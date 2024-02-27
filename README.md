@@ -15,8 +15,8 @@ Use terminal to send predefined commands (send **help** for full command list pr
 ### To enable manual control using a transmitter
 Connect to PC a transmitter via USB or wirelessly via an RF siumaltor dongle (e.g., *FrSky XSR-SIM*).
 Then install the **PySticks** package by navigating to its directory and runing the script:
-`python3 communicateViaBLE.py`
-You should now modify the joystick axes to send desired commands and switch to **manual** control mode.
+`sudo python3 setup.py install`
+You should now modify the joystick axes in the main python script to send desired commands and switch to **manual** control mode to override regular Serial <-> BLE communication interface.
 
 
 ### Microcontroller info:
