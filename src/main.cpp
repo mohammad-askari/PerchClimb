@@ -248,6 +248,14 @@ void loop()
     int ch = Serial.read();  // read a single byte from the serial
     processCommand(ch, buffer_len, buffer_idx, buffer);
   }
+
+  if (DEBUG) 
+  {
+    for(byte i = 0; i < servo_num; i++) {
+        if (DEBUG) actuator[i].print();
+      }
+    Serial.println();
+  }
   
   /**
     int speedESC;
