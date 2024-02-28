@@ -210,7 +210,7 @@ void motorHome(cmd *cmd_ptr) {
   Argument set_arg = c.getArgument(1);
   bool set_home = set_arg.isSet();
   if (set_home) {
-    encoder.reset_count();
+    // encoder.reset_count();
     Serial.println("Current position set to home");
   }
 

@@ -49,6 +49,39 @@ BLEUart bleuart;                  // BLE service for UART communication
 const byte ble_dle = 251;         // BLE data length (v4.2+: 251, otherwise: 27)
 const byte ble_mtu = ble_dle - 4; // BLE maximum transmission unit buffer size
 
+// char pitch[64];
+// char roll[64];
+// char yaw[64];
+char current[64];
+// char timex[64];
+
+void add_measure(){
+	// char buffer[8];
+	// strcat(pitch, dtostrf(filter.getPitch(), 4, 0, buffer));
+	// strcat(pitch, ",");
+	// strcat(roll, dtostrf(filter.getRoll(), 4, 0, buffer));
+	// strcat(roll, ",");
+	// strcat(yaw, dtostrf(filter.getYaw(), 4, 0, buffer));
+	// strcat(yaw, ",");
+	// char long_buffer[32];
+	// sprintf(long_buffer, "%d", millis());
+	// strcat(timex, long_buffer);
+	// strcat(timex, ",");
+	strcat(current, "2");
+	strcat(current, ",");
+	// strcat(current, analogRead(PIN_CURRENT))
+
+	// data_time.writeValue(timex);
+	// data_pitch.writeValue(pitch);
+	// data_roll.writeValue(roll);
+	// data_yaw.writeValue(yaw);
+	// data_current.writeValue(current);
+}
+
+void clear_measures(){
+
+}
+
 // —————————————————————————————— IMU VARIABLES ————————————————————————————— //
 #define SAMPLE_RATE 100       // filtering sample rate [Hz]
 #define LSM6DS3_CTRL1_XL 0x10 // control register for accelerometer

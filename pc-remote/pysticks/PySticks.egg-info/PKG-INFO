@@ -1,0 +1,9 @@
+Metadata-Version: 2.1
+Name: PySticks
+Version: 0.1
+Summary: Python API for flying with game controllers
+Home-page: https://github.com/simondlevy/PySticks
+Author-email: simon.d.levy@gmail.com
+License: LGPL
+Platform: Linux; Windows
+Requires: pygame
