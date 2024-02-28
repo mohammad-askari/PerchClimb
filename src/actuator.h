@@ -25,108 +25,21 @@ public:
   drive_t mode;
   Servo servo;
 
-  // object constructor
   Actuator() {}
 
-  // initializes variables, attaches servo pins, and moves to initial position
   void init(uint8_t pin, int8_t offset, int8_t range,
-            float frequency, drive_t mode = STEP)
-  {
-    this->pin = pin;
-    this->position = offset;
-    this->offset = offset;
-    this->range = range;
-    this->frequency = frequency;
-    this->mode = mode;
-    this->last_position = 0;
-    this->start_time = millis();
-    this->servo.attach(pin);
+            float frequency, drive_t mode);
 
-    servo.attach(pin);
-    setLimits();
-    move();
-  }
+  void setRange(int8_t range);
+  void setOffset(int8_t offset);
+  void setFrequency(int8_t frequency);
+  void setPosition(int8_t position);
+  void setTime(unsigned long start_time);
 
-  // set variable methods
-  void setRange(int8_t range)
-  {
-    this->range = range;
-    setLimits();
-    move();
-  }
-  void setOffset(int8_t offset)
-  {
-    this->offset = offset;
-    setLimits();
-    move();
-  }
-  void setFrequency(int8_t frequency)
-  {
-    this->frequency = frequency;
-    move();
-  }
-  void setPosition(int8_t position)
-  {
-    this->position = position;
-    this->frequency = 0;
-    move();
-  }
-  void setTime(unsigned long start_time)
-  {
-    this->start_time = start_time;
-  }
-
-  void setLimits()
-  {
-    int8_t rng = abs(range);
-    min_pos = constrain(offset - rng, RANGE_MIN, RANGE_MAX);
-    max_pos = constrain(offset + rng, RANGE_MIN, RANGE_MAX);
-  }
-
-  // main methods to move the servo, or reset its position back to the neutral state
-  void move()
-  {
-    updatePosition();
-    if (position == last_position)
-      return;
-    
-    int angle;
-    int servo_min = SERVO_MIN;
-    int servo_max = SERVO_MAX;
-    if (range < 0)
-    {
-      servo_min = SERVO_MAX;
-      servo_max = SERVO_MIN;
-    }
-
-    angle = map(position, RANGE_MIN, RANGE_MAX, servo_min, servo_max);
-    servo.write(angle);
-    last_position = position;
-  }
-
-  void reset()
-  {
-    setPosition(offset);
-  }
-
-  // print variables for debugging purposes
-  void print()
-  {
-    byte len = 80;
-    char str[len];
-    snprintf(str, len, "pin: %d, pos: %4d, offset: %4d, range: %4d, freq: %.1f"
-                       ", mode: %d",
-             pin, position, offset, range, frequency, mode);
-    Serial.println(str);
-  }
-
-  void printSignal()
-  {
-    Serial.print(">");
-    Serial.print(mode == STEP ? "STEP" : "LINEAR");
-    Serial.print(":");
-    Serial.println(position);
-  }
+  void move();
+  void reset();
+  void print();
+  void printSignal();
 
 private:
   uint8_t pin;
@@ -135,42 +48,8 @@ private:
   int8_t last_position;
   unsigned long start_time;
 
-  // update position using square (step) or triangular (linear) reference signals
-  void updatePosition()
-  {
-    if (frequency == 0)
-      return;
-
-    float period = 1000.0 / abs(frequency);
-    float half_period = period / 2;
-
-    unsigned long elapsed_time = millis() - start_time;
-    float dt = fmod(elapsed_time, period);
-    bool is_first_half = dt < half_period;
-
-    float a = (max_pos - min_pos) / half_period;
-    float b = 2.0 * max_pos - min_pos;
-
-    switch (mode)
-    {
-      case STEP: {
-        if (frequency >= 0)
-          position = is_first_half ? max_pos : min_pos;
-        else
-          position = is_first_half ? min_pos : max_pos;
-        break;
-      }
-
-      case LINEAR: {
-        if (frequency >= 0) {
-          position = is_first_half ? a * dt + min_pos : -a * dt + b;
-        } else {
-          position = is_first_half ? -a * dt + b : a * dt + min_pos;
-        }
-        break;
-      }
-    }
-  }
+  void setLimits();
+  void updatePosition();
 };
 
 #endif

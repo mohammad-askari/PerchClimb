@@ -251,9 +251,7 @@ void setup()
 
   // setting up the IMU, its registers, and the Madgwick filter
   if (imu.begin() != 0)
-  {
-    Serial.println("Device error");
-  }
+    Serial.println("IMU error");
   filter.begin(SAMPLE_RATE);
   imu.writeRegister(LSM6DS3_CTRL1_XL, ACC_ODR_104Hz);
   // imu.writeRegister(LSM6DS3_CTRL2_G, GYRO_ODR_416Hz);
@@ -283,7 +281,8 @@ void loop()
   {
     for(byte i = 0; i < 2; i++) {
         actuator[i].move();
-        if (DEBUG) actuator[i].printSignal();
+        actuator[i].printSignal();
+        delay(20);
       }
   }
   
