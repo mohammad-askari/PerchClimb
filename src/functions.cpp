@@ -1,4 +1,6 @@
 #include "functions.h"
+#include "main.h"
+#include "callbacks.h"
 
 // ———————————————————————————— LED COLOR CONTROL ——————————————————————————— //
 /**
@@ -28,4 +30,100 @@ void setLED(const byte *pins, const char mode) {
       digitalWrite(pins[b], LOW);
       break;
   }
+}
+
+// ———————————————————————— CLI COMMANDS DEFINITIONS ———————————————————————— //
+/**
+ * @brief Defines the CLI commands and their respective callbacks
+ **/
+void setupCLI() {
+  // define CLI usage help command and callback
+  Command cmd_help = cli.addCommand("help", cliHelp);
+  cmd_help.setDescription("\tShows command info");
+
+  // define QSPI format command and callback
+  Command cmd_format = cli.addCommand("format", formatMemory);
+  cmd_format.setDescription("\tErases a certain or all the files on QSPI");
+
+  // define QSPI erase command and callback
+  Command cmd_erase = cli.addCommand("erase", eraseFile);
+  cmd_erase.addArgument("n/ame,file/name");
+  cmd_erase.setDescription("\tFormats the on-board QSPI memory");
+
+  // define IMU data logger command, callback, and relevant arguments
+  Command cmd_log = cli.addCommand("log", logData);
+  cmd_log.addArgument("n/ame,file/name");
+  cmd_log.addArgument("t/ime", "30");
+  cmd_log.addArgument("d/elay", "0");
+  cmd_log.addArgument("f/req/uency", "100");
+  cmd_log.setDescription("\tLogs IMU data to a file on QSPI");
+
+  // define IMU data logger command, callback, and relevant arguments
+  Command cmd_ble = cli.addCommand("ble", bleCallback);
+  cmd_ble.addArgument("connect");
+  cmd_ble.addArgument("disconnect");
+  cmd_ble.addArgument("transfer");
+  cmd_ble.setDescription("\tEstablishes connection or does file transfer via BLE");
+
+  // define motor drive command, callback, and relevant arguments
+  Command cmd_drive = cli.addCommand("m/otor,d/rive", motorDrive);
+  cmd_drive.addPositionalArgument("t/urn/s", "1");
+  cmd_drive.addPositionalArgument("p/ow/er", "100");
+  cmd_drive.addFlagArgument("r/ev/erse");
+  cmd_drive.addFlagArgument("d/ist/ance");
+  cmd_drive.setDescription("\tDrives the wing motor according to the parameters.");
+
+  // define motor home command, callback, and relevant arguments
+  Command cmd_home = cli.addCommand("h/ome", motorHome);
+  cmd_home.addPositionalArgument("p/ow/er", "100");
+  cmd_home.addFlagArgument("s/et");
+  cmd_home.addFlagArgument("r/et/urn, g/o");
+  cmd_home.setDescription("\tSets the reference position for the wing motor and "
+                          "brings it back to the refence position if demanded");
+
+  // define climb command, callback, and relevant arguments
+  Command cmd_propulsion = cli.addCommand("prop", climb);
+  cmd_propulsion.addPositionalArgument("ms,micros", "500");
+  cmd_propulsion.addPositionalArgument("t/ime", "2000");
+  cmd_propulsion.addPositionalArgument("f/req/uency", "1");
+  cmd_propulsion.addFlagArgument("r/udder");
+  cmd_propulsion.setDescription("\tSets the propulsion motor speed.");
+
+  // set error callback
+  cli.setOnError(throwError);
+}
+
+
+// —————————————————— BLE CUSTOMIZATION & ADVERTISING SETUP ————————————————— //
+/**
+ * @brief Sets up the BLE peripheral device, services, and advertising packet
+ **/
+void setupBLE() {
+  // configure the BLE peripheral device settings and callbacks
+  Bluefruit.autoConnLed(true); // blink LED when not connected
+  Bluefruit.configPrphBandwidth(BANDWIDTH_MAX);
+  Bluefruit.begin();
+  Bluefruit.setName("PerchClimb");
+  Bluefruit.setTxPower(4);
+  Bluefruit.Periph.setConnectCallback(bleConnect);
+  Bluefruit.Periph.setDisconnectCallback(bleDisconnect);
+  Bluefruit.Periph.setConnInterval(6, 12); // in unit of 0.625 ms (7.5 - 15 ms)
+
+  // configure and start BLE device information service
+  bledis.setManufacturer("Seeed Studio");
+  bledis.setModel("XIAO BLE nRF52840 Sense");
+  bledis.begin();
+
+  // configure and start BLE UART service
+  bleuart.begin();
+
+  // configure advertising packet and start BLE advertising
+  Bluefruit.Advertising.addFlags(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
+  Bluefruit.Advertising.addTxPower();
+  Bluefruit.Advertising.addService(bleuart);       // include UART 128-bit UUID
+  Bluefruit.ScanResponse.addName();                // no room for name in packet
+  Bluefruit.Advertising.restartOnDisconnect(true); // advertise on disconnect
+  Bluefruit.Advertising.setInterval(32, 244);      // in unit of 0.625 ms
+  Bluefruit.Advertising.setFastTimeout(30);        // fast mode seconds
+  Bluefruit.Advertising.start(0);                  // advertise forever
 }

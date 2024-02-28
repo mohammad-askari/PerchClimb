@@ -1,4 +1,6 @@
 #include "callbacks.h"
+#include "main.h"
+#include "functions.h"
 
 // ——————————————————————— PARSE INCOMING USER INPUTS ——————————————————————— //
 /**

@@ -4,5 +4,7 @@
 #include <Arduino.h>
 
 void setLED(const byte *pins, const char mode);
+void setupCLI();
+void setupBLE();
 
 #endif
