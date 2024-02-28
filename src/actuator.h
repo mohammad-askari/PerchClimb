@@ -18,22 +18,21 @@ typedef enum
 class Actuator
 {
 public:
-  int8_t offset;
-  int8_t range;
-  int8_t position;
+  int offset;
+  int range;
+  int position;
   float frequency;
   drive_t mode;
   Servo servo;
 
   Actuator() {}
 
-  void init(uint8_t pin, int8_t offset, int8_t range,
-            float frequency, drive_t mode);
+  void init(byte pin, int offset, int range, float frequency, drive_t mode);
 
-  void setRange(int8_t range);
-  void setOffset(int8_t offset);
-  void setFrequency(int8_t frequency);
-  void setPosition(int8_t position);
+  void setRange(int range);
+  void setOffset(int offset);
+  void setFrequency(float frequency);
+  void setPosition(int position);
   void setTime(unsigned long start_time);
 
   void move();
@@ -42,10 +41,10 @@ public:
   void printSignal();
 
 private:
-  uint8_t pin;
-  int8_t min_pos;
-  int8_t max_pos;
-  int8_t last_position;
+  byte pin;
+  int min_pos;
+  int max_pos;
+  int last_position;
   unsigned long start_time;
 
   void setLimits();
