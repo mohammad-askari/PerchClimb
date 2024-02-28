@@ -29,19 +29,3 @@ void setLED(const byte *pins, const char mode) {
       break;
   }
 }
-
-// ———————————————————————————— REFERENCE SIGNAL ——————————————————————————— //
-/**
- * @brief Generates linear/stepwise servo position signals for synchronization.
- * @param[in] f   desired servo response frequency.
- * @param[in] dt  control loop time difference.
- * @param[out] R  reference position on the signal wrapped to [0,1] range.
- **/
-void servoSignal(const float &f, const unsigned long &dt,float &R) {
-  if (f == 0) {return;}
-  else {
-    float m = f/pow(10,6); // slope of the reference signal line    
-    R += m*dt;             // linear line equation
-    R = R - floor(R);      // wrapping to [0,1] range
-  }
-}
