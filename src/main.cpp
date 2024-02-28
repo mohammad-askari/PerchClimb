@@ -31,7 +31,7 @@
 #include "functions.h"
 
 // __________________________  MAIN FUNCTION FLAGS  _________________________ //
-bool DEBUG = false;  // enables extra serial connection in debug mode
+bool DEBUG = true;   // enables extra serial connection in debug mode
 bool MANUAL = false; // enables manual pilotting using transmitter inputs
 
 // ————————————————————————————— BOARD VARIABLES ———————————————————————————— //

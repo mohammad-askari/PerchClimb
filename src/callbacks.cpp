@@ -130,9 +130,9 @@ void bleConnect(uint16_t conn_handle)
   
   delay(500); // delay a bit for all the request to complete
   // print the current connection parameters
-  Serial.println(conn->getPHY());
-  Serial.println(conn->getDataLength());
-  Serial.println(conn->getMtu());
+  Serial.print("BLE PHY: "); Serial.println(conn->getPHY());
+  Serial.print("BLE DLE: "); Serial.println(conn->getDataLength());
+  Serial.print("BLE MTU: "); Serial.println(conn->getMtu());
 }
 
 // ————————————————————————— BLE DISCONNECT ACTIONS ————————————————————————— //

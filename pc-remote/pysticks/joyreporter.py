@@ -40,8 +40,7 @@ while True:
 
     for k in range(controller.get_numaxes()):
         stdout.write('%d:%+2.2f ' % (k, controller.get_axis(k)))
-    stdout.write(' | Buttons: ')
-    for k in range(controller.get_numbuttons()):
-        stdout.write('%d:%d ' % (k, controller.get_button(k)))
+    # stdout.write(' | Buttons: ')
+    # for k in range(controller.get_numbuttons()):
+    #     stdout.write('%d:%d ' % (k, controller.get_button(k)))
     stdout.write('\n')
-

@@ -31,9 +31,9 @@ while True:
 
         con.update()
 
-        print('Throttle: %+2.2f   Roll: %+2.2f   Pitch: %+2.2f   Yaw: %+2.2f   Aux: %+2.2f' %
-              (con.getThrottle(), con.getRoll(), con.getPitch(), con.getYaw(), con.getAux()))
-        #print('Test%+2.2f ' % (con.joystick.get_axis(4)))
+        # print('Throttle: %+2.2f   Roll: %+2.2f   Pitch: %+2.2f   Yaw: %+2.2f   Aux: %+2.2f' %
+        #      (con.getThrottle(), con.getRoll(), con.getPitch(), con.getYaw(), con.getAux()))
+        print('Test%+2.2f ' % (con.joystick.get_axis(4)))
 
     except KeyboardInterrupt:
 
