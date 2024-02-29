@@ -145,13 +145,59 @@ void setupCLI() {
   cmd_home.setDescription("\tSets the reference position for the wing motor and "
                           "brings it back to the refence position if demanded");
 
-  // define climb command, callback, and relevant arguments
-  Command cmd_propulsion = cli.addCommand("prop", cliClimb);
-  cmd_propulsion.addPositionalArgument("ms,micros", "500");
-  cmd_propulsion.addPositionalArgument("t/ime", "2000");
-  cmd_propulsion.addPositionalArgument("f/req/uency", "1");
-  cmd_propulsion.addFlagArgument("r/udder");
-  cmd_propulsion.setDescription("\tSets the propulsion motor speed.");
+  // define servo position command, callback, and relevant arguments
+  Command cmd_position = cli.addCommand("goto", setPos);
+  cmd_position.addPositionalArgument("id", "0");
+  cmd_position.addPositionalArgument("pos", "0");
+  cmd_position.setDescription("\tSet the position of one or all servos.");
+
+  // define servo frequency command, callback, and relevant arguments
+  Command cmd_freq = cli.addCommand("freq", setFreq);
+  cmd_freq.addPositionalArgument("id", "0");
+  cmd_freq.addPositionalArgument("freq", "0");
+  cmd_freq.setDescription("\tSet the frequency of all the servos.");
+
+  // define servo mode command, callback, and relevant arguments
+  Command cmd_mode = cli.addCommand("mode", setMode);
+  cmd_mode.addPositionalArgument("id", "0");
+  cmd_mode.addFlagArgument("lin");
+  cmd_mode.setDescription("\tSet the mode of of all the servos.");
+
+  // define servo offset command, callback, and relevant arguments
+  Command cmd_offset = cli.addCommand("ofst", setOffset);
+  cmd_offset.addFlagArgument("a1");
+  cmd_offset.addFlagArgument("a2");
+  cmd_offset.addFlagArgument("a3");
+  cmd_offset.addFlagArgument("a4");
+  cmd_offset.addFlagArgument("a5");
+  cmd_offset.addFlagArgument("a6");
+  cmd_offset.addPositionalArgument("o/ffset", "0");
+  cmd_offset.setDescription("\tSet the offset of one or multiple servos.");
+
+  // define servo range command, callback, and relevant arguments
+  Command cmd_range = cli.addCommand("rng", setRange);
+  cmd_range.addFlagArgument("a1");
+  cmd_range.addFlagArgument("a2");
+  cmd_range.addFlagArgument("a3");
+  cmd_range.addFlagArgument("a4");
+  cmd_range.addFlagArgument("a5");
+  cmd_range.addFlagArgument("a6");
+  cmd_range.addPositionalArgument("r/ange", "0");
+  cmd_range.setDescription("\tSet the range of one or multiple servos.");
+
+  // define ESC speed command, callback, and relevant arguments
+  Command cmd_esc = cli.addCommand("esc", setESC);
+  cmd_esc.addPositionalArgument("s/peed");
+  cmd_esc.setDescription("\tSet the speed of the ESC.");
+
+  // define experiment duration command, callback, and relevant arguments
+  Command cmd_duration = cli.addCommand("expt", setExpDuration);
+  cmd_duration.addPositionalArgument("t", "10");
+  cmd_duration.setDescription("\tSet the duration of the experiment.");
+
+  // define debug command, callback, and relevant arguments
+  Command cmd_debug = cli.addCommand("dbg", debug);
+  cmd_debug.setDescription("\tSet the duration of the experiment.");
 
   // set error callback
   cli.setOnError(cliThrowError);

@@ -183,38 +183,206 @@ void cliMotorHome(cmd *cmd_ptr) {
   }
 }
 
-// —————————————————————————— MOTOR DRIVE COMMANDS —————————————————————————— //
+// —————————————————————————— EXPERIMENT COMMANDS —————————————————————————— //
 /**
- * @brief //LEVY// Make the robot climb
+ * @brief //LEVY// Set the position of one or all servos
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void cliClimb(cmd *cmd_ptr) {
+void setPos(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
 
-  Argument arg0 = c.getArgument(0);   // thrust [%]
-  int throttle = arg0.getValue().toInt();
-
-  Argument arg1 = c.getArgument(1);   // time
-  int time = arg1.getValue().toInt();
-  Serial.println(time);
-
-  Argument arg2 = c.getArgument(2);   // frequency of wing twist [Hz]
-  int freq = arg2.getValue().toInt();
-
-  Argument arg3 = c.getArgument(3);   // bool: use rudder, 0 → no, 1 → yes
-  bool use_rudder = arg3.isSet();
-
+  Argument arg0 = c.getArgument(0);   
+  int servoID = arg0.getValue().toInt();
   
-  esc.speed(throttle);
-
-  // float angle = sin(global_time*freq)*90+90;
-  // angle = angle * aileron_range + aileron_offset; 
-  // servos[0].write(angle);
-  // servos[1].write(angle);
-
+  Argument arg1 = c.getArgument(1);  
+  int pos = arg1.getValue().toInt();
   
-  // if (use_rudder){
-  //   servos[0].write(-1 * (angle * rudder_range + rudder_offset));
-  // }
+
+  if (servoID == 99){
+    Serial.print("All servos");
+    for(byte i = 0; i < 6; i++) {
+      actuator[i].setPosition(pos);
+    }
+  }  
+  else{
+    Serial.print("Servo ");
+    Serial.print(servoID);
+    actuator[servoID].setPosition(pos);
+  }
+
+  Serial.print(" to position ");
+  Serial.println(pos);
+
+}
+
+/**
+ * @brief //LEVY// Set the frequency of all the servos
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void setFreq(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+
+  Argument arg0 = c.getArgument(0);   
+  int servoID = arg0.getValue().toInt();
+
+  Argument arg1 = c.getArgument(1);  
+  float freq = arg1.getValue().toFloat();
+
+  if (servoID == 99){
+    Serial.println("All servos");
+    for(byte i = 0; i < 6; i++) {
+      actuator[i].setFrequency(freq);
+    }
+  }
+  else{
+    actuator[servoID].setFrequency(freq);
+    Serial.print("Servo ");
+    Serial.print(servoID);
+  }
+  Serial.print(" at frequency ");
+  Serial.println(freq);
+}
+
+/**
+ * @brief //LEVY// Set the speed of the ESC
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void setESC(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+
+  Argument arg0 = c.getArgument(0);   
+  int speed = arg0.getValue().toInt();
+
+  esc_speed = speed;
+
+}
+
+/**
+ * @brief //LEVY// Set the actuation mode of one or all servos (step/linear)
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void setMode(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+
+  Argument arg0 = c.getArgument(0);   
+  int servoID = arg0.getValue().toInt();
   
+  Argument arg1 = c.getArgument(1);  
+  bool linear = arg1.isSet();
+  
+
+  if (servoID == 99){
+    Serial.print("All servos");
+    for(byte i = 0; i < 6; i++) {
+      if (!linear){
+        actuator[i].mode = STEP;
+      }
+      else{
+        actuator[i].mode = LINEAR;
+      }
+    }
+  }  
+  else{
+    Serial.print("Servo ");
+    Serial.print(servoID);
+    if (!linear){
+      actuator[servoID].mode = STEP;
+    }
+    else{
+      actuator[servoID].mode = LINEAR;
+    }
+
+  }
+
+  Serial.print("Set to ");
+  Serial.println(!linear ? "STEP" : "LINEAR");
+}
+
+/**
+ * @brief //LEVY// Set the duration of the experiment
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void setExpDuration(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+
+  Argument arg0 = c.getArgument(0);   
+  int duration = arg0.getValue().toInt();
+
+  exp_duration = duration;
+
+}
+
+/**
+ * @brief //LEVY// Set the speed of the wing opening DC motor
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void setDCSpeed(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+
+  Argument arg0 = c.getArgument(0);   
+  int speed = arg0.getValue().toInt();
+
+  dc_speed = speed;
+
+}
+
+/**
+ * @brief //LEVY// Set the offset of one or multiple servos
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void setOffset(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+
+  bool servoID[6];
+  for (int i = 0; i < 6; i++){
+    Argument arg = c.getArgument(i);
+    servoID[i] = arg.isSet();
+  }
+  
+  Argument ofst_arg = c.getArgument(7);
+  int offset = ofst_arg.getValue().toInt();
+  
+  for (int i = 0; i < 6; i++)
+  {
+    if (servoID[i]){
+      actuator[i].offset = offset;
+    }
+  }
+}
+
+/**
+ * @brief //LEVY// Set the range of one or multiple servos
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void setRange(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+
+  bool servoID[6];
+  for (int i = 0; i < 6; i++){
+    Argument arg = c.getArgument(i);
+    servoID[i] = arg.isSet();
+  }
+  
+  Argument rng_arg = c.getArgument(7);
+  int range = rng_arg.getValue().toInt();
+  
+  for (int i = 0; i < 6; i++)
+  {
+    if (servoID[i]){
+      actuator[i].range = range;
+    }
+  }
+}
+
+/**
+ * @brief //LEVY// Send the debug data in serial
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void debug(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+
+  for (int i = 0; i < 6; i++)
+  {
+    actuator[i].print();
+  }
 }
