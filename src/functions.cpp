@@ -61,7 +61,6 @@ void setLED(const byte *pins, const char mode) {
   }
 }
 
-
 // —————————————————— BLE CUSTOMIZATION & ADVERTISING SETUP ————————————————— //
 /**
  * @brief Sets up the BLE peripheral device, services, and advertising packet
@@ -72,7 +71,7 @@ void setupBLE() {
   Bluefruit.configPrphBandwidth(BANDWIDTH_MAX);
   Bluefruit.begin();
   Bluefruit.setName("PerchClimb");
-  Bluefruit.setTxPower(4);
+  Bluefruit.setTxPower(8);     // check supported values (max 8 dBm)
   Bluefruit.Periph.setConnectCallback(bleConnect);
   Bluefruit.Periph.setDisconnectCallback(bleDisconnect);
   Bluefruit.Periph.setConnInterval(6, 12); // in unit of 0.625 ms (7.5 - 15 ms)
@@ -156,4 +155,21 @@ void setupCLI() {
 
   // set error callback
   cli.setOnError(cliThrowError);
+}
+
+// ———————————————————————— TASKS SETUP & INITIALIZATION ——————————————————————— //
+/**
+ * @brief Initializes the task scheduler and adds tasks to the scheduler
+ **/
+void setupTasks() {
+  scheduler.init();
+	
+  scheduler.addTask(ts_parser);
+	scheduler.addTask(ts_ble_conn);
+	scheduler.addTask(ts_ble_lost);
+	scheduler.addTask(ts_climb_off);
+	scheduler.addTask(ts_climb_on);
+	scheduler.addTask(ts_data_logger);
+	
+  ts_parser.enable();
 }

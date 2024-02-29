@@ -3,10 +3,15 @@
 
 #include <Arduino.h>
 
+extern uint16_t ble_conn_handle;
+
 void tsParser();
-void tsClimbTimer();
+void tsBLEConn();
+void tsBLELost();
 void tsClimbOn();
 void tsClimbOff();
+void tsMotorUpdate();
 void tsDataLogger();
+void tsDataTransfer();
 
 #endif

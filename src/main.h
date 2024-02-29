@@ -36,6 +36,7 @@ extern BLEDis bledis;
 extern BLEUart bleuart;
 extern const byte ble_dle;
 extern const byte ble_mtu;
+extern byte ble_packet_len;
 
 // —————————————————————————————— IMU VARIABLES ————————————————————————————— //
 #define SAMPLE_RATE 100
@@ -84,9 +85,32 @@ extern const byte current_pin;
 
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 extern TsTask ts_parser;
-extern TsTask ts_climb_timer;
-extern TsTask ts_climb_on;
+extern TsTask ts_ble_conn;
+extern TsTask ts_ble_lost;
 extern TsTask ts_climb_off;
+extern TsTask ts_climb_on;
 extern TsTask ts_data_logger;
+extern TsTask ts_data_transfer;
+
+extern TsScheduler scheduler;
+
+
+typedef struct {
+    uint16_t time;
+    int16_t  current;
+    int16_t  roll;
+    int16_t  pitch;
+    int16_t  yaw;
+} exp_data_t;
+
+extern const int  move_freq;
+extern const int  log_freq;
+extern const int  log_max;
+extern const int  data_len;
+extern int        data_idx;
+extern char       exp_info[];
+extern int        exp_duration;
+extern unsigned long start_time;
+extern exp_data_t exp_data[];
 
 #endif

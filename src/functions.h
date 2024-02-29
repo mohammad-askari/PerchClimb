@@ -5,7 +5,8 @@
 
 void processCommand(const char c, const byte size, byte &idx, char *str);
 void setLED(const byte *pins, const char mode);
-void setupCLI();
 void setupBLE();
+void setupCLI();
+void setupTasks();
 
 #endif

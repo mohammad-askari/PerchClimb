@@ -33,10 +33,11 @@ const long baud_rate = 115200;             // serial data rate (bits per second)
 const byte led_pin[] = {LED_RED, LED_GREEN, LED_BLUE}; // 3-in-1 LED pins
 
 // —————————————————————————————— BLE VARIABLES ————————————————————————————— //
-BLEDis bledis;                    // BLE service for device information
-BLEUart bleuart;                  // BLE service for UART communication
-const byte ble_dle = 251;         // BLE data length (v4.2+: 251, otherwise: 27)
-const byte ble_mtu = ble_dle - 4; // BLE maximum transmission unit buffer size
+BLEDis bledis;                     // BLE service for device information
+BLEUart bleuart;                   // BLE service for UART communication
+const byte ble_dle  = 251;         // BLE data length (v4.2+: 251, else: 27)
+const byte ble_mtu  = ble_dle - 4; // BLE maximum transmission unit
+byte ble_packet_len = ble_mtu - 3; // BLE maximum packet/buffer length
 
 // —————————————————————————————— IMU VARIABLES ————————————————————————————— //
 LSM6DS3 imu(I2C_MODE, 0x6A);  // I2C device address
@@ -78,21 +79,28 @@ const byte buffer_len = ble_mtu - 2; // size of the input buffer characters
 byte buffer_idx;                     // position index variable for the buffer
 char buffer[buffer_len];             // CLI buffer array to parse user inputs
 
+// ——————————————————————— EXPERIMENTAL DATA VARIABLES —————————————————————— //
+const int move_freq = 100;                // motors movement update rate [Hz]
+const int log_freq  = 100;                // data logging frequency [Hz]
+const int log_max   = 60;                 // maximum data logging duration [s]
+const int data_len  = log_max * log_freq; // maximum size of data arrays
+int data_idx = 0;                         // position index of the data arrays
+char exp_info[200];                       // experimental information string
+int  exp_duration = 5;                    // experimental duration [s]
+unsigned long start_time;                 // start time of the experiment
+exp_data_t exp_data[data_len];            // experimental data array
+
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 // ———— TASK PARAMETERS: interval [ms/μs], #executions, callback function ——— //
-TsTask ts_parser     (TASK_IMMEDIATE,  TASK_FOREVER, &tsParser);
-TsTask ts_climb_timer(TASK_SECOND,     TASK_ONCE,    &tsClimbTimer);
-TsTask ts_climb_on   (TASK_SECOND,     TASK_ONCE,    &tsClimbOn);
-TsTask ts_climb_off  (TASK_SECOND,     TASK_ONCE,    &tsClimbOff);
-TsTask ts_data_logger(TASK_SECOND/100, TASK_FOREVER, &tsDataLogger);
+TsTask ts_parser       (TASK_IMMEDIATE,        TASK_FOREVER, &tsParser);
+TsTask ts_ble_conn     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLEConn);
+TsTask ts_ble_lost     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLELost);
+TsTask ts_climb_on     (TASK_SECOND,           TASK_ONCE,    &tsClimbOn);
+TsTask ts_climb_off    (TASK_SECOND,           TASK_ONCE,    &tsClimbOff);
+TsTask ts_motor_update (TASK_SECOND/move_freq, TASK_FOREVER, &tsMotorUpdate);
+TsTask ts_data_logger  (TASK_SECOND/log_freq,  TASK_FOREVER, &tsDataLogger);
+TsTask ts_data_transfer(TASK_MINUTE,           TASK_ONCE,    &tsDataTransfer);
 TsScheduler scheduler; // scheduler object to run tasks in order
-
-// ——————————————————————— EXPERIMENTAL DATA VARIABLES —————————————————————— //
-// char pitch[64];
-// char roll[64];
-// char yaw[64];
-char current[64];
-// char timex[64];
 
 void add_measure(){
 	// char buffer[8];
@@ -106,8 +114,8 @@ void add_measure(){
 	// sprintf(long_buffer, "%d", millis());
 	// strcat(timex, long_buffer);
 	// strcat(timex, ",");
-	strcat(current, "2");
-	strcat(current, ",");
+	// strcat(current, "2");
+	// strcat(current, ",");
 	// strcat(current, analogRead(PIN_CURRENT))
 
 	// data_time.writeValue(timex);
@@ -142,12 +150,6 @@ void setup()
   pinMode(phase_pin, OUTPUT);
   pinMode(current_pin, INPUT);
 
-  // configure the BLE services, characteristics, and callbacks
-  setupBLE();
-
-  // configure the CLI and define the commands
-  setupCLI();
-
   // initializing the servo variables and their positions
   for(byte i = 0; i < servo_num; i++) {
     actuator[i].init(servo_pin[i], servo_offset[i], servo_range[i], 
@@ -166,6 +168,16 @@ void setup()
   filter.begin(SAMPLE_RATE);
   imu.writeRegister(LSM6DS3_CTRL1_XL, ACC_ODR_104Hz);
   // imu.writeRegister(LSM6DS3_CTRL2_G, GYRO_ODR_416Hz);
+
+  // configure the BLE services, characteristics, and callbacks
+  setupBLE();
+
+  // configure the CLI and define the commands
+  setupCLI();
+
+  // configure the task scheduler and add the tasks to the scheduler
+  setupTasks();
+  ts_climb_on.restartDelayed(2000);
 }
 
 
@@ -174,6 +186,17 @@ void setup()
 // —————————————————————————————————————————————————————————————————————————— //
 void loop()
 {
+  // static int count = 0;
+  // static unsigned long start = millis();
+  scheduler.execute();
+
+  // if (millis() - start >= 1000)
+  // {
+  //   start = millis();
+  //   Serial.println(count);
+  //   count = 0;
+  // }
+  // count++;
   
   /**
     int speedESC;
@@ -226,7 +249,7 @@ void loop()
     }
     Serial.print("Servo Position: ");
     Serial.println(posServo);
-
+    
     // IMU
 
     char buffer[8];

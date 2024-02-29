@@ -1,6 +1,7 @@
 #include "callbacksBLE.h"
 #include "main.h"
 #include "functions.h"
+#include "callbacksTasks.h"
 
 // ——————————————————————————— BLE CONNECT ACTIONS —————————————————————————— //
 /**
@@ -22,11 +23,9 @@ void bleConnect(uint16_t conn_handle)
   conn->requestDataLengthUpdate();   // enable data length extension (BLE v4.2+)
   conn->requestMtuExchange(ble_mtu); // change maximum transmission unit
 
-  delay(1000); // delay a bit for all the request to complete
-  // print the current connection parameters
-  Serial.print("BLE PHY: "); Serial.println(conn->getPHY());
-  Serial.print("BLE DLE: "); Serial.println(conn->getDataLength());
-  Serial.print("BLE MTU: "); Serial.println(conn->getMtu());
+  // schedule a delayed call to update the connection parameters
+  ble_conn_handle = conn_handle;
+  ts_ble_conn.restartDelayed(TASK_SECOND);
 }
 
 // ————————————————————————— BLE DISCONNECT ACTIONS ————————————————————————— //
@@ -40,4 +39,8 @@ void bleDisconnect(uint16_t conn_handle, byte reason)
   Serial.print("BLE Disconnected, reason = 0x");
   Serial.println(reason, HEX);
   setLED(led_pin,'O');
+  
+  // take immediate actions on connection loss (not intended termination)
+  if (reason != BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION) 
+    ts_ble_lost.restart();
 }
