@@ -1,6 +1,35 @@
 #include "functions.h"
 #include "main.h"
-#include "callbacks.h"
+#include "callbacksBLE.h"
+#include "callbacksCLI.h"
+
+// ——————————————————————— PARSE INCOMING USER INPUTS ——————————————————————— //
+/**
+ * @brief Processes incoming serial/ble data bytes and parses into the CLI.
+ * @param[in] c    single character input from serial/ble buffer
+ * @param[in] size size of the processing buffer array
+ * @param[in] idx  index position of the processing buffer
+ * @param[in] str  pointer to the processing buffer array
+ **/
+void processCommand(const char c, const byte size, byte &idx, char *str) {
+  switch (c) {
+    // if a delimeter is received, reset buffer and enable CLI parsing
+    case ',':
+    case '\r':
+    case '\n':
+      if (!idx) break;  // skip leading delimeters if buffer is empty
+      str[idx] = '\0';  // adding terminating null byte
+      cli.parse(str);
+      idx = 0;
+      break;
+
+    // add non-delimeter regular bytes to the buffer
+    default:
+      if (!idx && c == ' ') break;  // skip leading space if buffer is empty
+      if (idx < (size - 1)) str[idx++] = c;
+      break;
+  }
+}
 
 // ———————————————————————————— LED COLOR CONTROL ——————————————————————————— //
 /**
@@ -30,67 +59,6 @@ void setLED(const byte *pins, const char mode) {
       digitalWrite(pins[b], LOW);
       break;
   }
-}
-
-// ———————————————————————— CLI COMMANDS DEFINITIONS ———————————————————————— //
-/**
- * @brief Defines the CLI commands and their respective callbacks
- **/
-void setupCLI() {
-  // define CLI usage help command and callback
-  Command cmd_help = cli.addCommand("help", cliHelp);
-  cmd_help.setDescription("\tShows command info");
-
-  // define QSPI format command and callback
-  Command cmd_format = cli.addCommand("format", formatMemory);
-  cmd_format.setDescription("\tErases a certain or all the files on QSPI");
-
-  // define QSPI erase command and callback
-  Command cmd_erase = cli.addCommand("erase", eraseFile);
-  cmd_erase.addArgument("n/ame,file/name");
-  cmd_erase.setDescription("\tFormats the on-board QSPI memory");
-
-  // define IMU data logger command, callback, and relevant arguments
-  Command cmd_log = cli.addCommand("log", logData);
-  cmd_log.addArgument("n/ame,file/name");
-  cmd_log.addArgument("t/ime", "30");
-  cmd_log.addArgument("d/elay", "0");
-  cmd_log.addArgument("f/req/uency", "100");
-  cmd_log.setDescription("\tLogs IMU data to a file on QSPI");
-
-  // define IMU data logger command, callback, and relevant arguments
-  Command cmd_ble = cli.addCommand("ble", bleCallback);
-  cmd_ble.addArgument("connect");
-  cmd_ble.addArgument("disconnect");
-  cmd_ble.addArgument("transfer");
-  cmd_ble.setDescription("\tEstablishes connection or does file transfer via BLE");
-
-  // define motor drive command, callback, and relevant arguments
-  Command cmd_drive = cli.addCommand("m/otor,d/rive", motorDrive);
-  cmd_drive.addPositionalArgument("t/urn/s", "1");
-  cmd_drive.addPositionalArgument("p/ow/er", "100");
-  cmd_drive.addFlagArgument("r/ev/erse");
-  cmd_drive.addFlagArgument("d/ist/ance");
-  cmd_drive.setDescription("\tDrives the wing motor according to the parameters.");
-
-  // define motor home command, callback, and relevant arguments
-  Command cmd_home = cli.addCommand("h/ome", motorHome);
-  cmd_home.addPositionalArgument("p/ow/er", "100");
-  cmd_home.addFlagArgument("s/et");
-  cmd_home.addFlagArgument("r/et/urn, g/o");
-  cmd_home.setDescription("\tSets the reference position for the wing motor and "
-                          "brings it back to the refence position if demanded");
-
-  // define climb command, callback, and relevant arguments
-  Command cmd_propulsion = cli.addCommand("prop", climb);
-  cmd_propulsion.addPositionalArgument("ms,micros", "500");
-  cmd_propulsion.addPositionalArgument("t/ime", "2000");
-  cmd_propulsion.addPositionalArgument("f/req/uency", "1");
-  cmd_propulsion.addFlagArgument("r/udder");
-  cmd_propulsion.setDescription("\tSets the propulsion motor speed.");
-
-  // set error callback
-  cli.setOnError(throwError);
 }
 
 
@@ -126,4 +94,66 @@ void setupBLE() {
   Bluefruit.Advertising.setInterval(32, 244);      // in unit of 0.625 ms
   Bluefruit.Advertising.setFastTimeout(30);        // fast mode seconds
   Bluefruit.Advertising.start(0);                  // advertise forever
+}
+
+// ———————————————————————— CLI COMMANDS DEFINITIONS ———————————————————————— //
+/**
+ * @brief Defines the CLI commands and their respective callbacks
+ **/
+void setupCLI() {
+  // define CLI usage help command and callback
+  Command cmd_help = cli.addCommand("help", cliHelp);
+  cmd_help.setDescription("\tShows command info");
+
+  // define QSPI format command and callback
+  Command cmd_format = cli.addCommand("format", cliFormatMemory);
+  cmd_format.setDescription("\tErases a certain or all the files on QSPI");
+
+  // define QSPI erase command and callback
+  Command cmd_erase = cli.addCommand("erase", cliEraseFile);
+  cmd_erase.addArgument("n/ame,file/name");
+  cmd_erase.setDescription("\tFormats the on-board QSPI memory");
+
+  // define IMU data logger command, callback, and relevant arguments
+  Command cmd_log = cli.addCommand("log", cliLogData);
+  cmd_log.addArgument("n/ame,file/name");
+  cmd_log.addArgument("t/ime", "30");
+  cmd_log.addArgument("d/elay", "0");
+  cmd_log.addArgument("f/req/uency", "100");
+  cmd_log.setDescription("\tLogs IMU data to a file on QSPI");
+
+  // define BLE transfer command, callback, and relevant arguments
+  Command cmd_ble = cli.addCommand("transfer", cliTransferData);
+  cmd_ble.addFlagArgument("info");
+  cmd_ble.addFlagArgument("time");
+  cmd_ble.addFlagArgument("imu");
+  cmd_ble.addFlagArgument("current");
+  cmd_ble.setDescription("\tEstablishes connection or does file transfer via BLE");
+
+  // define motor drive command, callback, and relevant arguments
+  Command cmd_drive = cli.addCommand("m/otor,d/rive", cliMotorDrive);
+  cmd_drive.addPositionalArgument("t/urn/s", "1");
+  cmd_drive.addPositionalArgument("p/ow/er", "100");
+  cmd_drive.addFlagArgument("r/ev/erse");
+  cmd_drive.addFlagArgument("d/ist/ance");
+  cmd_drive.setDescription("\tDrives the wing motor according to the parameters.");
+
+  // define motor home command, callback, and relevant arguments
+  Command cmd_home = cli.addCommand("h/ome", cliMotorHome);
+  cmd_home.addPositionalArgument("p/ow/er", "100");
+  cmd_home.addFlagArgument("s/et");
+  cmd_home.addFlagArgument("r/et/urn, g/o");
+  cmd_home.setDescription("\tSets the reference position for the wing motor and "
+                          "brings it back to the refence position if demanded");
+
+  // define climb command, callback, and relevant arguments
+  Command cmd_propulsion = cli.addCommand("prop", cliClimb);
+  cmd_propulsion.addPositionalArgument("ms,micros", "500");
+  cmd_propulsion.addPositionalArgument("t/ime", "2000");
+  cmd_propulsion.addPositionalArgument("f/req/uency", "1");
+  cmd_propulsion.addFlagArgument("r/udder");
+  cmd_propulsion.setDescription("\tSets the propulsion motor speed.");
+
+  // set error callback
+  cli.setOnError(cliThrowError);
 }

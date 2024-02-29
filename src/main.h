@@ -15,6 +15,7 @@
 #include <Wire.h>
 #include <avr/dtostrf.h>
 #include <quadrature.h>
+#include <TSchedulerDeclarations.hpp>
 
 #include "actuator.h"
 
@@ -79,5 +80,13 @@ extern SimpleCLI cli;
 extern const byte buffer_len;
 extern byte buffer_idx;
 extern char buffer[];
+extern const byte current_pin;
+
+// ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
+extern TsTask ts_parser;
+extern TsTask ts_climb_timer;
+extern TsTask ts_climb_on;
+extern TsTask ts_climb_off;
+extern TsTask ts_data_logger;
 
 #endif

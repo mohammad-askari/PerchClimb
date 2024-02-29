@@ -1,34 +1,6 @@
-#include "callbacks.h"
+#include "callbacksCLI.h"
 #include "main.h"
 #include "functions.h"
-
-// ——————————————————————— PARSE INCOMING USER INPUTS ——————————————————————— //
-/**
- * @brief Processes incoming serial/ble data bytes and parses into the CLI.
- * @param[in] c    single character input from serial/ble buffer
- * @param[in] size size of the processing buffer array
- * @param[in] idx  index position of the processing buffer
- * @param[in] str  pointer to the processing buffer array
- **/
-void processCommand(const char c, const byte size, byte &idx, char *str) {
-  switch (c) {
-    // if a delimeter is received, reset buffer and enable CLI parsing
-    case ',':
-    case '\r':
-    case '\n':
-      if (!idx) break;  // skip leading delimeters if buffer is empty
-      str[idx] = '\0';  // adding terminating null byte
-      cli.parse(str);
-      idx = 0;
-      break;
-
-    // add non-delimeter regular bytes to the buffer
-    default:
-      if (!idx && c == ' ') break;  // skip leading space if buffer is empty
-      if (idx < (size - 1)) str[idx++] = c;
-      break;
-  }
-}
 
 // ———————————————————————— CLI USAGE HELPER CALLBACK ——————————————————————— //
 /**
@@ -45,7 +17,7 @@ void cliHelp(cmd *cmd_ptr) {
  * @brief Throws error upon inputting wrong command or argument.
  * @param[in] err_ptr pointer to the error struct data type
  **/
-void throwError(cmd_error *err_ptr) {
+void cliThrowError(cmd_error *err_ptr) {
   CommandError e(err_ptr);  // wrapper class instance for the pointer
 
   // print error message
@@ -61,16 +33,34 @@ void throwError(cmd_error *err_ptr) {
   }
 }
 
-// ———————————————————————— IMU DATA LOGGER CALLBACK ———————————————————————— //
+// ———————————————————— EXPERIMENTAL DATA LOGGER CALLBACK ——————————————————— //
 /**
- * @brief Logs the IMU data onto the QSPI memory.
+ * @brief Logs the experimental data onto the QSPI memory.
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void logData(cmd *cmd_ptr) {
+void cliLogData(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Serial.println("Logging IMU data at 208 Hz for 5 seconds to test.txt file.");
   delay(5200);
   Serial.println("Data logging completed.");
+}
+
+// ——————————————————— EXPERIMENTAL DATA TRANSFER COMMANDS —————————————————— //
+/**
+ * @brief Transfers the logged data to the BLE connected central device.
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void cliTransferData(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+  
+  Argument info    = c.getArgument("info");
+  Argument time    = c.getArgument("time");
+  Argument imu     = c.getArgument("imu");
+  Argument current = c.getArgument("current");
+  bool is_info     = info.isSet();
+  bool is_time     = time.isSet();
+  bool is_imu      =  imu.isSet();
+  bool is_current  = current.isSet();
 }
 
 // ——————————————————————————— QSPI MEMORY FORMAT ——————————————————————————— //
@@ -78,7 +68,7 @@ void logData(cmd *cmd_ptr) {
  * @brief Formats the on-board 2MB QSPI memory using LittleFS file system.
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void formatMemory(cmd *cmd_ptr) {
+void cliFormatMemory(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Serial.print("Formatting the QSPI using LittleFS ...");
   delay(1500);
@@ -90,7 +80,7 @@ void formatMemory(cmd *cmd_ptr) {
  * @brief Erases a selected file or all the logged files on the QSPI memory.
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void eraseFile(cmd *cmd_ptr) {
+void cliEraseFile(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Serial.print("File: ");
   int argNum = c.countArgs();
@@ -101,64 +91,12 @@ void eraseFile(cmd *cmd_ptr) {
   Serial.println(" successfully deleted.");
 }
 
-// —————————————————————————— BLE CONTROL COMMANDS —————————————————————————— //
-/**
- * @brief ...
- * @param[in] cmd_ptr pointer to the command stuct data type
- **/
-void bleCallback(cmd *cmd_ptr) {
-  Command c(cmd_ptr);  // wrapper class instance for the pointer
-}
-
-// ——————————————————————————— BLE CONNECT ACTIONS —————————————————————————— //
-/**
- * @brief Callback invoked when central device connects to the peripheral
- * @param[in] conn_handle connection handle to where this event happens
- **/
-void bleConnect(uint16_t conn_handle)
-{
-  // get the reference to current connection and print connected device name
-  BLEConnection* conn = Bluefruit.Connection(conn_handle);
-  char central_name[32] = {0};
-  conn->getPeerName(central_name, sizeof(central_name));
-  Serial.print("BLE Connected to "); 
-  Serial.println(central_name);
-  setLED(led_pin,'G');
-
-  // customization for throughput maximum data transmission speed
-  conn->requestPHY();                // change PHY to 2Mbps (BLE v5.0+)
-  conn->requestDataLengthUpdate();   // enable data length extension (BLE v4.2+)
-  conn->requestMtuExchange(ble_mtu); // change maximum transmission unit
-  
-  delay(500); // delay a bit for all the request to complete
-  // print the current connection parameters
-  Serial.print("BLE PHY: "); Serial.println(conn->getPHY());
-  Serial.print("BLE DLE: "); Serial.println(conn->getDataLength());
-  Serial.print("BLE MTU: "); Serial.println(conn->getMtu());
-}
-
-// ————————————————————————— BLE DISCONNECT ACTIONS ————————————————————————— //
-/**
- * @brief Callback invoked when a connection is dropped, displaying the reason
- * @param[in] conn_handle connection handle to where this event happens
- * @param[in] reason      BLE_HCI_STATUS_CODE which can be found in ble_hci.h
- */
-void bleDisconnect(uint16_t conn_handle, byte reason)
-{
-  (void) conn_handle;
-  (void) reason;
-
-  Serial.print("BLE Disconnected, reason = 0x");
-  Serial.println(reason, HEX);
-  setLED(led_pin,'O');
-}
-
 // —————————————————————————— MOTOR DRIVE COMMANDS —————————————————————————— //
 /**
  * @brief //LEVY// Drives the motor as specified by the parameters
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void motorDrive(cmd *cmd_ptr) {
+void cliMotorDrive(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
 
   Argument turn_arg = c.getArgument(0);
@@ -206,7 +144,7 @@ void motorDrive(cmd *cmd_ptr) {
  *        refence position if demanded
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void motorHome(cmd *cmd_ptr) {
+void cliMotorHome(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
 
   Argument set_arg = c.getArgument(1);
@@ -250,7 +188,7 @@ void motorHome(cmd *cmd_ptr) {
  * @brief //LEVY// Make the robot climb
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void climb(cmd *cmd_ptr) {
+void cliClimb(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
 
   Argument arg0 = c.getArgument(0);   // thrust [%]

@@ -15,7 +15,9 @@
 #include <TScheduler.hpp>
 #include "main.h"
 #include "functions.h"
-#include "callbacks.h"
+#include "callbacksBLE.h"
+#include "callbacksCLI.h"
+#include "callbacksTasks.h"
 
 // __________________________  MAIN FUNCTION FLAGS  _________________________ //
 bool DEBUG = true;   // enables extra serial connection in debug mode
@@ -37,11 +39,6 @@ const byte ble_dle = 251;         // BLE data length (v4.2+: 251, otherwise: 27)
 const byte ble_mtu = ble_dle - 4; // BLE maximum transmission unit buffer size
 
 // —————————————————————————————— IMU VARIABLES ————————————————————————————— //
-#define SAMPLE_RATE 100       // filtering sample rate [Hz]
-#define LSM6DS3_CTRL1_XL 0x10 // control register for accelerometer
-#define LSM6DS3_CTRL2_G 0x11  // control register for gyroscope
-#define ACC_ODR_104Hz 0x40    // setting 104Hz ODR for accelerometer
-#define GYRO_ODR_416Hz 0x60   // setting 416Hz ODR for gyroscope
 LSM6DS3 imu(I2C_MODE, 0x6A);  // I2C device address
 Madgwick filter;
 
@@ -50,25 +47,25 @@ Madgwick filter;
 const byte    servo_pin[]    = {     1,      2,      3,      4,      5,      6};
 const int     servo_offset[] = {    +0,     +0,     +0,    -25,     +9,    -25};
 const int     servo_range[]  = {  +100,   +100,   +100,    -25,    -30,    +33};
-const float   servo_freq[]   = {  +0.5,   -0.5,     +0,     +0,     +0,     +0};
-const drive_t servo_linear[] = {  STEP, LINEAR,   STEP,   STEP,   STEP,   STEP};
+const float   servo_freq[]   = {    +0,     +0,     +0,     +0,     +0,     +0};
+const drive_t servo_linear[] = {  STEP,   STEP,   STEP,   STEP,   STEP,   STEP};
 const byte    servo_num      = sizeof(servo_pin) / sizeof(servo_pin[0]);
 Actuator actuator[servo_num];
 
 // —————————————————————————————— ESC VARIABLES ————————————————————————————— //
-const byte esc_pin = 7;
-const int  esc_min = 1000; // ESC minimum speed
-const int  esc_max = 2000; // ESC maximum speed
-const int  esc_arm = 500;  // ESC arm value
-int esc_speed;             // ESC variable for adjusting speed
-ESC esc(esc_pin, esc_min, esc_max, esc_arm);
+const byte esc_pin = 7;                       // ESC PWM pin
+const int  esc_min = 1000;                    // ESC minimum speed pulse [μs]
+const int  esc_max = 2000;                    // ESC maximum speed pulse [μs]
+const int  esc_arm = 500;                     // ESC arm value pulse [μs]
+int esc_speed;                                // ESC speed parameter [μs]
+ESC esc(esc_pin, esc_min, esc_max, esc_arm);  // ESC motor object
 
 // ————————————————————— WING MOTOR & ENCODER VARIABLES ————————————————————— //
 const byte encoder_pin[] = {8, 8}; // quadrature encoder pins
 const byte phase_pin  = 9;         // DC motor direction control pin
 const byte enable_pin = 10;        // DC motor speed control PWM pin
 const float gear_ratio = 297.92;   // DC motor gear ratio (faster motor: 150.58)
-const float spool_diameter = 10;   // spool diameter [mm]
+const float spool_diameter = 10;   // wing-opening mechanism spool diameter [mm]
 int dc_speed;                      // DC motor variable for adjusting speed
 Quadrature_encoder<8, 8> encoder;
 
@@ -80,6 +77,15 @@ SimpleCLI cli;                       // command line interface (CLI) object
 const byte buffer_len = ble_mtu - 2; // size of the input buffer characters
 byte buffer_idx;                     // position index variable for the buffer
 char buffer[buffer_len];             // CLI buffer array to parse user inputs
+
+// ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
+// ———— TASK PARAMETERS: interval [ms/μs], #executions, callback function ——— //
+TsTask ts_parser     (TASK_IMMEDIATE,  TASK_FOREVER, &tsParser);
+TsTask ts_climb_timer(TASK_SECOND,     TASK_ONCE,    &tsClimbTimer);
+TsTask ts_climb_on   (TASK_SECOND,     TASK_ONCE,    &tsClimbOn);
+TsTask ts_climb_off  (TASK_SECOND,     TASK_ONCE,    &tsClimbOff);
+TsTask ts_data_logger(TASK_SECOND/100, TASK_FOREVER, &tsDataLogger);
+TsScheduler scheduler; // scheduler object to run tasks in order
 
 // ——————————————————————— EXPERIMENTAL DATA VARIABLES —————————————————————— //
 // char pitch[64];
@@ -129,10 +135,8 @@ void setup()
   analogWriteResolution(pwm_res);
 
   // set up general purpose input/output pin modes
-  for (byte i = 0; i < 3; i++)
-    pinMode(led_pin[i], OUTPUT);
-  for (byte i = 0; i < 2; i++)
-    pinMode(encoder_pin[i], INPUT);
+  for (byte i = 0; i < 3; i++) pinMode(led_pin[i], OUTPUT);
+  for (byte i = 0; i < 2; i++) pinMode(encoder_pin[i], INPUT);
   pinMode(esc_pin, OUTPUT);
   pinMode(enable_pin, OUTPUT);
   pinMode(phase_pin, OUTPUT);
@@ -153,14 +157,12 @@ void setup()
 
   // arming the ESC and make it ready to take commands
   esc.arm();
-  delay(5000);
 
-  // setting up the wing motor encoder
+  // setting up the wing-opening motor and encoder
   encoder.begin();
 
   // setting up the IMU, its registers, and the Madgwick filter
-  if (imu.begin() != 0)
-    Serial.println("IMU error");
+  if (imu.begin() != 0) Serial.println("IMU error");
   filter.begin(SAMPLE_RATE);
   imu.writeRegister(LSM6DS3_CTRL1_XL, ACC_ODR_104Hz);
   // imu.writeRegister(LSM6DS3_CTRL2_G, GYRO_ODR_416Hz);
@@ -172,28 +174,6 @@ void setup()
 // —————————————————————————————————————————————————————————————————————————— //
 void loop()
 {
-  // check BLE UART for user input and parse into the CLI
-  while (bleuart.available())
-  {
-    int ch = bleuart.read(); // read a single byte from the BLE UART
-    processCommand(ch, buffer_len, buffer_idx, buffer);
-  }
-
-  // check serial for user input and parse into the CLI
-  while (Serial.available())
-  {
-    int ch = Serial.read();  // read a single byte from the serial
-    processCommand(ch, buffer_len, buffer_idx, buffer);
-  }
-
-  if (DEBUG) 
-  {
-    for(byte i = 0; i < 2; i++) {
-        actuator[i].move();
-        actuator[i].printSignal();
-        delay(10);
-      }
-  }
   
   /**
     int speedESC;
@@ -259,12 +239,12 @@ void loop()
       float ax, ay, az;
       float gx, gy, gz;
 
-      ax = myIMU.readFloatAccelX();
-      ay = myIMU.readFloatAccelY();
-      az = myIMU.readFloatAccelZ();
-      gx = myIMU.readFloatGyroX();
-      gy = myIMU.readFloatGyroY();
-      gz = myIMU.readFloatGyroZ();
+      ax = imu.readFloatAccelX();
+      ay = imu.readFloatAccelY();
+      az = imu.readFloatAccelZ();
+      gx = imu.readFloatGyroX();
+      gy = imu.readFloatGyroY();
+      gz = imu.readFloatGyroZ();
 
       // Serial.print(">counter:");  Serial.println(counter);
 
@@ -286,7 +266,7 @@ void loop()
 
       // At the end of every minute, display the total yaw drift and reset it
     }
-
+    
     counterESC++;
     counterServo++;
     delay(10);
