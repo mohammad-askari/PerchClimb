@@ -18,9 +18,11 @@ void setFreq(cmd *cmd_ptr);
 void setPos(cmd *cmd_ptr);
 void setESC(cmd *cmd_ptr);
 void setExpDuration(cmd *cmd_ptr);
+void setExpDelay(cmd *cmd_ptr);
 void setDCSpeed(cmd *cmd_ptr);
 void setOffset(cmd *cmd_ptr);
 void setRange(cmd *cmd_ptr);
 void debug(cmd *cmd_ptr);
+void cliKill(cmd *cmd_ptr);
 
 #endif

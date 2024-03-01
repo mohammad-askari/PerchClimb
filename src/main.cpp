@@ -24,7 +24,7 @@ bool DEBUG = true;   // enables extra serial connection in debug mode
 bool MANUAL = false; // enables manual pilotting using transmitter inputs
 
 // ————————————————————————————— BOARD VARIABLES ———————————————————————————— //
-const int adc_res = 10;                    // xiao's ADC resolution (12-bit max)
+const int adc_res = 12;                    // xiao's ADC resolution (12-bit max)
 const int pwm_res = 8;                     // xiao's PWM resolution (16-bit max)
 const int adc_range = pow(2, adc_res) - 1; // xiao's ADC maximum value
 const int pwm_range = pow(2, pwm_res) - 1; // xiao's PWM maximum value
@@ -86,7 +86,8 @@ const int log_max   = 60;                 // maximum data logging duration [s]
 const int data_len  = log_max * log_freq; // maximum size of data arrays
 int data_idx = 0;                         // position index of the data arrays
 char exp_info[200];                       // experimental information string
-int  exp_duration = 5;                    // experimental duration [s]
+int  exp_duration = 10;                   // experimental duration [s]
+int  exp_delayed = 10;                    // experimental start delay [s]
 unsigned long start_time;                 // start time of the experiment
 exp_data_t exp_data[data_len];            // experimental data array
 
@@ -99,35 +100,9 @@ TsTask ts_climb_on     (TASK_SECOND,           TASK_ONCE,    &tsClimbOn);
 TsTask ts_climb_off    (TASK_SECOND,           TASK_ONCE,    &tsClimbOff);
 TsTask ts_motor_update (TASK_SECOND/move_freq, TASK_FOREVER, &tsMotorUpdate);
 TsTask ts_data_logger  (TASK_SECOND/log_freq,  TASK_FOREVER, &tsDataLogger);
-TsTask ts_data_transfer(TASK_MINUTE,           TASK_ONCE,    &tsDataTransfer);
+TsTask ts_data_transfer(TASK_HOUR,             TASK_ONCE,    &tsDataTransfer);
 TsScheduler scheduler; // scheduler object to run tasks in order
 
-void add_measure(){
-	// char buffer[8];
-	// strcat(pitch, dtostrf(filter.getPitch(), 4, 0, buffer));
-	// strcat(pitch, ",");
-	// strcat(roll, dtostrf(filter.getRoll(), 4, 0, buffer));
-	// strcat(roll, ",");
-	// strcat(yaw, dtostrf(filter.getYaw(), 4, 0, buffer));
-	// strcat(yaw, ",");
-	// char long_buffer[32];
-	// sprintf(long_buffer, "%d", millis());
-	// strcat(timex, long_buffer);
-	// strcat(timex, ",");
-	// strcat(current, "2");
-	// strcat(current, ",");
-	// strcat(current, analogRead(PIN_CURRENT))
-
-	// data_time.writeValue(timex);
-	// data_pitch.writeValue(pitch);
-	// data_roll.writeValue(roll);
-	// data_yaw.writeValue(yaw);
-	// data_current.writeValue(current);
-}
-
-void clear_measures(){
-
-}
 
 // —————————————————————————————————————————————————————————————————————————— //
 //                               SETUP FUNCTION                               //
@@ -177,18 +152,71 @@ void setup()
 
   // configure the task scheduler and add the tasks to the scheduler
   setupTasks();
-  ts_climb_on.restartDelayed(2000);
+  
+  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UGLY FUNCTIONALITY TESTING CODE
+  // ts_climb_on.restartDelayed(2000);
+  delay(5000);
+  // ts_data_logger.enable();
+  Serial.println("Setup done");
 }
 
 
 // —————————————————————————————————————————————————————————————————————————— //
 //                                LOOP FUNCTION                               //
 // —————————————————————————————————————————————————————————————————————————— //
-void loop()
-{
+void loop() {
+  // run the task scheduler to execute the tasks in order
+  scheduler.execute();
+
+
+
+  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UGLY FUNCTIONALITY TESTING CODE
+  // static unsigned long prev_time = millis();
+  
+  // if (millis() - prev_time >= 2000) {
+  //   Serial.println("ONE LINE OF DATA");
+  //   bleuart.write( (uint8_t*) exp_data, sizeof(exp_data_t)*6);
+  //   prev_time = millis();
+  // }
+
+  // if (data_idx >= data_len)
+  // {
+  //   char P[60];
+  //   char Q[240];
+  //   // Serial.println("SENDING DATA NOW");
+  //   for (int i = 0; i < data_idx; i = i+6) {
+  //       for (int j = 0; j < 6; j++)
+  //       {
+
+  //         // memcpy(P + j * 10 + 0, &exp_data[i+j].time, 2);
+  //         // memcpy(P + j * 10 + 2, &exp_data[i+j].current, 2);
+  //         // memcpy(P + j * 10 + 4, &exp_data[i+j].roll, 2);
+  //         // memcpy(P + j * 10 + 6, &exp_data[i+j].pitch, 2);
+  //         // memcpy(P + j * 10 + 8, &exp_data[i+j].yaw, 2);
+
+  //         snprintf(Q, 240, "%d, %d, %d, %d, %d", 
+  //                 exp_data[i+j].time, exp_data[i+j].current, 
+  //                 exp_data[i+j].roll, exp_data[i+j].pitch, exp_data[i+j].yaw);
+  //         bleuart.write(Q, strlen(Q));
+  //          delay(50);
+  //         // Serial.print(exp_data[i+j].time); Serial.print(",");
+  //         // Serial.print(exp_data[i+j].current); Serial.print(",");
+  //         // Serial.print(exp_data[i+j].roll); Serial.print(",");
+  //         // Serial.print(exp_data[i+j].pitch); Serial.print(",");
+  //         // Serial.println(exp_data[i+j].yaw);
+          
+  //       }
+        
+  //       //P = (uint8_t*) exp_data;
+  //       //P += sizeof(exp_data_t)*i;
+  //       //bleuart.write(P, sizeof(exp_data_t)*6);
+  //       //delay(50);
+  //   }
+  //   ts_data_logger.disable();
+  // }
+
   // static int count = 0;
   // static unsigned long start = millis();
-  scheduler.execute();
 
   // if (millis() - start >= 1000)
   // {

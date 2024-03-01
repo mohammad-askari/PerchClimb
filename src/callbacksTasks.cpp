@@ -43,12 +43,17 @@ void tsBLEConn() {
 void tsBLELost() {
   esc.stop();
   for(byte i = 0; i < servo_num; i++) actuator[i].reset();
+  ts_climb_on.disable();
+  ts_climb_off.disable();
+  ts_motor_update.disable();
+  ts_data_logger.disable();
 };
 
 
 void tsClimbOn() {
   ts_climb_off  .restartDelayed(TASK_SECOND * exp_duration);
   ts_data_logger.restart();
+  ts_motor_update.enable();
   Serial.println("Climb On");
 
   // synchronize the servo start times
@@ -63,24 +68,26 @@ void tsClimbOn() {
 
 void tsClimbOff() {
    ts_data_logger.disable();
+   ts_motor_update.disable();
    Serial.println("Climb Off");
-   for (int i = 0; i < data_idx; i = i+10) 
-    {
-        Serial.print  (exp_data[i].time); Serial.print(",");
-        // Serial.print(exp_data[i].current); Serial.print(",");
-        Serial.print  (exp_data[i].roll); Serial.print(",");
-        Serial.print  (exp_data[i].pitch); Serial.print(",");
-        Serial.println(exp_data[i].yaw);
-    }
 };
 
 
 void tsMotorUpdate() {
-  
+  for(byte i = 0; i < servo_num; i++) actuator[i].move();
+
+  actuator[0].printSignal();
+  actuator[1].printSignal();
 };
 
 
 void tsDataLogger() {
+      if (data_idx >= data_len) {
+        Serial.println("Data Logger Buffer Full!");
+        ts_data_logger.disable();
+        return;
+      }
+
       float ax, ay, az;
       float gx, gy, gz;
 
@@ -92,10 +99,12 @@ void tsDataLogger() {
       gz = imu.readFloatGyroZ();
       filter.updateIMU(gx, gy, gz, ax, ay, az);
 
-      exp_data[data_idx].time  = millis() - start_time;
-      exp_data[data_idx].roll  = round(filter.getRoll());
-      exp_data[data_idx].pitch = round(filter.getPitch());
-      exp_data[data_idx].yaw   = round(filter.getYaw());
+      //!!!!!!!!!!!!!!! WRITE AN ALWAYS RUNNING TASK TO FILTER CURRENT
+      exp_data[data_idx].time     = millis() - start_time;
+      exp_data[data_idx].current  = analogRead(current_pin);
+      exp_data[data_idx].roll     = round(filter.getRoll());
+      exp_data[data_idx].pitch    = round(filter.getPitch());
+      exp_data[data_idx].yaw      = round(filter.getYaw());
 
       data_idx++;
 };
@@ -103,9 +112,8 @@ void tsDataLogger() {
 
 void tsDataTransfer() {
     
+    bleuart.write( (uint8_t*) exp_data, sizeof(exp_data_t));
 
-
-
-    memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
-    data_idx = 0;
+    // memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
+    // data_idx = 0;
 };

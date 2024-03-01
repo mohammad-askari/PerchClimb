@@ -15,6 +15,7 @@ void Actuator::init(byte pin, int offset, int range,
 
   servo.attach(pin);
   setLimits();
+  setTime(millis());
   move();
 }
 
@@ -22,24 +23,28 @@ void Actuator::init(byte pin, int offset, int range,
 void Actuator::setRange(int range) {
   this->range = range;
   setLimits();
+  setTime(millis());
   move();
 }
 
 void Actuator::setOffset(int offset) {
   this->offset = offset;
   setLimits();
+  setTime(millis());
   move();
 }
 
 void Actuator::setFrequency(float frequency) {
   this->frequency = frequency;
+  setTime(millis());
   move();
 }
 
 void Actuator::setPosition(int position) {
   this->position = position;
-  this->frequency = 0;
+  setTime(millis());
   move();
+  this->frequency = 0;
 }
 
 void Actuator::setTime(unsigned long start_time) {

@@ -89,6 +89,7 @@ extern TsTask ts_ble_conn;
 extern TsTask ts_ble_lost;
 extern TsTask ts_climb_off;
 extern TsTask ts_climb_on;
+extern TsTask ts_motor_update;
 extern TsTask ts_data_logger;
 extern TsTask ts_data_transfer;
 
@@ -110,6 +111,7 @@ extern const int  data_len;
 extern int        data_idx;
 extern char       exp_info[];
 extern int        exp_duration;
+extern int        exp_delayed;
 extern unsigned long start_time;
 extern exp_data_t exp_data[];
 

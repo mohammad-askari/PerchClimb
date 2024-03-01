@@ -28,6 +28,8 @@ UUID_pitch = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA148'
 UUID_roll = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA149'
 UUID_yaw = 		'13012F01-F8C3-4F4A-A8F4-15CD926DA150'
 UUID_current = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA151'
+UUID_RXD     =  '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'
+UUID_TXD	 =  '6E400003-B5A3-F393-E0A9-E50E24DCCA9E'
 
 ble = BLERadio()
 
@@ -67,8 +69,54 @@ async def run():
 							
 		
 							if input_str[0] == 'y':
+								# # try:
+								# 	if uart_connection and uart_connection.connected:
+								# 		print("Connected ...")
+								# 		uart_service = uart_connection[UARTService]
+								# 		# buffer = bytearray(10)
+
+								# 		counter = 0
+								# 		experimental_data = []
+								# 		while uart_connection.connected:
+								# 			buffer = uart_service.read(60)
+								# 			if type(buffer) == bytearray:
+								# 				counter += 1
+								# 				# print("Buffer size is: {0}".format(len(buffer)))
+								# 				for i in range(0, 6):
+								# 					data = convert_exp_data_to_str(buffer[i*10 : i*10+10])
+								# 					experimental_data.append(data)
+								# 					# try:
+								# 					# 	print(data.time, data.current, data.roll, data.pitch, data.yaw)
+								# 					# except Exception as e:
+								# 					# 	pass
+												
+								# 				if counter == 100:
+								# 					for i in range(0, 600):
+								# 						print(experimental_data[i].time, experimental_data[i].current, experimental_data[i].roll, experimental_data[i].pitch, experimental_data[i].yaw)
+								# 						counter = 0
+								# 					ble.disconnect()
+								# 					# exit(0)
+								alltext = ""
+								numberofdata = 0
 								try:
-									# rtime = await client.read_gatt_char(UUID_time)
+									if uart_connection and uart_connection.connected:
+										uart_service = uart_connection[UARTService]
+										while uart_connection.connected:
+											# uart_service.write(input_str.encode("utf-8"))
+											# uart_service.write(b'\n')
+											line = uart_service.readline().decode("utf-8")
+											numberofdata += 1
+											#print(line)
+											alltext += line 
+
+											if numberofdata == 1000:
+												break
+											# break
+								except Exception as e:
+									print(e)
+									BLEconnected = False
+									break
+
 									# print("step 01")
 									# rpitch = await client.read_gatt_char(UUID_pitch)
 									# print("step 02")
@@ -86,9 +134,15 @@ async def run():
 
 									# print(rtime.decode() )
 									await asyncio.sleep(0.1)
-								except Exception as e:
-									BLEconnected = False
-									break	
+								# except Exception as e:
+								# 	BLEconnected = False
+								# 	break
+								
+								h = open("sensordata/climb.csv", "w")
+								h.write(alltext)
+								h.close()
+
+								
 
 							try:
 								if uart_connection and uart_connection.connected:
@@ -113,6 +167,35 @@ async def run():
 
 ###################################### FUNCTIONS ##################################
 
+class DataProcessor:
+	def __init__(self, time, current, roll, pitch, yaw):
+		self.time = time
+		self.current = current
+		self.roll = roll
+		self.pitch = pitch
+		self.yaw = yaw
+
+def convert_exp_data_to_str(buffer):
+	if len(buffer) == 10:
+		time = int.from_bytes(buffer[0:2], byteorder='little', signed=False)
+		current = int.from_bytes(buffer[2:4], byteorder='little', signed=True)
+		roll = int.from_bytes(buffer[4:6], byteorder='little', signed=True)
+		pitch = int.from_bytes(buffer[6:8], byteorder='little', signed=True)
+		yaw = int.from_bytes(buffer[8:], byteorder='little', signed=True)
+
+		return DataProcessor(time, current, roll, pitch, yaw)
+	else:
+		print("BAD DATA")
+
+
+
+
+
+def save_data_to_csv(self, filename):
+	dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+	df = pd.DataFrame(self.data)
+	df.to_csv(filename + dt_string + '.csv')
+
 def write_csv(rtime,rpitch,rroll,ryaw,rcurrent):
 	dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
@@ -123,8 +206,8 @@ def write_csv(rtime,rpitch,rroll,ryaw,rcurrent):
 	dcurrent = rcurrent.split(',')
 	print("step a")
 	dft = pd.DataFrame({'Time': dtime})
-	dfp = pd.DataFrame({'Pitch': dpitch})
 	dfr = pd.DataFrame({'Roll':droll})
+	dfp = pd.DataFrame({'Pitch': dpitch})
 	dfy = pd.DataFrame({'Yaw': dyaw})
 	dfc = pd.DataFrame({'Current': dcurrent})
 	print("step b")

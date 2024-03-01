@@ -84,6 +84,26 @@ void setupBLE() {
   // configure and start BLE UART service
   bleuart.begin();
 
+  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! METHOD TO ADD NEW CHARACTERISTIC
+  /*const uint8_t BLEUART_UUID_CHR_TXD[] =
+  {
+      0x9E, 0xCA, 0xDC, 0x24, 0x0E, 0xE5, 0xA9, 0xE0,
+      0x93, 0xF3, 0xA3, 0xB5, 0x03, 0x00, 0x40, 0x60
+  };
+  BLECharacteristic counterChr = BLECharacteristic(BLEUART_UUID_CHR_TXD);
+  counterChr.setProperties(CHR_PROPS_WRITE_WO_RESP);
+  counterChr.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+
+  // Set the "size" of the characteristic variable, in bytes. In this case,
+  4 bytes/32 bits counterChr.setFixedLen(10);
+
+  // Set a human-readable descriptor; this help when inspecting the service
+  counterChr.setUserDescriptor("ASDF");
+
+  // Now 'bind' the characteristic to the service by starting it
+  counterChr.begin();*/
+
+
   // configure advertising packet and start BLE advertising
   Bluefruit.Advertising.addFlags(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
   Bluefruit.Advertising.addTxPower();
@@ -127,7 +147,7 @@ void setupCLI() {
   cmd_ble.addFlagArgument("time");
   cmd_ble.addFlagArgument("imu");
   cmd_ble.addFlagArgument("current");
-  cmd_ble.setDescription("\tEstablishes connection or does file transfer via BLE");
+  cmd_ble.setDescription("\tEstablishes file transfer via BLE");
 
   // define motor drive command, callback, and relevant arguments
   Command cmd_drive = cli.addCommand("m/otor,d/rive", cliMotorDrive);
@@ -135,7 +155,7 @@ void setupCLI() {
   cmd_drive.addPositionalArgument("p/ow/er", "100");
   cmd_drive.addFlagArgument("r/ev/erse");
   cmd_drive.addFlagArgument("d/ist/ance");
-  cmd_drive.setDescription("\tDrives the wing motor according to the parameters.");
+  cmd_drive.setDescription("\tDrives the wing motor based on the parameters.");
 
   // define motor home command, callback, and relevant arguments
   Command cmd_home = cli.addCommand("h/ome", cliMotorHome);
@@ -154,7 +174,7 @@ void setupCLI() {
   // define servo frequency command, callback, and relevant arguments
   Command cmd_freq = cli.addCommand("freq", setFreq);
   cmd_freq.addPositionalArgument("id", "0");
-  cmd_freq.addPositionalArgument("freq", "0");
+  cmd_freq.addPositionalArgument("f/req", "0");
   cmd_freq.setDescription("\tSet the frequency of all the servos.");
 
   // define servo mode command, callback, and relevant arguments
@@ -164,25 +184,15 @@ void setupCLI() {
   cmd_mode.setDescription("\tSet the mode of of all the servos.");
 
   // define servo offset command, callback, and relevant arguments
-  Command cmd_offset = cli.addCommand("ofst", setOffset);
-  cmd_offset.addFlagArgument("a1");
-  cmd_offset.addFlagArgument("a2");
-  cmd_offset.addFlagArgument("a3");
-  cmd_offset.addFlagArgument("a4");
-  cmd_offset.addFlagArgument("a5");
-  cmd_offset.addFlagArgument("a6");
+  Command cmd_offset = cli.addCommand("offset", setOffset);
+  cmd_offset.addPositionalArgument("id", "0");
   cmd_offset.addPositionalArgument("o/ffset", "0");
   cmd_offset.setDescription("\tSet the offset of one or multiple servos.");
 
   // define servo range command, callback, and relevant arguments
-  Command cmd_range = cli.addCommand("rng", setRange);
-  cmd_range.addFlagArgument("a1");
-  cmd_range.addFlagArgument("a2");
-  cmd_range.addFlagArgument("a3");
-  cmd_range.addFlagArgument("a4");
-  cmd_range.addFlagArgument("a5");
-  cmd_range.addFlagArgument("a6");
-  cmd_range.addPositionalArgument("r/ange", "0");
+  Command cmd_range = cli.addCommand("range", setRange);
+  cmd_range.addPositionalArgument("id", "0");
+  cmd_range.addPositionalArgument("r/ange", "100");
   cmd_range.setDescription("\tSet the range of one or multiple servos.");
 
   // define ESC speed command, callback, and relevant arguments
@@ -191,19 +201,32 @@ void setupCLI() {
   cmd_esc.setDescription("\tSet the speed of the ESC.");
 
   // define experiment duration command, callback, and relevant arguments
-  Command cmd_duration = cli.addCommand("expt", setExpDuration);
+  Command cmd_duration = cli.addCommand("duration", setExpDuration);
   cmd_duration.addPositionalArgument("t", "10");
   cmd_duration.setDescription("\tSet the duration of the experiment.");
 
+  // define experiment duration command, callback, and relevant arguments
+  Command cmd_delay = cli.addCommand("delay", setExpDelay);
+  cmd_delay.addPositionalArgument("t", "10");
+  cmd_delay.setDescription("\tSet the start delay of the experiment.");
+
+  // define kill command with no arguments to stop experiments immediately
+  Command cmd_kill = cli.addCommand("a/bort,s/top,k/ill", cliKill);
+  cmd_kill.setDescription("\tKill command to abort experiments.");
+
+  // define climb command with no arguments to start delayed experiments
+  Command cmd_climb = cli.addCommand("climb", cliClimb);
+  cmd_kill.setDescription("\tStarts the experiment.");
+
   // define debug command, callback, and relevant arguments
   Command cmd_debug = cli.addCommand("dbg", debug);
-  cmd_debug.setDescription("\tSet the duration of the experiment.");
+  cmd_debug.setDescription("\tTurns on/off the debug flag.");
 
   // set error callback
   cli.setOnError(cliThrowError);
 }
 
-// ———————————————————————— TASKS SETUP & INITIALIZATION ——————————————————————— //
+// —————————————————————— TASKS SETUP & INITIALIZATION —————————————————————— //
 /**
  * @brief Initializes the task scheduler and adds tasks to the scheduler
  **/
@@ -215,7 +238,9 @@ void setupTasks() {
 	scheduler.addTask(ts_ble_lost);
 	scheduler.addTask(ts_climb_off);
 	scheduler.addTask(ts_climb_on);
+	scheduler.addTask(ts_motor_update);
 	scheduler.addTask(ts_data_logger);
+	scheduler.addTask(ts_data_transfer);
 	
   ts_parser.enable();
 }
