@@ -51,6 +51,10 @@ void tsBLELost() {
 
 
 void tsClimbOn() {
+  // reset the data logger buffer and index to zero
+  memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
+  data_idx = 0;
+
   ts_climb_off  .restartDelayed(TASK_SECOND * exp_duration);
   ts_data_logger.restart();
   ts_motor_update.enable();
@@ -77,9 +81,9 @@ void tsMotorUpdate() {
   for(byte i = 0; i < servo_num; i++) actuator[i].move();
 
   if (DEBUG) {
-    for(byte i = 0; i < servo_num; i++) {
-      actuator[i].printSignal(i);
-    }
+    // for(byte i = 0; i < servo_num; i++) {
+    //   actuator[i].printSignal(i);
+    // }
   }
 };
 
@@ -131,6 +135,4 @@ void tsDataTransfer() {
     }
 
   Serial.println("Data Transfer Complete");
-  // memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
-  // data_idx = 0;
 };

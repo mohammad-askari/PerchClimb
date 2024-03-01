@@ -249,7 +249,8 @@ void setESC(cmd *cmd_ptr) {
   int speed = arg0.getValue().toInt();
 
   esc_speed = speed;
-
+  Serial.print("ESC speed set to ");
+  Serial.println(speed);
 }
 
 /**
@@ -435,4 +436,5 @@ void cliKill(cmd *cmd_ptr) {
 
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UGLY WAY TO KILL THE MISSION
   ts_ble_lost.restart();
+  Serial.println("Mission aborted.");
 }
