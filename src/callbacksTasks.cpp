@@ -76,8 +76,11 @@ void tsClimbOff() {
 void tsMotorUpdate() {
   for(byte i = 0; i < servo_num; i++) actuator[i].move();
 
-  actuator[0].printSignal();
-  actuator[1].printSignal();
+  if (DEBUG) {
+    for(byte i = 0; i < servo_num; i++) {
+      actuator[i].printSignal(i);
+    }
+  }
 };
 
 
@@ -111,9 +114,23 @@ void tsDataLogger() {
 
 
 void tsDataTransfer() {
-    
-    bleuart.write( (uint8_t*) exp_data, sizeof(exp_data_t));
+    Serial.println("Data Transfer Started");
+    char buffer[32];
+    delay(300);
+    sprintf(buffer, "meta: %d\n", (int)ceil(data_idx / 6) );
+    bleuart.write( (uint8_t*) buffer, strlen(buffer));
+    delay(300);
 
-    // memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
-    // data_idx = 0;
+    uint8_t *P;
+    // Serial.println("SENDING DATA NOW");
+    for (int i = 0; i < data_idx; i = i+6) {                 
+        P = (uint8_t*) exp_data;
+        P += sizeof(exp_data_t) * i;
+        bleuart.write(P, sizeof(exp_data_t) * 6);
+        delay(150);
+    }
+
+  Serial.println("Data Transfer Complete");
+  // memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
+  // data_idx = 0;
 };

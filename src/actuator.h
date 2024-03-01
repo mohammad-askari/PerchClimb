@@ -38,7 +38,7 @@ public:
   void move();
   void reset();
   void print();
-  void printSignal();
+  void printSignal(int motor_idx);
 
 private:
   byte pin;

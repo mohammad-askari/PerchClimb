@@ -91,9 +91,9 @@ void Actuator::print() {
   Serial.println(str);
 }
 
-void Actuator::printSignal() {
-  Serial.print(">");
-  Serial.print(mode == STEP ? "STEP" : "LINEAR");
+void Actuator::printSignal(int motor_idx) {
+  Serial.print("> Motor ");
+  Serial.print(motor_idx);
   Serial.print(":");
   Serial.println(position);
 }

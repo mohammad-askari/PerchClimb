@@ -6,7 +6,7 @@ from bleak import BleakClient
 from bleak import BleakScanner
 from bleak import discover
 from bleak import BleakError
-import re
+import re, os
 from datetime import datetime
 import csv 
 import pandas as pd
@@ -68,54 +68,80 @@ async def run():
 							input_str += '\n'
 							
 		
-							if input_str[0] == 'y':
-								# # try:
-								# 	if uart_connection and uart_connection.connected:
-								# 		print("Connected ...")
-								# 		uart_service = uart_connection[UARTService]
-								# 		# buffer = bytearray(10)
-
-								# 		counter = 0
-								# 		experimental_data = []
-								# 		while uart_connection.connected:
-								# 			buffer = uart_service.read(60)
-								# 			if type(buffer) == bytearray:
-								# 				counter += 1
-								# 				# print("Buffer size is: {0}".format(len(buffer)))
-								# 				for i in range(0, 6):
-								# 					data = convert_exp_data_to_str(buffer[i*10 : i*10+10])
-								# 					experimental_data.append(data)
-								# 					# try:
-								# 					# 	print(data.time, data.current, data.roll, data.pitch, data.yaw)
-								# 					# except Exception as e:
-								# 					# 	pass
-												
-								# 				if counter == 100:
-								# 					for i in range(0, 600):
-								# 						print(experimental_data[i].time, experimental_data[i].current, experimental_data[i].roll, experimental_data[i].pitch, experimental_data[i].yaw)
-								# 						counter = 0
-								# 					ble.disconnect()
-								# 					# exit(0)
-								alltext = ""
-								numberofdata = 0
+							if input_str[0:8] == "transfer":
 								try:
 									if uart_connection and uart_connection.connected:
 										uart_service = uart_connection[UARTService]
-										while uart_connection.connected:
-											# uart_service.write(input_str.encode("utf-8"))
-											# uart_service.write(b'\n')
-											line = uart_service.readline().decode("utf-8")
-											numberofdata += 1
-											#print(line)
-											alltext += line 
+										uart_service.write(input_str.encode("utf-8"))
+										print("Connected ...")
+										uart_service = uart_connection[UARTService]
+										line = uart_service.readline().decode("utf-8")
+										numberOfPackets = 0
+										if line[:4] == "meta":
+											numberOfPackets = int(line[6:])
+											print("Metadata received: ", numberOfPackets)
 
-											if numberofdata == 1000:
-												break
-											# break
-								except Exception as e:
-									print(e)
-									BLEconnected = False
-									break
+
+										alltext = "Time [ms], Current [adc], Roll [deg], Pitch [deg], Yaw [deg]\n"
+										counter = 0
+										experimental_data = []
+										while uart_connection.connected:
+											buffer = uart_service.read(60)
+											if type(buffer) == bytearray:
+												counter += 1
+												# print("Buffer size is: {0}".format(len(buffer)))
+												for i in range(0, 6):
+													data = convert_exp_data_to_str(buffer[i*10 : i*10+10])
+													experimental_data.append(data)
+													alltext += str(data.time) + ',' + str(data.current) + ',' + str(data.roll) + ',' + str(data.pitch) + ',' + str(data.yaw) + '\n'
+												print("packets: ", counter)
+													# try:
+													# 	print(data.time, data.current, data.roll, data.pitch, data.yaw)
+													# except Exception as e:
+													# 	pass
+												
+												if counter == numberOfPackets:
+													print("Writing to file...")
+													dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+													try:
+														os.mkdir('sensordata')
+													except Exception as e:
+														pass
+													h = open('sensordata/climb' + dt_string + '.csv', "+w")
+													h.write(alltext)
+													h.close()	
+													print("Data saved to file")
+													break
+													# for i in range(0, 600):
+													# 	print(experimental_data[i].time, experimental_data[i].current, experimental_data[i].roll, experimental_data[i].pitch, experimental_data[i].yaw)
+													# 	counter = 0
+													# ble.disconnect()
+													# exit(0)
+														
+									
+								
+										
+
+								# alltext = ""
+								# numberofdata = 0
+								# try:
+								# 	if uart_connection and uart_connection.connected:
+								# 		uart_service = uart_connection[UARTService]
+								# 		while uart_connection.connected:
+								# 			# uart_service.write(input_str.encode("utf-8"))
+								# 			# uart_service.write(b'\n')
+								# 			line = uart_service.readline().decode("utf-8")
+								# 			numberofdata += 1
+								# 			#print(line)
+								# 			alltext += line 
+
+								# 			if numberofdata == 1000:
+								# 				break
+								# 			# break
+								# except Exception as e:
+								# 	print(e)
+								# 	BLEconnected = False
+								# 	break
 
 									# print("step 01")
 									# rpitch = await client.read_gatt_char(UUID_pitch)
@@ -134,28 +160,28 @@ async def run():
 
 									# print(rtime.decode() )
 									await asyncio.sleep(0.1)
-								# except Exception as e:
-								# 	BLEconnected = False
-								# 	break
-								
-								h = open("sensordata/climb.csv", "w")
-								h.write(alltext)
-								h.close()
+								except Exception as e:
+									BLEconnected = False
+									print(e)
+									break
 
 								
 
-							try:
-								if uart_connection and uart_connection.connected:
-									uart_service = uart_connection[UARTService]
-									while uart_connection.connected:
-										uart_service.write(input_str.encode("utf-8"))
-										uart_service.write(b'\n')
-										print(uart_service.readline().decode("utf-8"))
-										break
-							except Exception as e:
-								print(e)
-								BLEconnected = False
-								break
+							else:
+								try:
+									if uart_connection and uart_connection.connected:
+										uart_service = uart_connection[UARTService]
+										while uart_connection.connected:
+											print("serial input: ", input_str)
+											uart_service.write(input_str.encode("utf-8"))
+											# uart_service.write(b'\n')
+											print(uart_service.readline().decode("utf-8"))
+											break
+								except Exception as e:
+									pass
+									#print("error:", e)
+									# BLEconnected = False
+									#break
 									
 							
 							# await asyncio.sleep(0.1)

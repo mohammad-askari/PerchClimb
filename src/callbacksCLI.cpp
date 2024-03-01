@@ -304,7 +304,7 @@ void setExpDuration(cmd *cmd_ptr) {
 
   exp_duration = duration;
 
-  Serial.print("Delay set to ");
+  Serial.print("Experiment duration set to ");
   Serial.print(duration);
   Serial.println(" (s)");
 }
@@ -321,7 +321,7 @@ void setExpDelay(cmd *cmd_ptr) {
 
   exp_delayed = delay;
 
-  Serial.print("Delay set to ");
+  Serial.print("Experiment delay set to ");
   Serial.print(delay);
   Serial.println(" (s)");
 }
