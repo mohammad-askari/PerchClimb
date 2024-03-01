@@ -41,7 +41,7 @@ void tsBLEConn() {
 
 
 void tsBLELost() {
-  esc.stop();
+  esc.speed(esc_min);
   for(byte i = 0; i < servo_num; i++) actuator[i].reset();
   ts_climb_on.disable();
   ts_climb_off.disable();
@@ -131,7 +131,7 @@ void tsDataTransfer() {
         P = (uint8_t*) exp_data;
         P += sizeof(exp_data_t) * i;
         bleuart.write(P, sizeof(exp_data_t) * 6);
-        delay(150);
+        delay(250);
     }
 
   Serial.println("Data Transfer Complete");

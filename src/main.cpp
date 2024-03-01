@@ -45,7 +45,7 @@ Madgwick filter;
 
 // ————————————————————————————— SERVO VARIABLES ———————————————————————————— //
 // ————— ORDER: aileron, elevator, rudder, clutch, body hook, tail hook ————— //
-const byte    servo_pin[]    = {     1,      2,      3,      4,      5,      6};
+const byte    servo_pin[]    = {     7,      2,      3,      4,      5,      6};
 const int     servo_offset[] = {    +0,     +0,     +0,    -25,     +9,    -25};
 const int     servo_range[]  = {  +100,   +100,   +100,    -25,    -30,    +33};
 const float   servo_freq[]   = {    +0,     +0,     +0,     +0,     +0,     +0};
@@ -54,7 +54,7 @@ const byte    servo_num      = sizeof(servo_pin) / sizeof(servo_pin[0]);
 Actuator actuator[servo_num];
 
 // —————————————————————————————— ESC VARIABLES ————————————————————————————— //
-const byte esc_pin = 7;                       // ESC PWM pin
+const byte esc_pin = 1;                       // ESC PWM pin
 const int  esc_min = 1000;                    // ESC minimum speed pulse [μs]
 const int  esc_max = 2000;                    // ESC maximum speed pulse [μs]
 const int  esc_arm = 500;                     // ESC arm value pulse [μs]
@@ -133,6 +133,7 @@ void setup()
   }
 
   // arming the ESC and make it ready to take commands
+  delay(1000);
   esc.arm();
 
   // setting up the wing-opening motor and encoder

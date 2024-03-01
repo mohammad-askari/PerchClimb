@@ -87,9 +87,9 @@ async def run():
 										experimental_data = []
 										while uart_connection.connected:
 											buffer = uart_service.read(60)
-											if type(buffer) == bytearray:
+											if (type(buffer) == bytearray):
 												counter += 1
-												# print("Buffer size is: {0}".format(len(buffer)))
+												print("Buffer size is: {0}".format(len(buffer)))
 												for i in range(0, 6):
 													data = convert_exp_data_to_str(buffer[i*10 : i*10+10])
 													experimental_data.append(data)
@@ -212,6 +212,7 @@ def convert_exp_data_to_str(buffer):
 		return DataProcessor(time, current, roll, pitch, yaw)
 	else:
 		print("BAD DATA")
+		print(len(buffer))
 
 
 

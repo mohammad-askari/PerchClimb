@@ -37,7 +37,7 @@ void Actuator::setOffset(int offset) {
 void Actuator::setFrequency(float frequency) {
   this->frequency = frequency;
   setTime(millis());
-  move();
+  // move();
 }
 
 void Actuator::setPosition(int position) {

@@ -249,6 +249,8 @@ void setESC(cmd *cmd_ptr) {
   int speed = arg0.getValue().toInt();
 
   esc_speed = speed;
+  esc.arm();
+  esc.speed(500);
   Serial.print("ESC speed set to ");
   Serial.println(speed);
 }
