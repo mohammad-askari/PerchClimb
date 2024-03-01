@@ -236,7 +236,7 @@ void setupTasks() {
   scheduler.addTask(ts_parser);
 	scheduler.addTask(ts_ble_conn);
 	scheduler.addTask(ts_ble_lost);
-	scheduler.addTask(ts_climb_off);
+	scheduler.addTask(ts_climb_off_smooth);
 	scheduler.addTask(ts_climb_on);
 	scheduler.addTask(ts_motor_update);
 	scheduler.addTask(ts_data_logger);

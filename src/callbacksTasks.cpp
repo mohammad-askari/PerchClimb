@@ -55,7 +55,7 @@ void tsClimbOn() {
   memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
   data_idx = 0;
 
-  ts_climb_off  .restartDelayed(TASK_SECOND * exp_duration);
+  ts_climb_off_smooth  .restartDelayed(TASK_SECOND * exp_duration);
   ts_data_logger.restart();
   ts_motor_update.enable();
   Serial.println("Climb On");
@@ -71,9 +71,23 @@ void tsClimbOn() {
 
 
 void tsClimbOff() {
-   ts_data_logger.disable();
-   ts_motor_update.disable();
-   Serial.println("Climb Off");
+  ts_data_logger.disable();
+  ts_motor_update.disable();
+  esc.speed(esc_min);
+  Serial.println("Climb Off");
+};
+
+void tsClimbOffSmooth() {
+  ts_data_logger.disable();
+  ts_motor_update.disable();
+  
+  while (esc_speed > esc_min){
+    esc_speed -= 1;
+    esc.speed(esc_speed);
+    // Serial.println(esc_speed);
+  }
+  
+  Serial.println("Climb Off Smooth");
 };
 
 
