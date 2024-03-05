@@ -87,7 +87,7 @@ async def run():
 										experimental_data = []
 										while uart_connection.connected:
 											buffer = uart_service.read(60)
-											if (type(buffer) == bytearray):
+											if isinstance(buffer, bytearray):
 												counter += 1
 												print("Buffer size is: {0}".format(len(buffer)))
 												for i in range(0, 6):

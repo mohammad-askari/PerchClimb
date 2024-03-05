@@ -98,9 +98,9 @@ void tsMotorUpdate() {
   for(byte i = 0; i < servo_num; i++) actuator[i].move();
 
   if (DEBUG) {
-    // for(byte i = 0; i < servo_num; i++) {
-    //   actuator[i].printSignal(i);
-    // }
+    for(byte i = 0; i < servo_num; i++) {
+      actuator[i].printSignal(i);
+    }
   }
 };
 
