@@ -46,8 +46,8 @@ Madgwick filter;
 // ————————————————————————————— SERVO VARIABLES ———————————————————————————— //
 // ————— ORDER: aileron, elevator, rudder, clutch, body hook, tail hook ————— //
 const byte    servo_pin[]    = {     7,      2,      3,      4,      5,      6};
-const int     servo_offset[] = {    +0,     +0,     +0,    -25,     +9,    -25};
-const int     servo_range[]  = {  +100,   +100,   +100,    -25,    -30,    +33};
+const int     servo_offset[] = {    +0,     +0,     +0,    -25,     +9,    +10};
+const int     servo_range[]  = {  +100,   +100,   +100,    -25,    -30,    +10};
 const float   servo_freq[]   = {    +0,     +0,     +0,     +0,     +0,     +0};
 const drive_t servo_linear[] = {  STEP,   STEP,   STEP,   STEP,   STEP,   STEP};
 const byte    servo_num      = sizeof(servo_pin) / sizeof(servo_pin[0]);

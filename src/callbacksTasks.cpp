@@ -74,6 +74,7 @@ void tsClimbOff() {
   ts_data_logger.disable();
   ts_motor_update.disable();
   esc.speed(esc_min);
+  actuator[4].reset();
   Serial.println("Climb Off");
 };
 
@@ -82,9 +83,11 @@ void tsClimbOffSmooth() {
   ts_motor_update.disable();
   
   while (esc_speed > esc_min){
-    esc_speed -= 1;
+    esc_speed -= 10;
     esc.speed(esc_speed);
+    delay(100);
     // Serial.println(esc_speed);
+    actuator[4].reset();
   }
   
   Serial.println("Climb Off Smooth");

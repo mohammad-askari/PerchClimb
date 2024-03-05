@@ -211,8 +211,12 @@ void setupCLI() {
   cmd_delay.setDescription("\tSet the start delay of the experiment.");
 
   // define kill command with no arguments to stop experiments immediately
-  Command cmd_kill = cli.addCommand("a/bort,s/top,k/ill", cliKill);
+  Command cmd_kill = cli.addCommand("a/bort,k/ill", cliKill);
   cmd_kill.setDescription("\tKill command to abort experiments.");
+
+  // define smooth stop command with no arguments to stop experiments immediately
+  Command cmd_kill_smooth = cli.addCommand("s/top", cliKillSmooth);
+  cmd_kill_smooth.setDescription("\tKill command to stop experiments smoothly.");
 
   // define climb command with no arguments to start delayed experiments
   Command cmd_climb = cli.addCommand("climb", cliClimb);

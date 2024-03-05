@@ -24,5 +24,6 @@ void setOffset(cmd *cmd_ptr);
 void setRange(cmd *cmd_ptr);
 void debug(cmd *cmd_ptr);
 void cliKill(cmd *cmd_ptr);
+void cliKillSmooth(cmd *cmd_ptr);
 
 #endif

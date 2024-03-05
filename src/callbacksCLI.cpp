@@ -430,7 +430,7 @@ void cliClimb(cmd *cmd_ptr) {
 
 
 /**
- * @brief //LEVY// Kill the mission
+ * @brief Kill the mission
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void cliKill(cmd *cmd_ptr) {
@@ -439,4 +439,15 @@ void cliKill(cmd *cmd_ptr) {
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UGLY WAY TO KILL THE MISSION
   ts_ble_lost.restart();
   Serial.println("Mission aborted.");
+}
+
+/**
+ * @brief //LEVY// Kill the mission in a smooth way
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void cliKillSmooth(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+
+  ts_climb_off_smooth.restart();
+  Serial.println("Mission aborted with smooth falloff.");
 }
