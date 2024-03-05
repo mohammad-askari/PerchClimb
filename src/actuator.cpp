@@ -9,9 +9,15 @@ void Actuator::init(byte pin, int offset, int range,
   this->range = range;
   this->frequency = frequency;
   this->mode = mode;
-  this->last_position = 0;
+  this->last_position = 8888; // a random out of bound value 
   this->start_time = millis();
   this->servo.attach(pin);
+
+  if (pin == 5 || pin == 6 ) //setting the position for the hooks as retracted by default
+  {
+    this->position = offset-range;
+  }
+  
 
   servo.attach(pin);
   setLimits();
@@ -102,8 +108,10 @@ void Actuator::printSignal(int motor_idx) {
 
 // update position using square (step) or triangular (linear) reference signals
 void Actuator::updatePosition() {
-  if (frequency == 0)
+  if (frequency == 0) {
+    position = constrain(position, min_pos, max_pos);
     return;
+}
 
   float period = 1000.0 / abs(frequency);
   float half_period = period / 2;

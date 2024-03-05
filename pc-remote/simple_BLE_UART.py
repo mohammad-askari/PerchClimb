@@ -89,7 +89,7 @@ async def run():
 											buffer = uart_service.read(60)
 											if isinstance(buffer, bytearray):
 												counter += 1
-												print("Buffer size is: {0}".format(len(buffer)))
+												# print("Buffer size is: {0}".format(len(buffer)))
 												for i in range(0, 6):
 													data = convert_exp_data_to_str(buffer[i*10 : i*10+10])
 													experimental_data.append(data)
