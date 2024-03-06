@@ -74,20 +74,24 @@ void tsClimbOff() {
   ts_data_logger.disable();
   ts_motor_update.disable();
   esc.speed(esc_min);
-  actuator[4].reset();
+  for(byte i = 0; i < servo_num-2; i++) actuator[i].reset();
+  actuator[4].setPosition(actuator[4].offset - actuator[4].range);
+  actuator[5].setPosition(actuator[5].offset - actuator[5].range);
   Serial.println("Climb Off");
 };
 
 void tsClimbOffSmooth() {
   ts_data_logger.disable();
   ts_motor_update.disable();
-  
-  while (esc_speed > esc_min){
+  for(byte i = 0; (i < servo_num-2) && (i != 1); i++) actuator[i].reset();
+  actuator[4].setPosition(actuator[4].offset - actuator[4].range);
+  actuator[5].setPosition(actuator[5].offset - actuator[5].range);
+
+  while (esc_speed > esc_min){ // slow down propeller gradually
     esc_speed -= 10;
     esc.speed(esc_speed);
     delay(100);
     // Serial.println(esc_speed);
-    actuator[4].reset();
   }
   
   Serial.println("Climb Off Smooth");

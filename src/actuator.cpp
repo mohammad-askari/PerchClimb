@@ -13,9 +13,9 @@ void Actuator::init(byte pin, int offset, int range,
   this->start_time = millis();
   this->servo.attach(pin);
 
-  if (pin == 5 || pin == 6 ) //setting the position for the hooks as retracted by default
+  if (pin == 5) //setting the position for the hooks as retracted by default
   {
-    this->position = offset-range;
+    this->position = offset + range;
   }
   
 
@@ -49,8 +49,8 @@ void Actuator::setFrequency(float frequency) {
 void Actuator::setPosition(int position) {
   this->position = position;
   setTime(millis());
-  move();
   this->frequency = 0;
+  move();
 }
 
 void Actuator::setTime(unsigned long start_time) {
