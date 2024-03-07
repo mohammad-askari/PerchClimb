@@ -223,6 +223,7 @@ void setupCLI() {
   cmd_pre_hover.addPositionalArgument("esc", "1000");
   cmd_pre_hover.addPositionalArgument("t/ime", "0");
   cmd_pre_hover.addFlagArgument("h/ook/s");
+  cmd_pre_hover.addPositionalArgument("transition", "1500");
   cmd_pre_hover.setDescription("\tSets optional pre-hover ascent parameters.");
 
   // define climb command with no arguments to start delayed experiments

@@ -420,21 +420,25 @@ void debug(cmd *cmd_ptr) {
  **/
 void setPreHover(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-  Argument arg0 = c.getArgument(0);
-  Argument arg1 = c.getArgument(1);
-  Argument arg2 = c.getArgument(2);
-  int esc_spd   = arg0.getValue().toInt();
-  float time    = arg1.getValue().toFloat();
+  Argument arg0   = c.getArgument(0);
+  Argument arg1   = c.getArgument(1);
+  Argument arg2   = c.getArgument(2);
+  Argument arg3   = c.getArgument(3);
+  pre_hover_esc   = arg0.getValue().toInt();
+  pre_hover_time  = arg1.getValue().toFloat();
   hover_use_hooks = arg2.isSet();
+  transition_esc  = arg3.getValue().toInt();
 
-  pre_hover_esc  = esc_spd;
-  pre_hover_time = time;
-
-  Serial.print("Pre-hovering set to ");
+  Serial.print("Pre-hovering set to ESC speed of ");
   Serial.print(pre_hover_esc);
-  Serial.print(" ESC speed, for ");
+  if (hover_use_hooks) {
+    Serial.print(", with transition from ");
+    Serial.print(transition_esc);
+  }
+  Serial.print(", for ");
   Serial.print(pre_hover_time);
   Serial.println(" (s)");
+
 }
 
 /**

@@ -80,6 +80,7 @@ byte buffer_idx;                     // position index variable for the buffer
 char buffer[buffer_len];             // CLI buffer array to parse user inputs
 
 // ——————————————————————— EXPERIMENTAL DATA VARIABLES —————————————————————— //
+const int drop_freq = 10;                 // gradual ESC speed drop rate [Hz]
 const int move_freq = 100;                // motors movement update rate [Hz]
 const int log_freq  = 100;                // data logging frequency [Hz]
 const int log_max   = 60;                 // maximum data logging duration [s]
@@ -94,7 +95,8 @@ exp_data_t exp_data[data_len];            // experimental data array
 // —————————————————————— EXPERIMENT-SPECIFIC VARIABLES ————————————————————— //
 float pre_hover_time;                       // pre-hover ascent time [s]
 int   pre_hover_esc;                        // pre-hover ESC speed [μs]
-bool  hover_use_hooks;                      // flag to set hooks usage for hover
+bool  hover_use_hooks;                      // flag to set hooks usage for
+int   transition_esc;                       // transition start ESC speed
 
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 // ———— TASK PARAMETERS: interval [ms/μs], #executions, callback function ——— //
@@ -104,7 +106,7 @@ TsTask ts_ble_lost     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLELost);
 TsTask ts_climb_on     (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOn);
 TsTask ts_climb_off    (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOff);
 TsTask ts_pre_hover    (TASK_IMMEDIATE,        TASK_ONCE,    &tsPreHover);
-TsTask ts_hover_on     (TASK_IMMEDIATE,        TASK_ONCE,    &tsHoverOn);
+TsTask ts_hover_on     (TASK_SECOND/drop_freq, TASK_FOREVER, &tsHoverOn);
 TsTask ts_hover_off    (TASK_IMMEDIATE,        TASK_ONCE,    &tsHoverOff);
 TsTask ts_motor_update (TASK_SECOND/move_freq, TASK_FOREVER, &tsMotorUpdate);
 TsTask ts_data_logger  (TASK_SECOND/log_freq,  TASK_FOREVER, &tsDataLogger);

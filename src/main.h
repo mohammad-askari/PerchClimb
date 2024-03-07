@@ -107,6 +107,7 @@ typedef struct {
     int16_t  yaw;
 } exp_data_t;
 
+extern const int  drop_freq;
 extern const int  move_freq;
 extern const int  log_freq;
 extern const int  log_max;
@@ -122,5 +123,6 @@ extern exp_data_t exp_data[];
 extern float pre_hover_time;
 extern int pre_hover_esc;
 extern bool hover_use_hooks;
+extern int transition_esc;
 
 #endif

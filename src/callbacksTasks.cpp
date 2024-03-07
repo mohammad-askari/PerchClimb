@@ -111,16 +111,24 @@ void tsPreHover() {
 
 
 void tsHoverOn() {
-  ts_hover_off.restartDelayed(TASK_SECOND * exp_duration);
-  Serial.println("Hover On");
-  esc.speed(esc_speed);
-  if (hover_use_hooks)
-  {
-    actuator[4].setPosition(actuator[4].offset - actuator[4].range);
-    actuator[5].setPosition(actuator[5].offset - actuator[5].range);
+  if (ts_hover_on.isFirstIteration()) {
+    Serial.println("Hover On");
+    if (hover_use_hooks)
+    {
+      actuator[4].setPosition(actuator[4].offset - actuator[4].range);
+      actuator[5].setPosition(actuator[5].offset + actuator[5].range);
+    }
   }
-  
-  
+
+  if (hover_use_hooks && transition_esc > esc_speed){ // slow down propeller gradually
+    transition_esc -= 10;
+    esc.speed(transition_esc);
+    Serial.println(millis());
+  } 
+  else {
+    ts_hover_on .disable();
+    ts_hover_off.restartDelayed(TASK_SECOND * exp_duration);
+  }
 };
 
 
