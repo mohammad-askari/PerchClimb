@@ -14,6 +14,7 @@ void cliMotorDrive(cmd *cmd_ptr);
 void cliMotorHome(cmd *cmd_ptr);
 void cliClimb(cmd *cmd_ptr);
 void cliHover(cmd *cmd_ptr);
+void setPreHover(cmd *cmd_ptr);
 void setMode(cmd *cmd_ptr);
 void setFreq(cmd *cmd_ptr);
 void setPos(cmd *cmd_ptr);

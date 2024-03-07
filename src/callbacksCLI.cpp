@@ -415,23 +415,10 @@ void debug(cmd *cmd_ptr) {
 }
 
 /**
- * @brief //LEVY// Set the position of one or all servos
+ * @brief //LEVY// Set the pre-hover ascent parameters
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void cliClimb(cmd *cmd_ptr) {
-  Command c(cmd_ptr);  // wrapper class instance for the pointer
-  ts_climb_on.restartDelayed(exp_delayed * TASK_SECOND);
-  Serial.print("Climb starts in ");
-  Serial.print(exp_delayed);
-  Serial.println(" (s)");
-}
-
-
-/**
- * @brief //LEVY// Set the position of one or all servos
- * @param[in] cmd_ptr pointer to the command stuct data type
- **/
-void cliHover(cmd *cmd_ptr) {
+void setPreHover(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);
   Argument arg1 = c.getArgument(1);
@@ -441,15 +428,34 @@ void cliHover(cmd *cmd_ptr) {
   pre_hover_esc  = esc_spd;
   pre_hover_time = time;
 
-  ts_pre_hover.restartDelayed(exp_delayed * TASK_SECOND);
+  Serial.print("Pre-hovering set to ");
+  Serial.print(pre_hover_esc);
+  Serial.print(" ESC speed, for ");
+  Serial.print(pre_hover_time);
+  Serial.println(" (s)");
+}
 
-  Serial.print("Hover starts in ");
+/**
+ * @brief //LEVY// Starts the climbing experiment with the specified delay
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void cliHover(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+  ts_pre_hover.restartDelayed(exp_delayed * TASK_SECOND);
+  Serial.print("Hovering starts in ");
   Serial.print(exp_delayed);
   Serial.println(" (s)");
-  Serial.print("With pre-hovering at speed ");
-  Serial.print(pre_hover_esc);
-  Serial.print(", for ");
-  Serial.print(pre_hover_time);
+}
+
+/**
+ * @brief //LEVY// Starts the climbing experiment with the specified delay
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void cliClimb(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+  ts_climb_on.restartDelayed(exp_delayed * TASK_SECOND);
+  Serial.print("Climbing starts in ");
+  Serial.print(exp_delayed);
   Serial.println(" (s)");
 }
 

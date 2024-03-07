@@ -169,46 +169,46 @@ void setupCLI() {
   Command cmd_position = cli.addCommand("goto", setPos);
   cmd_position.addPositionalArgument("id", "0");
   cmd_position.addPositionalArgument("pos", "0");
-  cmd_position.setDescription("\tSet the position of one or all servos.");
+  cmd_position.setDescription("\tSets the position of one or all servos.");
 
   // define servo frequency command, callback, and relevant arguments
   Command cmd_freq = cli.addCommand("freq", setFreq);
   cmd_freq.addPositionalArgument("id", "0");
   cmd_freq.addPositionalArgument("f/req", "0");
-  cmd_freq.setDescription("\tSet the frequency of all the servos.");
+  cmd_freq.setDescription("\tSets the frequency of all the servos.");
 
   // define servo mode command, callback, and relevant arguments
   Command cmd_mode = cli.addCommand("mode", setMode);
   cmd_mode.addPositionalArgument("id", "0");
   cmd_mode.addFlagArgument("lin");
-  cmd_mode.setDescription("\tSet the mode of of all the servos.");
+  cmd_mode.setDescription("\tSets the mode of of all the servos.");
 
   // define servo offset command, callback, and relevant arguments
   Command cmd_offset = cli.addCommand("offset", setOffset);
   cmd_offset.addPositionalArgument("id", "0");
   cmd_offset.addPositionalArgument("o/ffset", "0");
-  cmd_offset.setDescription("\tSet the offset of one or multiple servos.");
+  cmd_offset.setDescription("\tSets the offset of one or multiple servos.");
 
   // define servo range command, callback, and relevant arguments
   Command cmd_range = cli.addCommand("range", setRange);
   cmd_range.addPositionalArgument("id", "0");
   cmd_range.addPositionalArgument("r/ange", "100");
-  cmd_range.setDescription("\tSet the range of one or multiple servos.");
+  cmd_range.setDescription("\tSets the range of one or multiple servos.");
 
   // define ESC speed command, callback, and relevant arguments
   Command cmd_esc = cli.addCommand("esc", setESC);
   cmd_esc.addPositionalArgument("s/peed");
-  cmd_esc.setDescription("\tSet the speed of the ESC.");
+  cmd_esc.setDescription("\tSets the speed of the ESC.");
 
   // define experiment duration command, callback, and relevant arguments
   Command cmd_duration = cli.addCommand("duration", setExpDuration);
   cmd_duration.addPositionalArgument("t", "10");
-  cmd_duration.setDescription("\tSet the duration of the experiment.");
+  cmd_duration.setDescription("\tSets the duration of the experiment.");
 
   // define experiment duration command, callback, and relevant arguments
   Command cmd_delay = cli.addCommand("delay", setExpDelay);
   cmd_delay.addPositionalArgument("t", "10");
-  cmd_delay.setDescription("\tSet the start delay of the experiment.");
+  cmd_delay.setDescription("\tSets the start delay of the experiment.");
 
   // define kill command with no arguments to stop experiments immediately
   Command cmd_kill = cli.addCommand("a/bort,k/ill", cliKill);
@@ -216,17 +216,21 @@ void setupCLI() {
 
   // define smooth stop command with no arguments to stop experiments immediately
   Command cmd_kill_smooth = cli.addCommand("s/top", cliKillSmooth);
-  cmd_kill_smooth.setDescription("\tKill command to stop experiments smoothly.");
+  cmd_kill_smooth.setDescription("\tStop command to stop experiments smoothly.");
+
+  // define climb command with no arguments to start delayed experiments
+  Command cmd_pre_hover = cli.addCommand("prehover", setPreHover);
+  cmd_pre_hover.addPositionalArgument("esc", "1000");
+  cmd_pre_hover.addPositionalArgument("t/ime", "0");
+  cmd_pre_hover.setDescription("\tSets optional pre-hover ascent parameters.");
+
+  // define climb command with no arguments to start delayed experiments
+  Command cmd_hover = cli.addCommand("hover", cliHover);
+  cmd_hover.setDescription("\tStarts hovering experiment.");
 
   // define climb command with no arguments to start delayed experiments
   Command cmd_climb = cli.addCommand("climb", cliClimb);
   cmd_climb.setDescription("\tStarts climbing experiment.");
-
-  // define climb command with no arguments to start delayed experiments
-  Command cmd_hover = cli.addCommand("hover", cliHover);
-  cmd_hover.addPositionalArgument("esc", "1000");
-  cmd_hover.addPositionalArgument("t/ime", "0");
-  cmd_hover.setDescription("\tStarts hovering experiment with pre-climbing option.");
 
   // define debug command, callback, and relevant arguments
   Command cmd_debug = cli.addCommand("debug", debug);
