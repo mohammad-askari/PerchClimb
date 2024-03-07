@@ -92,8 +92,9 @@ unsigned long start_time;                 // start time of the experiment
 exp_data_t exp_data[data_len];            // experimental data array
 
 // —————————————————————— EXPERIMENT-SPECIFIC VARIABLES ————————————————————— //
-int pre_hover_time;                       // pre-hover ascent time [s]
-int pre_hover_esc;                        // pre-hover ESC speed [μs]
+float pre_hover_time;                       // pre-hover ascent time [s]
+int   pre_hover_esc;                        // pre-hover ESC speed [μs]
+bool  hover_use_hooks;                      // flag to set hooks usage for hover
 
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 // ———— TASK PARAMETERS: interval [ms/μs], #executions, callback function ——— //

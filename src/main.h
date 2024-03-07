@@ -119,7 +119,8 @@ extern unsigned long start_time;
 extern exp_data_t exp_data[];
 
 // —————————————————————— EXPERIMENT-SPECIFIC VARIABLES ————————————————————— //
-extern int pre_hover_time;
+extern float pre_hover_time;
 extern int pre_hover_esc;
+extern bool hover_use_hooks;
 
 #endif

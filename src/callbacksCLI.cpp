@@ -422,8 +422,10 @@ void setPreHover(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);
   Argument arg1 = c.getArgument(1);
+  Argument arg2 = c.getArgument(2);
   int esc_spd   = arg0.getValue().toInt();
-  int time      = arg1.getValue().toInt();
+  float time    = arg1.getValue().toFloat();
+  hover_use_hooks = arg2.isSet();
 
   pre_hover_esc  = esc_spd;
   pre_hover_time = time;
