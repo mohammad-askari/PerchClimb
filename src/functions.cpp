@@ -220,7 +220,13 @@ void setupCLI() {
 
   // define climb command with no arguments to start delayed experiments
   Command cmd_climb = cli.addCommand("climb", cliClimb);
-  cmd_kill.setDescription("\tStarts the experiment.");
+  cmd_climb.setDescription("\tStarts the experiment.");
+
+  // define climb command with no arguments to start delayed experiments
+  Command cmd_hover = cli.addCommand("climb", cliHover);
+  cmd_hover.addPositionalArgument("esc", "1000");
+  cmd_hover.addPositionalArgument("t/ime", "0");
+  cmd_hover.setDescription("\tSets the parameters for the initial climb phase in the hovering experiments.");
 
   // define debug command, callback, and relevant arguments
   Command cmd_debug = cli.addCommand("dbg", debug);
@@ -240,7 +246,7 @@ void setupTasks() {
   scheduler.addTask(ts_parser);
 	scheduler.addTask(ts_ble_conn);
 	scheduler.addTask(ts_ble_lost);
-	scheduler.addTask(ts_climb_off_smooth);
+	scheduler.addTask(ts_climb_off);
 	scheduler.addTask(ts_climb_on);
 	scheduler.addTask(ts_motor_update);
 	scheduler.addTask(ts_data_logger);

@@ -88,7 +88,7 @@ extern TsTask ts_parser;
 extern TsTask ts_ble_conn;
 extern TsTask ts_ble_lost;
 extern TsTask ts_climb_off;
-extern TsTask ts_climb_off_smooth;
+extern TsTask ts_climb_off;
 extern TsTask ts_climb_on;
 extern TsTask ts_motor_update;
 extern TsTask ts_data_logger;

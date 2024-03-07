@@ -420,14 +420,34 @@ void debug(cmd *cmd_ptr) {
  **/
 void cliClimb(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-
-  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UGLY WAY TO KILL THE MISSION
   ts_climb_on.restartDelayed(exp_delayed * TASK_SECOND);
   Serial.print("Climb starts in ");
   Serial.print(exp_delayed);
   Serial.println(" (s)");
 }
 
+
+/**
+ * @brief //LEVY// Set the position of one or all servos
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void cliHover(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+  Argument arg0 = c.getArgument(0);  
+  int esc_spd  = arg0.getValue().toInt();
+
+  Argument arg1 = c.getArgument(1);  
+  int time  = arg1.getValue().toInt();
+
+  pre_hover_esc = esc_spd;
+  pre_hove_time = time;
+
+  Serial.print("Pre-hovering at speed ");
+  Serial.print(pre_hover_esc);
+  Serial.print(", for ");
+  Serial.print(pre_hove_time);
+  Serial.println(" (s)");
+}
 
 /**
  * @brief Kill the mission
@@ -448,6 +468,6 @@ void cliKill(cmd *cmd_ptr) {
 void cliKillSmooth(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
 
-  ts_climb_off_smooth.restart();
+  ts_climb_off.restart();
   Serial.println("Mission aborted with smooth falloff.");
 }

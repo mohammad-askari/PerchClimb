@@ -98,7 +98,6 @@ TsTask ts_ble_conn     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLEConn);
 TsTask ts_ble_lost     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLELost);
 TsTask ts_climb_on     (TASK_SECOND,           TASK_ONCE,    &tsClimbOn);
 TsTask ts_climb_off    (TASK_SECOND,           TASK_ONCE,    &tsClimbOff);
-TsTask ts_climb_off_smooth   (TASK_SECOND,           TASK_ONCE,    &tsClimbOffSmooth);
 TsTask ts_motor_update (TASK_SECOND/move_freq, TASK_FOREVER, &tsMotorUpdate);
 TsTask ts_data_logger  (TASK_SECOND/log_freq,  TASK_FOREVER, &tsDataLogger);
 TsTask ts_data_transfer(TASK_HOUR,             TASK_ONCE,    &tsDataTransfer);

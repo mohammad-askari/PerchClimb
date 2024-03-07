@@ -13,6 +13,5 @@ void tsClimbOff();
 void tsMotorUpdate();
 void tsDataLogger();
 void tsDataTransfer();
-void tsClimbOffSmooth();
 
 #endif
