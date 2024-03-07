@@ -433,19 +433,23 @@ void cliClimb(cmd *cmd_ptr) {
  **/
 void cliHover(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-  Argument arg0 = c.getArgument(0);  
-  int esc_spd  = arg0.getValue().toInt();
+  Argument arg0 = c.getArgument(0);
+  Argument arg1 = c.getArgument(1);
+  int esc_spd   = arg0.getValue().toInt();
+  int time      = arg1.getValue().toInt();
 
-  Argument arg1 = c.getArgument(1);  
-  int time  = arg1.getValue().toInt();
+  pre_hover_esc  = esc_spd;
+  pre_hover_time = time;
 
-  pre_hover_esc = esc_spd;
-  pre_hove_time = time;
+  ts_pre_hover.restartDelayed(exp_delayed * TASK_SECOND);
 
-  Serial.print("Pre-hovering at speed ");
+  Serial.print("Hover starts in ");
+  Serial.print(exp_delayed);
+  Serial.println(" (s)");
+  Serial.print("With pre-hovering at speed ");
   Serial.print(pre_hover_esc);
   Serial.print(", for ");
-  Serial.print(pre_hove_time);
+  Serial.print(pre_hover_time);
   Serial.println(" (s)");
 }
 

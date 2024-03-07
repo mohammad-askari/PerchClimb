@@ -220,16 +220,16 @@ void setupCLI() {
 
   // define climb command with no arguments to start delayed experiments
   Command cmd_climb = cli.addCommand("climb", cliClimb);
-  cmd_climb.setDescription("\tStarts the experiment.");
+  cmd_climb.setDescription("\tStarts climbing experiment.");
 
   // define climb command with no arguments to start delayed experiments
-  Command cmd_hover = cli.addCommand("climb", cliHover);
+  Command cmd_hover = cli.addCommand("hover", cliHover);
   cmd_hover.addPositionalArgument("esc", "1000");
   cmd_hover.addPositionalArgument("t/ime", "0");
-  cmd_hover.setDescription("\tSets the parameters for the initial climb phase in the hovering experiments.");
+  cmd_hover.setDescription("\tStarts hovering experiment with pre-climbing option.");
 
   // define debug command, callback, and relevant arguments
-  Command cmd_debug = cli.addCommand("dbg", debug);
+  Command cmd_debug = cli.addCommand("debug", debug);
   cmd_debug.setDescription("\tTurns on/off the debug flag.");
 
   // set error callback
@@ -246,8 +246,11 @@ void setupTasks() {
   scheduler.addTask(ts_parser);
 	scheduler.addTask(ts_ble_conn);
 	scheduler.addTask(ts_ble_lost);
-	scheduler.addTask(ts_climb_off);
 	scheduler.addTask(ts_climb_on);
+	scheduler.addTask(ts_climb_off);
+	scheduler.addTask(ts_pre_hover);
+	scheduler.addTask(ts_hover_on);
+	scheduler.addTask(ts_hover_off);
 	scheduler.addTask(ts_motor_update);
 	scheduler.addTask(ts_data_logger);
 	scheduler.addTask(ts_data_transfer);

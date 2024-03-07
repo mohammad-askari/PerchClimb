@@ -91,13 +91,20 @@ int  exp_delayed = 10;                    // experimental start delay [s]
 unsigned long start_time;                 // start time of the experiment
 exp_data_t exp_data[data_len];            // experimental data array
 
+// —————————————————————— EXPERIMENT-SPECIFIC VARIABLES ————————————————————— //
+int pre_hover_time;                       // pre-hover ascent time [s]
+int pre_hover_esc;                        // pre-hover ESC speed [μs]
+
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 // ———— TASK PARAMETERS: interval [ms/μs], #executions, callback function ——— //
 TsTask ts_parser       (TASK_IMMEDIATE,        TASK_FOREVER, &tsParser);
 TsTask ts_ble_conn     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLEConn);
 TsTask ts_ble_lost     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLELost);
-TsTask ts_climb_on     (TASK_SECOND,           TASK_ONCE,    &tsClimbOn);
-TsTask ts_climb_off    (TASK_SECOND,           TASK_ONCE,    &tsClimbOff);
+TsTask ts_climb_on     (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOn);
+TsTask ts_climb_off    (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOff);
+TsTask ts_pre_hover    (TASK_IMMEDIATE,        TASK_ONCE,    &tsPreHover);
+TsTask ts_hover_on     (TASK_IMMEDIATE,        TASK_ONCE,    &tsHoverOn);
+TsTask ts_hover_off    (TASK_IMMEDIATE,        TASK_ONCE,    &tsHoverOff);
 TsTask ts_motor_update (TASK_SECOND/move_freq, TASK_FOREVER, &tsMotorUpdate);
 TsTask ts_data_logger  (TASK_SECOND/log_freq,  TASK_FOREVER, &tsDataLogger);
 TsTask ts_data_transfer(TASK_HOUR,             TASK_ONCE,    &tsDataTransfer);
@@ -154,10 +161,7 @@ void setup()
   // configure the task scheduler and add the tasks to the scheduler
   setupTasks();
   
-  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UGLY FUNCTIONALITY TESTING CODE
-  // ts_climb_on.restartDelayed(2000);
   delay(5000);
-  // ts_data_logger.enable();
   Serial.println("Setup done");
 }
 
@@ -215,112 +219,4 @@ void loop() {
   //   }
   //   ts_data_logger.disable();
   // }
-
-  // static int count = 0;
-  // static unsigned long start = millis();
-
-  // if (millis() - start >= 1000)
-  // {
-  //   start = millis();
-  //   Serial.println(count);
-  //   count = 0;
-  // }
-  // count++;
-  
-  /**
-    int speedESC;
-    int speedMIN = 1000;
-    int speedMAX = 2000;
-    int range = (speedMAX - speedMIN);
-    int speedIncrement = counterESC % range;
-    if (speedIncrement == 0)
-    {
-      signESC = -1 * signESC;
-    }
-    if (signESC > 0)
-    {
-      speedESC = speedMIN + speedIncrement;
-    }
-    else
-    {
-      speedESC = speedMAX - speedIncrement;
-    }
-
-    myESC.speed(speedESC); // tell ESC to go to the oESC speed value
-    Serial.print("Speed: ");
-    Serial.print(speedESC);
-    Serial.print(". Current: ");
-    Serial.println(analogRead(CURRENT) / float(adc_range));
-
-    // SERVO
-    int posServo;
-    int posMIN = 0;
-    int posMAX = 180;
-    int posRange = posMAX - posMIN;
-    int posIncrement = counterServo % posRange;
-    if (posIncrement == 0)
-    {
-      signServo = -1 * signServo;
-    }
-
-    if (signServo > 0)
-    {
-      posServo = posMIN + posIncrement;
-    }
-    else
-    {
-      posServo = posMAX - posIncrement;
-    }
-
-    for (byte i = 0; i < servo_num; i++)
-    {
-      servos[i].write(posServo); // tell servo to go to position in variable 'pos'
-    }
-    Serial.print("Servo Position: ");
-    Serial.println(posServo);
-    
-    // IMU
-
-    char buffer[8];
-    static unsigned long previousTime = millis();
-
-    unsigned long currentTime = millis();
-
-    if (currentTime - previousTime >= 1000 / SAMPLE_RATE)
-    {
-      float ax, ay, az;
-      float gx, gy, gz;
-
-      ax = imu.readFloatAccelX();
-      ay = imu.readFloatAccelY();
-      az = imu.readFloatAccelZ();
-      gx = imu.readFloatGyroX();
-      gy = imu.readFloatGyroY();
-      gz = imu.readFloatGyroZ();
-
-      // Serial.print(">counter:");  Serial.println(counter);
-
-      filter.updateIMU(gx, gy, gz, ax, ay, az);
-
-      // Get the current yaw value
-
-      // Display yaw, pitch, and roll
-      Serial.print("Roll:");
-      Serial.print(dtostrf(filter.getRoll(), 4, 0, buffer));
-      Serial.print("\t");
-      Serial.print("Pitch:");
-      Serial.print(dtostrf(filter.getPitch(), 4, 0, buffer));
-      Serial.print("\t");
-      Serial.print("Yaw:");
-      Serial.println(dtostrf(filter.getYaw(), 4, 0, buffer));
-
-      previousTime = millis();
-
-      // At the end of every minute, display the total yaw drift and reset it
-    }
-    
-    counterESC++;
-    counterServo++;
-    delay(10);
-    **/
 }

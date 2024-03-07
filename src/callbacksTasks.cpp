@@ -45,6 +45,9 @@ void tsBLELost() {
   for(byte i = 0; i < servo_num; i++) actuator[i].reset();
   ts_climb_on.disable();
   ts_climb_off.disable();
+  ts_pre_hover.disable();
+  ts_hover_on.disable();
+  ts_hover_off.disable();
   ts_motor_update.disable();
   ts_data_logger.disable();
 };
@@ -69,6 +72,7 @@ void tsClimbOn() {
   esc.speed(esc_speed);
 };
 
+
 void tsClimbOff() {
   ts_data_logger.disable();
   ts_motor_update.disable();
@@ -82,8 +86,51 @@ void tsClimbOff() {
     delay(100);
     // Serial.println(esc_speed);
   }
-  
   Serial.println("Climb Off Smooth");
+};
+
+
+void tsPreHover() {
+  // reset the data logger buffer and index to zero
+  memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
+  data_idx = 0;
+
+  ts_hover_on   .restartDelayed(TASK_SECOND * pre_hover_time);
+  ts_data_logger.restart();
+  ts_motor_update.enable();
+  Serial.println("Pre Hover On");
+
+  // synchronize the servo start times
+  unsigned long now = millis();
+  start_time = now;
+  for(byte i = 0; i < servo_num; i++) {
+    actuator[i].setTime(now);
+  }
+  esc.speed(pre_hover_esc);
+};
+
+
+void tsHoverOn() {
+  ts_hover_off.restartDelayed(TASK_SECOND * exp_duration);
+  Serial.println("Hover On");
+  esc.speed(esc_speed);
+};
+
+
+void tsHoverOff() {
+  ts_data_logger.disable();
+  ts_motor_update.disable();
+  for(byte i = 0; (i < servo_num-2) && (i != 1); i++) actuator[i].reset();
+  actuator[4].setPosition(actuator[4].offset - actuator[4].range);
+  actuator[5].setPosition(actuator[5].offset - actuator[5].range);
+
+  while (esc_speed > esc_min){ // slow down propeller gradually
+    esc_speed -= 10;
+    esc.speed(esc_speed);
+    delay(100);
+    // Serial.println(esc_speed);
+  }
+  Serial.println("Hover Off Smooth");
 };
 
 

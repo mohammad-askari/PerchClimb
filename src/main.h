@@ -87,9 +87,11 @@ extern const byte current_pin;
 extern TsTask ts_parser;
 extern TsTask ts_ble_conn;
 extern TsTask ts_ble_lost;
-extern TsTask ts_climb_off;
-extern TsTask ts_climb_off;
 extern TsTask ts_climb_on;
+extern TsTask ts_climb_off;
+extern TsTask ts_pre_hover;
+extern TsTask ts_hover_on;
+extern TsTask ts_hover_off;
 extern TsTask ts_motor_update;
 extern TsTask ts_data_logger;
 extern TsTask ts_data_transfer;
@@ -115,5 +117,9 @@ extern int        exp_duration;
 extern int        exp_delayed;
 extern unsigned long start_time;
 extern exp_data_t exp_data[];
+
+// —————————————————————— EXPERIMENT-SPECIFIC VARIABLES ————————————————————— //
+extern int pre_hover_time;
+extern int pre_hover_esc;
 
 #endif
