@@ -303,7 +303,7 @@ void setExpDuration(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
 
   Argument arg0 = c.getArgument(0);   
-  int duration = arg0.getValue().toInt();
+  float duration = arg0.getValue().toFloat();
 
   exp_duration = duration;
 

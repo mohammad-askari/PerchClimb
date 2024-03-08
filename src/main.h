@@ -117,7 +117,7 @@ extern const int  log_max;
 extern const int  data_len;
 extern int        data_idx;
 extern char       exp_info[];
-extern int        exp_duration;
+extern float      exp_duration;
 extern int        exp_delayed;
 extern unsigned long start_time;
 extern exp_data_t exp_data[];

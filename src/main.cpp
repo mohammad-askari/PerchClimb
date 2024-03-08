@@ -85,10 +85,10 @@ const int move_freq = 100;                // motors movement update rate [Hz]
 const int log_freq  = 100;                // data logging frequency [Hz]
 const int log_max   = 60;                 // maximum data logging duration [s]
 const int data_len  = log_max * log_freq; // maximum size of data arrays
-int data_idx = 0;                         // position index of the data arrays
-char exp_info[200];                       // experimental information string
-int  exp_duration = 10;                   // experimental duration [s]
-int  exp_delayed = 10;                    // experimental start delay [s]
+int   data_idx = 0;                       // position index of the data arrays
+char  exp_info[200];                      // experimental information string
+float exp_duration = 10;                  // experimental duration [s]
+int   exp_delayed = 10;                   // experimental start delay [s]
 unsigned long start_time;                 // start time of the experiment
 exp_data_t exp_data[data_len];            // experimental data array
 
