@@ -120,11 +120,13 @@ void tsPreDescent() {
 
 void tsDescentOn() {
   static bool is_start_of_transition = false;
+  unsigned long dt = ts_descent_on.getInterval();
+  unsigned long n  = ts_descent_on.getRunCounter() - 1;
+  unsigned long elapsed_time = dt * n * TASK_MILLISECOND;
 
   if (ts_descent_on.isFirstIteration()) {
     Serial.println("Descent On");
     ts_motor_update.enable();
-    esc.speed(esc_speed);
     is_start_of_transition = true;  // enable the flag for later
 
     // disenage hooks
@@ -132,12 +134,23 @@ void tsDescentOn() {
     actuator[5].setPosition(RANGE_MAX);
   }
 
-  unsigned long dt = ts_descent_on.getInterval();
-  unsigned long n  = ts_descent_on.getRunCounter() - 1;
-  unsigned long elapsed_time = dt * n * TASK_MILLISECOND;
-  Serial.println(elapsed_time);
+  // if during main experiment, do a controlled descent or freefall
+  if (elapsed_time < TASK_SECOND * exp_duration)
+  {
+    if (!is_freefall_mode && descent_freq != 0) {
+      float period = 1000.0 / abs(descent_freq);
+      float half_period = period / 2;
 
-  if (elapsed_time >= TASK_SECOND * exp_duration){
+      float dt = fmod(elapsed_time, period);
+      bool is_first_half = dt < half_period;
+
+      esc.speed(is_first_half ? esc_speed : transition_esc);
+    }
+    else esc.speed(esc_speed);
+  }
+  // if main experiment is over, do post-descent hover then descent off
+  else
+  {
     if (is_start_of_transition) {
       is_start_of_transition = false; // reset flag
       ts_motor_update.disable();

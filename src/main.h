@@ -132,5 +132,7 @@ extern float pre_descent_time;
 extern int   pre_descent_esc;
 extern float post_descent_time;
 extern int   post_descent_esc;
+extern float descent_freq;
+extern bool  is_freefall_mode;
 
 #endif

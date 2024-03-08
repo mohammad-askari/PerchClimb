@@ -488,22 +488,33 @@ void setClimbDown(cmd *cmd_ptr) {
   Argument arg2     = c.getArgument(2);
   Argument arg3     = c.getArgument(3);
   Argument arg4     = c.getArgument(4);
+  Argument arg5     = c.getArgument(5);
+  Argument arg6     = c.getArgument(6);
   pre_descent_esc   = arg0.getValue().toInt();
   transition_esc    = arg1.getValue().toInt();
   post_descent_esc  = arg2.getValue().toInt();
   pre_descent_time  = arg3.getValue().toFloat();
   post_descent_time = arg4.getValue().toFloat();
+  descent_freq      = arg5.getValue().toFloat();
+  is_freefall_mode  = arg6.isSet();
 
-  Serial.print("Pre-hovering set to ESC speed of ");
-  Serial.print(pre_hover_esc);
-  if (hover_use_hooks) {
-    Serial.print(", with transition from ");
-    Serial.print(transition_esc);
+  Serial.print("Pre-descent at ");
+  Serial.print(pre_descent_esc);
+  Serial.print(" ESC for ");
+  Serial.print(pre_descent_time);
+  Serial.print(" (s), post-descent at ");
+  Serial.print(post_descent_esc);
+  Serial.print(" ESC for ");
+  Serial.print(post_descent_time);
+  Serial.print(" (s), with descent ESC transition of ");
+  Serial.print(transition_esc);
+  if (is_freefall_mode) 
+    Serial.println(" in free-fall mode");
+  else {
+    Serial.print(" at ");
+    Serial.print(descent_freq);
+    Serial.println(" Hz");
   }
-  Serial.print(", for ");
-  Serial.print(pre_hover_time);
-  Serial.println(" (s)");
-
 }
 
 /**
@@ -519,7 +530,7 @@ void cliKill(cmd *cmd_ptr) {
 }
 
 /**
- * @brief //LEVY// Kill the mission in a smooth way
+ * @brief //LEVY// Kill the CLIMB UP mission in a smooth way
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void cliKillSmooth(cmd *cmd_ptr) {

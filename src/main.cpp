@@ -102,6 +102,8 @@ float pre_descent_time;                     // pre-descent  hover time [s]
 int   pre_descent_esc;                      // pre-descent  ESC speed [μs]
 float post_descent_time;                    // post-descent hover time [s]
 int   post_descent_esc;                     // post-descent ESC speed [μs]
+float descent_freq;                         // descent frequency [Hz]
+bool  is_freefall_mode;                     // flag to enable freefall mode
 
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 // ———— TASK PARAMETERS: interval [ms/μs], #executions, callback function ——— //

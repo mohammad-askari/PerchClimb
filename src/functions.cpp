@@ -234,15 +234,17 @@ void setupCLI() {
   Command cmd_climb_down = cli.addCommand("descend", setClimbDown);
   cmd_climb_down.addPositionalArgument("pre_esc", "1000");
   cmd_climb_down.addPositionalArgument("transition_esc", "1500");
-  cmd_climb_down.addPositionalArgument("Post_esc", "1000");
+  cmd_climb_down.addPositionalArgument("post_esc", "1000");
   cmd_climb_down.addPositionalArgument("before", "0");
   cmd_climb_down.addPositionalArgument("after", "0");
-  cmd_climb_down.setDescription("\tSets climb down parameters.");
+  cmd_climb_down.addPositionalArgument("freq", "0");
+  cmd_climb_down.addFlagArgument("f/ree/fall");
+  cmd_climb_down.setDescription("\tSets climbing down parameters.");
 
   // define climb command with no arguments to start delayed experiments
   Command cmd_climb = cli.addCommand("climb", cliClimb);
   cmd_climb.addPositionalArgument("direction", "up");
-  cmd_climb.setDescription("\tStarts climbing experiment.");
+  cmd_climb.setDescription("\tStarts climbing up/down experiment.");
 
   // define debug command, callback, and relevant arguments
   Command cmd_debug = cli.addCommand("debug", debug);
