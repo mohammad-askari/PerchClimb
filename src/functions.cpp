@@ -232,8 +232,9 @@ void setupCLI() {
 
   // define climb down command with no arguments to start delayed experiments
   Command cmd_climb_down = cli.addCommand("descend", setClimbDown);
-  cmd_climb_down.addPositionalArgument("esc1", "1000");
-  cmd_climb_down.addPositionalArgument("esc2", "1000");
+  cmd_climb_down.addPositionalArgument("pre_esc", "1000");
+  cmd_climb_down.addPositionalArgument("transition_esc", "1500");
+  cmd_climb_down.addPositionalArgument("Post_esc", "1000");
   cmd_climb_down.addPositionalArgument("before", "0");
   cmd_climb_down.addPositionalArgument("after", "0");
   cmd_climb_down.setDescription("\tSets climb down parameters.");
@@ -248,6 +249,8 @@ void setupCLI() {
 
   // set error callback
   cli.setOnError(cliThrowError);
+
+
 }
 
 // —————————————————————— TASKS SETUP & INITIALIZATION —————————————————————— //

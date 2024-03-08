@@ -475,10 +475,12 @@ void setClimbDown(cmd *cmd_ptr) {
   Argument arg1   = c.getArgument(1);
   Argument arg2   = c.getArgument(2);
   Argument arg3   = c.getArgument(3);
+  Argument arg4   = c.getArgument(4);
   pre_descent_esc   = arg0.getValue().toInt();
-  post_descent_esc  = arg1.getValue().toInt();
-  pre_descent_time   = arg2.getValue().toFloat();
-  post_descent_time   = arg3.getValue().toFloat();
+  transition_esc    = arg1.getValue().toInt();
+  post_descent_esc  = arg2.getValue().toInt();
+  pre_descent_time    = arg3.getValue().toFloat();
+  post_descent_time   = arg4.getValue().toFloat();
 
   Serial.print("Pre-hovering set to ESC speed of ");
   Serial.print(pre_hover_esc);

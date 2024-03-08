@@ -221,8 +221,6 @@ def convert_exp_data_to_str(buffer):
 	else:
 		print("BAD DATA")
 		print(len(buffer))
-		
-		
 
 
 
