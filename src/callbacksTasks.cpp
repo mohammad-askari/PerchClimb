@@ -171,7 +171,7 @@ void tsDescentOn() {
 
     // slow down propeller gradually
     esc.speed(transition_esc);
-    transition_esc -= 10;
+    transition_esc -= 1;
   }
 };
 
