@@ -13,6 +13,7 @@ void cliEraseFile(cmd *cmd_ptr);
 void cliMotorDrive(cmd *cmd_ptr);
 void cliMotorHome(cmd *cmd_ptr);
 void cliClimb(cmd *cmd_ptr);
+void setClimbDown(cmd *cmd_ptr);
 void cliHover(cmd *cmd_ptr);
 void setPreHover(cmd *cmd_ptr);
 void setMode(cmd *cmd_ptr);

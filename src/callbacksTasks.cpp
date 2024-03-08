@@ -126,7 +126,8 @@ void tsHoverOn() {
     Serial.println(millis());
   } 
   else {
-    ts_hover_on .disable();
+    esc.speed(esc_speed);
+    ts_hover_on.disable();
     ts_hover_off.restartDelayed(TASK_SECOND * exp_duration);
   }
 };

@@ -14,7 +14,7 @@ import pandas as pd
 from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
 from adafruit_ble.services.nordic import UARTService
-# import time
+import time
 # import pygame
 
 # import os
@@ -174,8 +174,15 @@ async def run():
 										while uart_connection.connected:
 											print("serial input: ", input_str)
 											uart_service.write(input_str.encode("utf-8"))
+											
+											# UNCOMMENT FOR CLIMBING AROUND
+											if input_str[0:5] == "hover":
+													time.sleep(2+10)
+													commands = 'esc 1900, \n'
+													uart_service.write(commands.encode("utf-8"))
+											
 											# uart_service.write(b'\n')
-											print(uart_service.readline().decode("utf-8"))
+											# print(uart_service.readline().decode("utf-8"))
 											break
 								except Exception as e:
 									pass
@@ -208,11 +215,14 @@ def convert_exp_data_to_str(buffer):
 		roll = int.from_bytes(buffer[4:6], byteorder='little', signed=True)
 		pitch = int.from_bytes(buffer[6:8], byteorder='little', signed=True)
 		yaw = int.from_bytes(buffer[8:], byteorder='little', signed=True)
+		
 
 		return DataProcessor(time, current, roll, pitch, yaw)
 	else:
 		print("BAD DATA")
 		print(len(buffer))
+		
+		
 
 
 

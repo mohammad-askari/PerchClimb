@@ -466,6 +466,33 @@ void cliClimb(cmd *cmd_ptr) {
 }
 
 /**
+ * @brief //LEVY// Set the pre-hover ascent parameters
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void setClimbDown(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+  Argument arg0   = c.getArgument(0);
+  Argument arg1   = c.getArgument(1);
+  Argument arg2   = c.getArgument(2);
+  Argument arg3   = c.getArgument(3);
+  pre_descent_esc   = arg0.getValue().toInt();
+  post_descent_esc  = arg1.getValue().toInt();
+  pre_descent_time   = arg2.getValue().toFloat();
+  post_descent_time   = arg3.getValue().toFloat();
+
+  Serial.print("Pre-hovering set to ESC speed of ");
+  Serial.print(pre_hover_esc);
+  if (hover_use_hooks) {
+    Serial.print(", with transition from ");
+    Serial.print(transition_esc);
+  }
+  Serial.print(", for ");
+  Serial.print(pre_hover_time);
+  Serial.println(" (s)");
+
+}
+
+/**
  * @brief Kill the mission
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/

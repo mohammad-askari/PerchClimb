@@ -218,7 +218,7 @@ void setupCLI() {
   Command cmd_kill_smooth = cli.addCommand("s/top", cliKillSmooth);
   cmd_kill_smooth.setDescription("\tStop command to stop experiments smoothly.");
 
-  // define climb command with no arguments to start delayed experiments
+  // define the hovering parameters
   Command cmd_pre_hover = cli.addCommand("prehover", setPreHover);
   cmd_pre_hover.addPositionalArgument("esc", "1000");
   cmd_pre_hover.addPositionalArgument("t/ime", "0");
@@ -226,9 +226,17 @@ void setupCLI() {
   cmd_pre_hover.addPositionalArgument("transition", "1500");
   cmd_pre_hover.setDescription("\tSets optional pre-hover ascent parameters.");
 
-  // define climb command with no arguments to start delayed experiments
+  // define hover command with no arguments to start delayed experiments
   Command cmd_hover = cli.addCommand("hover", cliHover);
   cmd_hover.setDescription("\tStarts hovering experiment.");
+
+  // define climb down command with no arguments to start delayed experiments
+  Command cmd_climb_down = cli.addCommand("descend", setClimbDown);
+  cmd_climb_down.addPositionalArgument("esc1", "1000");
+  cmd_climb_down.addPositionalArgument("esc2", "1000");
+  cmd_climb_down.addPositionalArgument("before", "0");
+  cmd_climb_down.addPositionalArgument("after", "0");
+  cmd_climb_down.setDescription("\tSets climb down parameters.");
 
   // define climb command with no arguments to start delayed experiments
   Command cmd_climb = cli.addCommand("climb", cliClimb);
