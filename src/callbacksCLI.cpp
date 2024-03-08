@@ -459,8 +459,20 @@ void cliHover(cmd *cmd_ptr) {
  **/
 void cliClimb(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-  ts_climb_on.restartDelayed(exp_delayed * TASK_SECOND);
-  Serial.print("Climbing starts in ");
+  Argument arg0 = c.getArgument(0);
+  String direction = arg0.getValue();
+  direction.toLowerCase();
+  
+  if (direction == "up") {
+    ts_climb_on.restartDelayed(exp_delayed * TASK_SECOND);
+  }
+  else if (direction == "down") {
+    ts_pre_descent.restartDelayed(exp_delayed * TASK_SECOND);
+  }
+
+  Serial.print("Climbing ");
+  Serial.print(direction);
+  Serial.print(" starts in ");
   Serial.print(exp_delayed);
   Serial.println(" (s)");
 }
@@ -471,16 +483,16 @@ void cliClimb(cmd *cmd_ptr) {
  **/
 void setClimbDown(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-  Argument arg0   = c.getArgument(0);
-  Argument arg1   = c.getArgument(1);
-  Argument arg2   = c.getArgument(2);
-  Argument arg3   = c.getArgument(3);
-  Argument arg4   = c.getArgument(4);
+  Argument arg0     = c.getArgument(0);
+  Argument arg1     = c.getArgument(1);
+  Argument arg2     = c.getArgument(2);
+  Argument arg3     = c.getArgument(3);
+  Argument arg4     = c.getArgument(4);
   pre_descent_esc   = arg0.getValue().toInt();
   transition_esc    = arg1.getValue().toInt();
   post_descent_esc  = arg2.getValue().toInt();
-  pre_descent_time    = arg3.getValue().toFloat();
-  post_descent_time   = arg4.getValue().toFloat();
+  pre_descent_time  = arg3.getValue().toFloat();
+  post_descent_time = arg4.getValue().toFloat();
 
   Serial.print("Pre-hovering set to ESC speed of ");
   Serial.print(pre_hover_esc);

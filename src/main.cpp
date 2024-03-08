@@ -98,6 +98,11 @@ int   pre_hover_esc;                        // pre-hover ESC speed [μs]
 bool  hover_use_hooks;                      // flag to set hooks usage for
 int   transition_esc;                       // transition start ESC speed
 
+float pre_descent_time;                     // pre-descent  hover time [s]
+int   pre_descent_esc;                      // pre-descent  ESC speed [μs]
+float post_descent_time;                    // post-descent hover time [s]
+int   post_descent_esc;                     // post-descent ESC speed [μs]
+
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 // ———— TASK PARAMETERS: interval [ms/μs], #executions, callback function ——— //
 TsTask ts_parser       (TASK_IMMEDIATE,        TASK_FOREVER, &tsParser);
@@ -105,6 +110,9 @@ TsTask ts_ble_conn     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLEConn);
 TsTask ts_ble_lost     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLELost);
 TsTask ts_climb_on     (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOn);
 TsTask ts_climb_off    (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOff);
+TsTask ts_pre_descent  (TASK_IMMEDIATE,        TASK_ONCE,    &tsPreDescent);
+TsTask ts_descent_on   (TASK_SECOND/drop_freq, TASK_FOREVER, &tsDescentOn);
+TsTask ts_descent_off  (TASK_IMMEDIATE,        TASK_ONCE,    &tsDescentOff);
 TsTask ts_pre_hover    (TASK_IMMEDIATE,        TASK_ONCE,    &tsPreHover);
 TsTask ts_hover_on     (TASK_SECOND/drop_freq, TASK_FOREVER, &tsHoverOn);
 TsTask ts_hover_off    (TASK_IMMEDIATE,        TASK_ONCE,    &tsHoverOff);

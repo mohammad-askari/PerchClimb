@@ -25,6 +25,7 @@ void tsParser() {
 };
 
 
+// ——————————————————————————— BLE TASK FUNCTIONS ——————————————————————————— //
 void tsBLEConn() {
   // get the reference to current connection and print connected device name
   BLEConnection* conn = Bluefruit.Connection(ble_conn_handle);
@@ -45,6 +46,9 @@ void tsBLELost() {
   for(byte i = 0; i < servo_num; i++) actuator[i].reset();
   ts_climb_on.disable();
   ts_climb_off.disable();
+  ts_pre_descent.disable();
+  ts_descent_on.disable();
+  ts_descent_off.disable();
   ts_pre_hover.disable();
   ts_hover_on.disable();
   ts_hover_off.disable();
@@ -53,15 +57,16 @@ void tsBLELost() {
 };
 
 
+// ———————————————————————————— ASCENT FUNCTIONS ———————————————————————————— //
 void tsClimbOn() {
   // reset the data logger buffer and index to zero
   memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
   data_idx = 0;
 
+  Serial.println("Climb On");
   ts_climb_off  .restartDelayed(TASK_SECOND * exp_duration);
   ts_data_logger.restart();
   ts_motor_update.enable();
-  Serial.println("Climb On");
 
   // synchronize the servo start times
   unsigned long now = millis();
@@ -74,6 +79,7 @@ void tsClimbOn() {
 
 
 void tsClimbOff() {
+  Serial.println("Climb Off Smooth");
   ts_data_logger.disable();
   ts_motor_update.disable();
   for(byte i = 0; (i < servo_num-2) && (i != 1); i++) actuator[i].reset();
@@ -84,21 +90,101 @@ void tsClimbOff() {
     esc_speed -= 10;
     esc.speed(esc_speed);
     delay(100);
-    // Serial.println(esc_speed);
   }
-  Serial.println("Climb Off Smooth");
 };
 
 
-void tsPreHover() {
+// ———————————————————————————— DESCENT FUNCTIONS ——————————————————————————— //
+void tsPreDescent() {
   // reset the data logger buffer and index to zero
   memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
   data_idx = 0;
 
+  Serial.println("Pre Descent On");
+  ts_descent_on .restartDelayed(TASK_SECOND * pre_descent_time);
+  ts_data_logger.restart();
+
+  // enage hooks
+  actuator[4].setPosition(RANGE_MIN);
+  actuator[5].setPosition(RANGE_MIN);
+
+  // synchronize the servo start times
+  unsigned long now = millis();
+  start_time = now;
+  for(byte i = 0; i < servo_num; i++) {
+    actuator[i].setTime(now);
+  }
+  esc.speed(pre_descent_esc);
+};
+
+
+void tsDescentOn() {
+  static bool is_start_of_transition = false;
+
+  if (ts_descent_on.isFirstIteration()) {
+    Serial.println("Descent On");
+    ts_motor_update.enable();
+    esc.speed(esc_speed);
+    is_start_of_transition = true;  // enable the flag for later
+
+    // disenage hooks
+    actuator[4].setPosition(RANGE_MAX);
+    actuator[5].setPosition(RANGE_MAX);
+  }
+
+  unsigned long dt = ts_descent_on.getInterval();
+  unsigned long n  = ts_descent_on.getRunCounter() - 1;
+  unsigned long elapsed_time = dt * n * TASK_MILLISECOND;
+  Serial.println(elapsed_time);
+
+  if (elapsed_time >= TASK_SECOND * exp_duration){
+    if (is_start_of_transition) {
+      is_start_of_transition = false; // reset flag
+      ts_motor_update.disable();
+      for(byte i = 0; (i < servo_num-2) && (i != 1); i++) actuator[i].reset();
+
+      // enage hooks
+      actuator[4].setPosition(RANGE_MIN);
+      actuator[5].setPosition(RANGE_MIN);
+    }
+
+    // if transition is over, trigger the descent off after post-descent hover
+    if (transition_esc <= post_descent_esc) {
+      esc_speed = post_descent_esc;
+      esc.speed(esc_speed);
+      ts_descent_on.disable();
+      ts_descent_off.restartDelayed(TASK_SECOND * post_descent_time);
+    }
+
+    // slow down propeller gradually
+    esc.speed(transition_esc);
+    transition_esc -= 10;
+  }
+};
+
+
+void tsDescentOff() {
+  Serial.println("Descent Off Smooth");
+  ts_data_logger.disable();
+
+  while (esc_speed > esc_min){ // slow down propeller gradually
+    esc_speed -= 10;
+    esc.speed(esc_speed);
+    delay(100);
+  }
+};
+
+
+// ————————————————————————————— HOVER FUNTIONS ————————————————————————————— //
+void tsPreHover() {
+  // reset the data logger buffer and index to zero
+  memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
+  data_idx = 0;
+  
+  Serial.println("Pre Hover On");
   ts_hover_on   .restartDelayed(TASK_SECOND * pre_hover_time);
   ts_data_logger.restart();
   ts_motor_update.enable();
-  Serial.println("Pre Hover On");
 
   // synchronize the servo start times
   unsigned long now = millis();
@@ -115,15 +201,14 @@ void tsHoverOn() {
     Serial.println("Hover On");
     if (hover_use_hooks)
     {
-      actuator[4].setPosition(actuator[4].offset - actuator[4].range);
-      actuator[5].setPosition(actuator[5].offset + actuator[5].range);
+      actuator[4].setPosition(RANGE_MIN);
+      actuator[5].setPosition(RANGE_MIN);
     }
   }
 
   if (hover_use_hooks && transition_esc > esc_speed){ // slow down propeller gradually
-    transition_esc -= 10;
     esc.speed(transition_esc);
-    Serial.println(millis());
+    transition_esc -= 10;
   } 
   else {
     esc.speed(esc_speed);
@@ -134,6 +219,7 @@ void tsHoverOn() {
 
 
 void tsHoverOff() {
+  Serial.println("Hover Off Smooth");
   ts_data_logger.disable();
   ts_motor_update.disable();
   for(byte i = 0; (i < servo_num-2) && (i != 1); i++) actuator[i].reset();
@@ -142,12 +228,11 @@ void tsHoverOff() {
     esc_speed -= 10;
     esc.speed(esc_speed);
     delay(100);
-    // Serial.println(esc_speed);
   }
-  Serial.println("Hover Off Smooth");
 };
 
 
+// ————————————————————————— MOTOR UPDATE FUNCTIONS ————————————————————————— //
 void tsMotorUpdate() {
   for(byte i = 0; i < servo_num; i++) actuator[i].move();
 
@@ -159,6 +244,7 @@ void tsMotorUpdate() {
 };
 
 
+// ———————————————————— DATA LOGGING & TRANSFER FUNCTIONS ——————————————————— //
 void tsDataLogger() {
       if (data_idx >= data_len) {
         Serial.println("Data Logger Buffer Full!");

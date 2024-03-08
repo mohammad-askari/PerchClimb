@@ -89,6 +89,9 @@ extern TsTask ts_ble_conn;
 extern TsTask ts_ble_lost;
 extern TsTask ts_climb_on;
 extern TsTask ts_climb_off;
+extern TsTask ts_pre_descent;
+extern TsTask ts_descent_on;
+extern TsTask ts_descent_off;
 extern TsTask ts_pre_hover;
 extern TsTask ts_hover_on;
 extern TsTask ts_hover_off;
@@ -124,5 +127,10 @@ extern float pre_hover_time;
 extern int pre_hover_esc;
 extern bool hover_use_hooks;
 extern int transition_esc;
+
+extern float pre_descent_time;
+extern int   pre_descent_esc;
+extern float post_descent_time;
+extern int   post_descent_esc;
 
 #endif
