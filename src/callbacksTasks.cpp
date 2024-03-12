@@ -89,7 +89,7 @@ void tsClimbOff() {
   while (esc_speed > esc_min){ // slow down propeller gradually
     esc_speed -= 10;
     esc.speed(esc_speed);
-    delay(100);
+    // delay(100);
   }
 };
 
@@ -240,11 +240,31 @@ void tsHoverOff() {
   while (esc_speed > esc_min){ // slow down propeller gradually
     esc_speed -= 10;
     esc.speed(esc_speed);
-    delay(100);
+    // delay(100);
   }
 };
 
+// ————————————————————————————— UNPERCH FUNTIONS ————————————————————————————— //
+//LEVY//
+void tsTiltOn() {
+  Serial.println("Tilt On");
 
+  esc.speed(esc_speed);
+  ts_tilt_off.restartDelayed(TASK_SECOND * exp_duration);
+
+}
+
+void tsTiltOff() {
+  esc.speed(esc_min);
+  Serial.println("Tilt Off");
+  ts_tilt_on.disable();
+
+  delay(200);
+  actuator[4].setPosition(RANGE_MAX);
+
+  // delay(2000);
+  ts_data_logger.disable();  
+}
 // ————————————————————————— MOTOR UPDATE FUNCTIONS ————————————————————————— //
 void tsMotorUpdate() {
   for(byte i = 0; i < servo_num; i++) actuator[i].move();

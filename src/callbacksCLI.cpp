@@ -121,7 +121,7 @@ void cliMotorDrive(cmd *cmd_ptr) {
 
   int time = millis();
 
-  while ((abs(encoder.count() - initial_pos) < ticks) && (millis()-time) < 5000)
+  while ((abs(encoder.count() - initial_pos) < ticks) && (millis()-time) < turn_val*100)
   {
     delay(10);
   }
@@ -177,7 +177,7 @@ void cliMotorHome(cmd *cmd_ptr) {
   }
 }
 
-// —————————————————————————— EXPERIMENT COMMANDS —————————————————————————— //
+// ———————————————————————————————————————————————————— EXPERIMENT PARAMETERS COMMANDS ———————————————————————————————————————————————————— //
 /**
  * @brief //LEVY// Set the position of one or all servos
  * @param[in] cmd_ptr pointer to the command stuct data type
@@ -303,12 +303,10 @@ void setExpDuration(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
 
   Argument arg0 = c.getArgument(0);   
-  float duration = arg0.getValue().toFloat();
-
-  exp_duration = duration;
+  exp_duration = arg0.getValue().toFloat();
 
   Serial.print("Experiment duration set to ");
-  Serial.print(duration);
+  Serial.print(exp_duration);
   Serial.println(" (s)");
 }
 
@@ -441,6 +439,8 @@ void setPreHover(cmd *cmd_ptr) {
 
 }
 
+// —————————————————————————————————————————————— RUN EXPERIMENT COMMANDS —————————————————————————————————————————————————— //
+
 /**
  * @brief //LEVY// Starts the climbing experiment with the specified delay
  * @param[in] cmd_ptr pointer to the command stuct data type
@@ -515,6 +515,28 @@ void setClimbDown(cmd *cmd_ptr) {
     Serial.print(descent_freq);
     Serial.println(" Hz");
   }
+}
+
+/**
+ * @brief //LEVY// Starts the climbing experiment with the specified delay
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void cliTilt(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+  Argument arg0 = c.getArgument(0);
+  esc_speed = arg0.getValue().toInt();
+  
+  Argument arg1 = c.getArgument(1);
+  exp_duration = arg1.getValue().toInt();
+
+  ts_tilt_on.restartDelayed(exp_delayed * TASK_SECOND);
+  
+
+  Serial.print("Pre-tilt hovering for");
+  Serial.print(exp_duration);
+  Serial.print(" with ESC speed of ");
+  Serial.print(esc_speed);
+  Serial.println(" (s)");
 }
 
 /**

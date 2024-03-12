@@ -16,6 +16,8 @@ void tsDescentOff();
 void tsPreHover();
 void tsHoverOn();
 void tsHoverOff();
+void tsTiltOn();
+void tsTiltOff();
 void tsMotorUpdate();
 void tsDataLogger();
 void tsDataTransfer();

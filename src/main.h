@@ -95,6 +95,8 @@ extern TsTask ts_descent_off;
 extern TsTask ts_pre_hover;
 extern TsTask ts_hover_on;
 extern TsTask ts_hover_off;
+extern TsTask ts_tilt_on;
+extern TsTask ts_tilt_off;
 extern TsTask ts_motor_update;
 extern TsTask ts_data_logger;
 extern TsTask ts_data_transfer;

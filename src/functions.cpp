@@ -241,6 +241,12 @@ void setupCLI() {
   cmd_climb_down.addFlagArgument("f/ree/fall");
   cmd_climb_down.setDescription("\tSets climbing down parameters.");
 
+  // define tilt back command and start delayed experiments
+  Command cmd_tilt = cli.addCommand("tilt", cliTilt);
+  cmd_tilt.addPositionalArgument("esc", "1000");
+  cmd_tilt.addPositionalArgument("t/ime", "0");
+  cmd_tilt.setDescription("\tSet the tilt back parameters and start the experiment");
+
   // define climb command with no arguments to start delayed experiments
   Command cmd_climb = cli.addCommand("climb", cliClimb);
   cmd_climb.addPositionalArgument("direction", "up");
@@ -274,6 +280,8 @@ void setupTasks() {
 	scheduler.addTask(ts_pre_hover);
 	scheduler.addTask(ts_hover_on);
 	scheduler.addTask(ts_hover_off);
+  scheduler.addTask(ts_tilt_on);
+  scheduler.addTask(ts_tilt_off);
 	scheduler.addTask(ts_motor_update);
 	scheduler.addTask(ts_data_logger);
 	scheduler.addTask(ts_data_transfer);

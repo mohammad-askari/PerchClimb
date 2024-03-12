@@ -46,8 +46,8 @@ Madgwick filter;
 // ————————————————————————————— SERVO VARIABLES ———————————————————————————— //
 // ————— ORDER: aileron, elevator, rudder, clutch, body hook, tail hook ————— //
 const byte    servo_pin[]    = {     7,      2,      3,      4,      5,      6};
-const int     servo_offset[] = {    +0,     +0,     +0,      0,     +9,     +5};
-const int     servo_range[]  = {  +100,   +100,   +100,    +15,    +30,    +15};
+const int     servo_offset[] = {    +0,     +0,     +0,      0,     +0,    +28};
+const int     servo_range[]  = {  +100,   +100,    +90,    +15,    +30,    +20};
 const float   servo_freq[]   = {    +0,     +0,     +0,     +0,     +0,     +0};
 const drive_t servo_linear[] = {  STEP,   STEP,   STEP,   STEP,   STEP,   STEP};
 const byte    servo_num      = sizeof(servo_pin) / sizeof(servo_pin[0]);
@@ -63,8 +63,8 @@ ESC esc(esc_pin, esc_min, esc_max, esc_arm);  // ESC motor object
 
 // ————————————————————— WING MOTOR & ENCODER VARIABLES ————————————————————— //
 const byte encoder_pin[] = {8, 8}; // quadrature encoder pins
-const byte phase_pin  = 9;         // DC motor direction control pin
-const byte enable_pin = 10;        // DC motor speed control PWM pin
+const byte phase_pin  = 10;         // DC motor direction control pin
+const byte enable_pin = 9;        // DC motor speed control PWM pin
 const float gear_ratio = 297.92;   // DC motor gear ratio (faster motor: 150.58)
 const float spool_diameter = 10;   // wing-opening mechanism spool diameter [mm]
 int dc_speed;                      // DC motor variable for adjusting speed
@@ -118,6 +118,8 @@ TsTask ts_descent_off  (TASK_IMMEDIATE,        TASK_ONCE,    &tsDescentOff);
 TsTask ts_pre_hover    (TASK_IMMEDIATE,        TASK_ONCE,    &tsPreHover);
 TsTask ts_hover_on     (TASK_SECOND/drop_freq, TASK_FOREVER, &tsHoverOn);
 TsTask ts_hover_off    (TASK_IMMEDIATE,        TASK_ONCE,    &tsHoverOff);
+TsTask ts_tilt_on      (TASK_IMMEDIATE,        TASK_ONCE,    &tsTiltOn);
+TsTask ts_tilt_off     (TASK_IMMEDIATE,        TASK_ONCE,    &tsTiltOff);
 TsTask ts_motor_update (TASK_SECOND/move_freq, TASK_FOREVER, &tsMotorUpdate);
 TsTask ts_data_logger  (TASK_SECOND/log_freq,  TASK_FOREVER, &tsDataLogger);
 TsTask ts_data_transfer(TASK_HOUR,             TASK_ONCE,    &tsDataTransfer);
@@ -144,6 +146,7 @@ void setup()
   pinMode(enable_pin, OUTPUT);
   pinMode(phase_pin, OUTPUT);
   pinMode(current_pin, INPUT);
+  analogWrite(enable_pin, 0);
 
   // initializing the servo variables and their positions
   for(byte i = 0; i < servo_num; i++) {
@@ -151,6 +154,7 @@ void setup()
                     servo_freq[i], servo_linear[i]);
     if (DEBUG) actuator[i].print();
   }
+  actuator[3].setPosition(RANGE_MIN);
 
   // arming the ESC and make it ready to take commands
   delay(1000);
