@@ -61,6 +61,9 @@ void tsBLELost() {
   ts_pre_hover.disable();
   ts_hover_on.disable();
   ts_hover_off.disable();
+  ts_pre_unperch.disable();
+  ts_unperch_on.disable();
+  ts_unperch_off.disable();
   ts_motor_update.disable();
   ts_data_logger.disable();
 };
