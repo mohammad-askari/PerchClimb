@@ -303,5 +303,5 @@ void setupTasks() {
 	
   ts_motor_update.setOnDisable(&tsMotorUpdateDisabled); 
   ts_parser.enable();
-  // ts_sensors.enable();  // TODO: IMPLEMENT AND ENABLE
+  ts_sensors.enable();
 }

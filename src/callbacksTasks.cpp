@@ -30,7 +30,20 @@ void tsParser() {
  * @brief Filters the IMU and current sensor readings and stores them in memory.
  **/
 void tsSensors() {
-  
+  // apply sensor fusion algorithm to filter the IMU readings
+  float ax = imu.readFloatAccelX();
+  float ay = imu.readFloatAccelY();
+  float az = imu.readFloatAccelZ();
+  float gx = imu.readFloatGyroX();
+  float gy = imu.readFloatGyroY();
+  float gz = imu.readFloatGyroZ();
+  filter.updateIMU(gx, gy, gz, ax, ay, az);
+
+  // update the recorded sensor readings in memory
+  current = analogRead(current_pin);
+  roll    = filter.getRoll();
+  pitch   = filter.getPitch();
+  yaw     = filter.getYaw();
 };
 
 
@@ -369,23 +382,6 @@ void tsDataLogger() {
     ts_data_logger.disable();
     return;
   }
-
-  float ax, ay, az;
-  float gx, gy, gz;
-
-  ax = imu.readFloatAccelX();
-  ay = imu.readFloatAccelY();
-  az = imu.readFloatAccelZ();
-  gx = imu.readFloatGyroX();
-  gy = imu.readFloatGyroY();
-  gz = imu.readFloatGyroZ();
-  filter.updateIMU(gx, gy, gz, ax, ay, az);
-
-  // update the recorded sensor readings in memory
-  current = analogRead(current_pin);
-  roll    = filter.getRoll();
-  pitch   = filter.getPitch();
-  yaw     = filter.getYaw();
 
   // TODO: WRITE AN ALWAYS RUNNING TASK TO FILTER CURRENT
   exp_data[data_idx].time     = millis() - start_time;
