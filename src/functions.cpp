@@ -284,6 +284,7 @@ void setupTasks() {
   scheduler.init();
 	
   scheduler.addTask(ts_parser);
+  scheduler.addTask(ts_sensors);
 	scheduler.addTask(ts_ble_conn);
 	scheduler.addTask(ts_ble_lost);
 	scheduler.addTask(ts_climb_on);

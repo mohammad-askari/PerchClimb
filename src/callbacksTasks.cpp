@@ -44,6 +44,11 @@ void tsSensors() {
   roll    = filter.getRoll();
   pitch   = filter.getPitch();
   yaw     = filter.getYaw();
+  if (DEBUG) {
+    Serial.print(">roll: "); Serial.println(roll);
+    Serial.print(">pitch: "); Serial.println(pitch);
+    Serial.print(">yaw: "); Serial.println(yaw);
+  }
 };
 
 
@@ -315,6 +320,7 @@ void tsUnperchOn() {
 
   // start takeoff if pitch angle drops below the desired pitch for takeoff
   if (is_start_of_takeoff && fabs(pitch) <= takeoff_pitch) {
+    Serial.println("Takeoff Initiated");
     is_start_of_takeoff = false;  // reset flag
     takeoff_start_time  = elapsed_time;
     esc.speed(takeoff_esc);
@@ -324,6 +330,7 @@ void tsUnperchOn() {
   // after the initial takeoff duration, do wing twist and fly away
   unsigned long since_takeoff = (elapsed_time - takeoff_start_time);
   if (!is_start_of_takeoff && since_takeoff >= TASK_SECOND * takeoff_duration) {
+    Serial.println("Fly Away Initiated");
     esc.speed(esc_speed);
     actuator[0].setPosition(RANGE_MAX);  // maximum wing twist
     actuator[5].setPosition(RANGE_MIN);  // grasp the tail hook
