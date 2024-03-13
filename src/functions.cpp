@@ -2,6 +2,7 @@
 #include "main.h"
 #include "callbacksBLE.h"
 #include "callbacksCLI.h"
+#include "callbacksTasks.h"
 
 // ——————————————————————— PARSE INCOMING USER INPUTS ——————————————————————— //
 /**
@@ -241,16 +242,29 @@ void setupCLI() {
   cmd_climb_down.addFlagArgument("f/ree/fall");
   cmd_climb_down.setDescription("\tSets climbing down parameters.");
 
-  // define tilt back command and start delayed experiments
-  Command cmd_tilt = cli.addCommand("tilt", cliTilt);
-  cmd_tilt.addPositionalArgument("esc", "1000");
-  cmd_tilt.addPositionalArgument("t/ime", "0");
-  cmd_tilt.setDescription("\tSet the tilt back parameters and start the experiment");
-
   // define climb command with no arguments to start delayed experiments
   Command cmd_climb = cli.addCommand("climb", cliClimb);
   cmd_climb.addPositionalArgument("direction", "up");
   cmd_climb.setDescription("\tStarts climbing up/down experiment.");
+
+  // define wing opening command
+  Command cmd_wing_time = cli.addCommand("w/ing", setWingOpening);
+  cmd_wing_time.addPositionalArgument("t/ime", "1");
+  cmd_wing_time.addPositionalArgument("s/peed", "100");
+  cmd_wing_time.setDescription("\tSets wing opening parameters.");
+
+  // define climb down command with no arguments to start delayed experiments
+  Command cmd_set_unperch = cli.addCommand("setunperch", setUnperch);
+  cmd_set_unperch.addPositionalArgument("pre_time", "20");
+  cmd_set_unperch.addPositionalArgument("pre_esc", "1500");
+  cmd_set_unperch.addPositionalArgument("takeoff_time", "1");
+  cmd_set_unperch.addPositionalArgument("takeoff_esc", "2000");
+  cmd_set_unperch.addPositionalArgument("takeoff_pitch", "45");
+  cmd_set_unperch.setDescription("\tSets unperching parameters.");
+
+  // define tilt back command and start delayed experiments
+  Command cmd_unperch = cli.addCommand("unperch", cliUnperch);
+  cmd_unperch.setDescription("\tStarts unperching experiment");
 
   // define debug command, callback, and relevant arguments
   Command cmd_debug = cli.addCommand("debug", debug);
@@ -280,11 +294,14 @@ void setupTasks() {
 	scheduler.addTask(ts_pre_hover);
 	scheduler.addTask(ts_hover_on);
 	scheduler.addTask(ts_hover_off);
-  scheduler.addTask(ts_tilt_on);
-  scheduler.addTask(ts_tilt_off);
+	scheduler.addTask(ts_pre_unperch);
+  scheduler.addTask(ts_unperch_on);
+  scheduler.addTask(ts_unperch_off);
 	scheduler.addTask(ts_motor_update);
 	scheduler.addTask(ts_data_logger);
 	scheduler.addTask(ts_data_transfer);
 	
+  ts_motor_update.setOnDisable(&tsMotorUpdateDisabled); 
   ts_parser.enable();
+  // ts_sensors.enable();  // TODO: IMPLEMENT AND ENABLE
 }

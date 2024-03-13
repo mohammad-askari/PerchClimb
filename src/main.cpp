@@ -40,14 +40,15 @@ const byte ble_mtu  = ble_dle - 4; // BLE maximum transmission unit
 byte ble_packet_len = ble_mtu - 3; // BLE maximum packet/buffer length
 
 // —————————————————————————————— IMU VARIABLES ————————————————————————————— //
-LSM6DS3 imu(I2C_MODE, 0x6A);  // I2C device address
-Madgwick filter;
+float roll, pitch, yaw;       // filtered Euler angles [deg]
+LSM6DS3 imu(I2C_MODE, 0x6A);  // I2C IMU device address
+Madgwick filter;              // Madgwick sensors fusion algorithm object
 
 // ————————————————————————————— SERVO VARIABLES ———————————————————————————— //
 // ————— ORDER: aileron, elevator, rudder, clutch, body hook, tail hook ————— //
 const byte    servo_pin[]    = {     7,      2,      3,      4,      5,      6};
 const int     servo_offset[] = {    +0,     +0,     +0,      0,     +0,    +28};
-const int     servo_range[]  = {  +100,   +100,    +90,    +15,    +30,    +20};
+const int     servo_range[]  = {  +100,   +100,    +90,    +15,    +25,    +20};
 const float   servo_freq[]   = {    +0,     +0,     +0,     +0,     +0,     +0};
 const drive_t servo_linear[] = {  STEP,   STEP,   STEP,   STEP,   STEP,   STEP};
 const byte    servo_num      = sizeof(servo_pin) / sizeof(servo_pin[0]);
@@ -57,21 +58,22 @@ Actuator actuator[servo_num];
 const byte esc_pin = 1;                       // ESC PWM pin
 const int  esc_min = 1000;                    // ESC minimum speed pulse [μs]
 const int  esc_max = 2000;                    // ESC maximum speed pulse [μs]
-const int  esc_arm = 500;                     // ESC arm value pulse [μs]
-int esc_speed;                                // ESC speed parameter [μs]
+const int  esc_arm = 500;                     // ESC arm value pulse     [μs]
+int esc_speed;                                // ESC speed parameter     [μs]
 ESC esc(esc_pin, esc_min, esc_max, esc_arm);  // ESC motor object
 
 // ————————————————————— WING MOTOR & ENCODER VARIABLES ————————————————————— //
 const byte encoder_pin[] = {8, 8}; // quadrature encoder pins
-const byte phase_pin  = 10;         // DC motor direction control pin
-const byte enable_pin = 9;        // DC motor speed control PWM pin
+const byte phase_pin  = 10;        // DC motor direction control pin
+const byte enable_pin = 9;         // DC motor speed control PWM pin
 const float gear_ratio = 297.92;   // DC motor gear ratio (faster motor: 150.58)
 const float spool_diameter = 10;   // wing-opening mechanism spool diameter [mm]
-int dc_speed;                      // DC motor variable for adjusting speed
+int dc_speed = pwm_range;          // DC motor variable for adjusting speed
 Quadrature_encoder<8, 8> encoder;
 
 // ———————————————————————— CURRENT SENSOR VARIABLES ———————————————————————— //
-const byte current_pin = A0;
+const byte current_pin = A0; // current sensor pin
+int current;                 // current sensor value [ADC]
 
 // ———————————————————————————— PARSER VARIABLES ———————————————————————————— //
 SimpleCLI cli;                       // command line interface (CLI) object
@@ -80,34 +82,46 @@ byte buffer_idx;                     // position index variable for the buffer
 char buffer[buffer_len];             // CLI buffer array to parse user inputs
 
 // ——————————————————————— EXPERIMENTAL DATA VARIABLES —————————————————————— //
-const int drop_freq = 10;                 // gradual ESC speed drop rate [Hz]
-const int move_freq = 100;                // motors movement update rate [Hz]
-const int log_freq  = 100;                // data logging frequency [Hz]
+const int drop_freq = 10;                 // gradual ESC speed drop rate  [Hz]
+const int move_freq = 100;                // motors movement update rate  [Hz]
+const int log_freq  = 100;                // data logging frequency       [Hz]
 const int log_max   = 60;                 // maximum data logging duration [s]
 const int data_len  = log_max * log_freq; // maximum size of data arrays
 int   data_idx = 0;                       // position index of the data arrays
 char  exp_info[200];                      // experimental information string
-float exp_duration = 10;                  // experimental duration [s]
+float exp_duration = 10;                  // experimental duration    [s]
 int   exp_delayed = 10;                   // experimental start delay [s]
 unsigned long start_time;                 // start time of the experiment
 exp_data_t exp_data[data_len];            // experimental data array
 
 // —————————————————————— EXPERIMENT-SPECIFIC VARIABLES ————————————————————— //
-float pre_hover_time;                       // pre-hover ascent time [s]
-int   pre_hover_esc;                        // pre-hover ESC speed [μs]
-bool  hover_use_hooks;                      // flag to set hooks usage for
-int   transition_esc;                       // transition start ESC speed
+float pre_hover_time;                     // pre-hover ascent time [s]
+int   pre_hover_esc;                      // pre-hover ESC speed  [μs]
+bool  hover_use_hooks;                    // flag to set hooks usage for
+int   transition_esc;                     // transition start ESC speed
 
-float pre_descent_time;                     // pre-descent  hover time [s]
-int   pre_descent_esc;                      // pre-descent  ESC speed [μs]
-float post_descent_time;                    // post-descent hover time [s]
-int   post_descent_esc;                     // post-descent ESC speed [μs]
-float descent_freq;                         // descent frequency [Hz]
-bool  is_freefall_mode;                     // flag to enable freefall mode
+float pre_descent_time;                   // pre-descent hover time  [s]
+int   pre_descent_esc;                    // pre-descent ESC speed  [μs]
+float post_descent_time;                  // post-descent hover time [s]
+int   post_descent_esc;                   // post-descent ESC speed [μs]
+float descent_freq;                       // descent frequency      [Hz]
+bool  is_freefall_mode;                   // flag to enable freefall mode
+
+float wing_opening_duration;              // wing opening duration [s]
+bool  is_wing_opening;                    // flag to enable wing opening
+
+float pre_unperch_duration;               // pre-unperch hover duration [s]
+int   pre_unperch_esc;                    // pre-unperch ESC speed     [μs]
+float takeoff_duration;                   // initial takeoff duration   [s]
+int   takeoff_esc;                        // initial takeoff ESC speed [μs]
+float takeoff_pitch;                      // desired takeoff pitch    [deg]
+long  takeoff_start_time;                 // initial takeoff time flag
+bool  is_start_of_takeoff;                // flag to set enable takeoff
 
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 // ———— TASK PARAMETERS: interval [ms/μs], #executions, callback function ——— //
 TsTask ts_parser       (TASK_IMMEDIATE,        TASK_FOREVER, &tsParser);
+TsTask ts_sensors      (TASK_IMMEDIATE,        TASK_FOREVER, &tsSensors);
 TsTask ts_ble_conn     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLEConn);
 TsTask ts_ble_lost     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLELost);
 TsTask ts_climb_on     (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOn);
@@ -118,9 +132,10 @@ TsTask ts_descent_off  (TASK_IMMEDIATE,        TASK_ONCE,    &tsDescentOff);
 TsTask ts_pre_hover    (TASK_IMMEDIATE,        TASK_ONCE,    &tsPreHover);
 TsTask ts_hover_on     (TASK_SECOND/drop_freq, TASK_FOREVER, &tsHoverOn);
 TsTask ts_hover_off    (TASK_IMMEDIATE,        TASK_ONCE,    &tsHoverOff);
-TsTask ts_tilt_on      (TASK_IMMEDIATE,        TASK_ONCE,    &tsTiltOn);
-TsTask ts_tilt_off     (TASK_IMMEDIATE,        TASK_ONCE,    &tsTiltOff);
-TsTask ts_motor_update (TASK_SECOND/move_freq, TASK_FOREVER, &tsMotorUpdate);
+TsTask ts_pre_unperch  (TASK_IMMEDIATE,        TASK_ONCE,    &tsPreUnperch);
+TsTask ts_unperch_on   (TASK_SECOND/move_freq, TASK_FOREVER, &tsUnperchOn);
+TsTask ts_unperch_off  (TASK_IMMEDIATE,        TASK_ONCE,    &tsUnperchOff);
+TsTask ts_motor_update (TASK_SECOND/move_freq, TASK_FOREVER, &tsMotorUpdate);      
 TsTask ts_data_logger  (TASK_SECOND/log_freq,  TASK_FOREVER, &tsDataLogger);
 TsTask ts_data_transfer(TASK_HOUR,             TASK_ONCE,    &tsDataTransfer);
 TsScheduler scheduler; // scheduler object to run tasks in order

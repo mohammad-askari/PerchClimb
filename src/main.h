@@ -44,6 +44,7 @@ extern byte ble_packet_len;
 #define LSM6DS3_CTRL2_G 0x11
 #define ACC_ODR_104Hz 0x40
 #define GYRO_ODR_416Hz 0x60
+extern float roll, pitch, yaw;
 extern LSM6DS3 imu;
 extern Madgwick filter;
 
@@ -75,6 +76,7 @@ extern Quadrature_encoder<8, 8> encoder;
 
 // ———————————————————————— CURRENT SENSOR VARIABLES ———————————————————————— //
 extern const byte current_pin;
+extern int current;
 
 // ———————————————————————————— PARSER VARIABLES ———————————————————————————— //
 extern SimpleCLI cli;
@@ -85,6 +87,7 @@ extern const byte current_pin;
 
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 extern TsTask ts_parser;
+extern TsTask ts_sensors;
 extern TsTask ts_ble_conn;
 extern TsTask ts_ble_lost;
 extern TsTask ts_climb_on;
@@ -95,8 +98,9 @@ extern TsTask ts_descent_off;
 extern TsTask ts_pre_hover;
 extern TsTask ts_hover_on;
 extern TsTask ts_hover_off;
-extern TsTask ts_tilt_on;
-extern TsTask ts_tilt_off;
+extern TsTask ts_pre_unperch;
+extern TsTask ts_unperch_on;
+extern TsTask ts_unperch_off;
 extern TsTask ts_motor_update;
 extern TsTask ts_data_logger;
 extern TsTask ts_data_transfer;
@@ -136,5 +140,16 @@ extern float post_descent_time;
 extern int   post_descent_esc;
 extern float descent_freq;
 extern bool  is_freefall_mode;
+
+extern float wing_opening_duration;
+extern bool  is_wing_opening;
+
+extern float pre_unperch_duration;
+extern int   pre_unperch_esc;
+extern float takeoff_duration;
+extern int   takeoff_esc;
+extern float takeoff_pitch;
+extern long  takeoff_start_time;
+extern bool  is_start_of_takeoff;
 
 #endif

@@ -328,20 +328,6 @@ void setExpDelay(cmd *cmd_ptr) {
 }
 
 /**
- * @brief //LEVY// Set the speed of the wing opening DC motor
- * @param[in] cmd_ptr pointer to the command stuct data type
- **/
-void setDCSpeed(cmd *cmd_ptr) {
-  Command c(cmd_ptr);  // wrapper class instance for the pointer
-
-  Argument arg0 = c.getArgument(0);   
-  int speed = arg0.getValue().toInt();
-
-  dc_speed = speed;
-
-}
-
-/**
  * @brief //LEVY// Set the offset of one or multiple servos
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
@@ -521,21 +507,64 @@ void setClimbDown(cmd *cmd_ptr) {
  * @brief //LEVY// Starts the climbing experiment with the specified delay
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void cliTilt(cmd *cmd_ptr) {
+void setWingOpening(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);
-  esc_speed = arg0.getValue().toInt();
-  
   Argument arg1 = c.getArgument(1);
-  exp_duration = arg1.getValue().toInt();
+  wing_opening_duration = arg0.getValue().toFloat();
+  int speed_percent     = arg1.getValue().toInt();
+  dc_speed = map(speed_percent,0,100,0,pwm_range);
 
-  ts_tilt_on.restartDelayed(exp_delayed * TASK_SECOND);
+  // enable the wing opening under motor update task
+  is_wing_opening = true;
+
+  Serial.print("Wing opening set to ");
+  Serial.print(speed_percent);
+  Serial.print("%% speed for ");
+  Serial.print(wing_opening_duration);
+  Serial.println(" (s)");
+}
+
+/**
+ * @brief Set the unperch parameters
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void setUnperch(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+  Argument arg0        = c.getArgument(0);
+  Argument arg1        = c.getArgument(1);
+  Argument arg2        = c.getArgument(2);
+  Argument arg3        = c.getArgument(3);
+  Argument arg4        = c.getArgument(4);
+  pre_unperch_duration = arg0.getValue().toFloat();
+  pre_unperch_esc      = arg1.getValue().toInt();
+  takeoff_duration     = arg2.getValue().toFloat();
+  takeoff_esc          = arg3.getValue().toInt();
+  takeoff_pitch        = arg4.getValue().toFloat();
+
+  Serial.print("Pre-unperch at ");
+  Serial.print(pre_unperch_esc);
+  Serial.print(" ESC for ");
+  Serial.print(pre_unperch_duration);
+  Serial.print(" (s), takeoff at ");
+  Serial.print(takeoff_esc);
+  Serial.print(" ESC for ");
+  Serial.print(takeoff_duration);
+  Serial.print(" (s), at the desired ");
+  Serial.print(takeoff_pitch);
+  Serial.println(" (deg) pitch");
+}
+
+/**
+ * @brief Starts the unperching experiment with the specified delay
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void cliUnperch(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
   
-
-  Serial.print("Pre-tilt hovering for");
-  Serial.print(exp_duration);
-  Serial.print(" with ESC speed of ");
-  Serial.print(esc_speed);
+  ts_pre_unperch.restartDelayed(exp_delayed * TASK_SECOND);
+  Serial.print("Unperching starts in ");
+  Serial.print(exp_delayed);
   Serial.println(" (s)");
 }
 

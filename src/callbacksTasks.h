@@ -6,6 +6,7 @@
 extern uint16_t ble_conn_handle;
 
 void tsParser();
+void tsSensors();
 void tsBLEConn();
 void tsBLELost();
 void tsClimbOn();
@@ -16,9 +17,11 @@ void tsDescentOff();
 void tsPreHover();
 void tsHoverOn();
 void tsHoverOff();
-void tsTiltOn();
-void tsTiltOff();
+void tsPreUnperch();
+void tsUnperchOn();
+void tsUnperchOff();
 void tsMotorUpdate();
+void tsMotorUpdateDisabled();
 void tsDataLogger();
 void tsDataTransfer();
 

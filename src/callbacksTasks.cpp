@@ -25,6 +25,15 @@ void tsParser() {
 };
 
 
+// ————————————————————————— FILTER SENSOR READINGS ————————————————————————— //
+/**
+ * @brief Filters the IMU and current sensor readings and stores them in memory.
+ **/
+void tsSensors() {
+  
+};
+
+
 // ——————————————————————————— BLE TASK FUNCTIONS ——————————————————————————— //
 void tsBLEConn() {
   // get the reference to current connection and print connected device name
@@ -244,85 +253,161 @@ void tsHoverOff() {
   }
 };
 
-// ————————————————————————————— UNPERCH FUNTIONS ————————————————————————————— //
-//LEVY//
-void tsTiltOn() {
-  Serial.println("Tilt On");
 
-  esc.speed(esc_speed);
-  ts_tilt_off.restartDelayed(TASK_SECOND * exp_duration);
+// ———————————————————————————— UNPERCH FUNTIONS ———————————————————————————— //
+void tsPreUnperch() {
+  // reset the data logger buffer and index to zero
+  memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
+  data_idx = 0;
+  
+  Serial.println("Pre Unperch On");
+  ts_unperch_on .restartDelayed(TASK_SECOND * pre_unperch_duration);
+  ts_data_logger.restart();
+  ts_motor_update.enable();
 
+  // punch the tail hook and start hovering
+  actuator[5].setPosition(RANGE_MAX);
+  esc.speed(pre_unperch_esc);
+
+  // synchronize the servo start times
+  unsigned long now = millis();
+  start_time = now;
+  for(byte i = 0; i < servo_num; i++) {
+    actuator[i].setTime(now);
+  }
+
+  // reset the takeoff parameters for later use in the main unperching task
+  is_start_of_takeoff = false;
+  takeoff_start_time  = 0;
 }
 
-void tsTiltOff() {
-  esc.speed(esc_min);
-  Serial.println("Tilt Off");
-  ts_tilt_on.disable();
 
-  delay(200);
-  actuator[4].setPosition(RANGE_MAX);
+void tsUnperchOn() {
+  unsigned long dt = ts_unperch_on.getInterval();
+  unsigned long n  = ts_unperch_on.getRunCounter() - 1;
+  unsigned long elapsed_time = dt * n * TASK_MILLISECOND;
 
-  // delay(2000);
-  ts_data_logger.disable();  
-}
-// ————————————————————————— MOTOR UPDATE FUNCTIONS ————————————————————————— //
-void tsMotorUpdate() {
-  for(byte i = 0; i < servo_num; i++) actuator[i].move();
+  // initiate the pitch back movement
+  if (ts_unperch_on.isFirstIteration()) {
+    Serial.println("Unperch On");
+    is_start_of_takeoff = true;  // enable the flag for later
 
-  if (DEBUG) {
-    for(byte i = 0; i < servo_num; i++) {
-      actuator[i].printSignal(i);
-    }
+    // cut off thrust and disenage the body hook
+    esc.speed(esc_min);
+    actuator[4].setPosition(RANGE_MAX);
+  }
+
+  // start takeoff if pitch angle drops below the desired pitch for takeoff
+  if (is_start_of_takeoff && fabs(pitch) <= takeoff_pitch) {
+    is_start_of_takeoff = false;  // reset flag
+    takeoff_start_time  = elapsed_time;
+    esc.speed(takeoff_esc);
+    actuator[1].reset();  // reset the elevator
+  }
+
+  // after the initial takeoff duration, do wing twist and fly away
+  if ((elapsed_time - takeoff_start_time) >= TASK_SECOND * takeoff_duration) {
+    esc.speed(esc_speed);
+    actuator[0].setPosition(RANGE_MAX);  // maximum wing twist
+    actuator[5].setPosition(RANGE_MIN);  // grasp the tail hook
+    ts_unperch_on.disable();
+    ts_unperch_off.restartDelayed(TASK_SECOND * exp_duration);
   }
 };
 
 
+void tsUnperchOff() {
+  Serial.println("Unperch Off");
+  ts_data_logger.disable();
+  ts_motor_update.disable();
+
+  esc_speed = esc_min;
+  esc.speed(esc_speed);
+  actuator[5].setPosition(25); // bring tail hook in - FIXME: AVOID HARD-CODED
+}
+
+
+// ————————————————————————— MOTOR UPDATE FUNCTIONS ————————————————————————— //
+void tsMotorUpdate() {
+  for(byte i = 0; i < servo_num; i++) actuator[i].move();
+
+  static unsigned long start = 0;
+  unsigned long dt = ts_motor_update.getInterval();
+  unsigned long n  = ts_motor_update.getRunCounter() - 1;
+  unsigned long elapsed_time = dt * n * TASK_MILLISECOND;
+
+  if (is_wing_opening) {
+    start = elapsed_time;
+    is_wing_opening = false;
+    analogWrite(enable_pin, dc_speed);
+    Serial.println("Wing Opening Started");
+  }
+  if (dc_speed != 0 && (elapsed_time-start) >= wing_opening_duration*TASK_SECOND)
+  {
+    dc_speed = 0;
+    analogWrite(enable_pin, 0);
+    Serial.println("Wing Opening Completed");
+  }
+  
+  if (DEBUG) {
+    for(byte i = 0; i < servo_num; i++) { actuator[i].printSignal(i); }
+  }
+};
+
+void tsMotorUpdateDisabled() { 
+  analogWrite(enable_pin,0); 
+};
+
 // ———————————————————— DATA LOGGING & TRANSFER FUNCTIONS ——————————————————— //
 void tsDataLogger() {
-      if (data_idx >= data_len) {
-        Serial.println("Data Logger Buffer Full!");
-        ts_data_logger.disable();
-        return;
-      }
+  if (data_idx >= data_len) {
+    Serial.println("Data Logger Buffer Full!");
+    ts_data_logger.disable();
+    return;
+  }
 
-      float ax, ay, az;
-      float gx, gy, gz;
+  float ax, ay, az;
+  float gx, gy, gz;
 
-      ax = imu.readFloatAccelX();
-      ay = imu.readFloatAccelY();
-      az = imu.readFloatAccelZ();
-      gx = imu.readFloatGyroX();
-      gy = imu.readFloatGyroY();
-      gz = imu.readFloatGyroZ();
-      filter.updateIMU(gx, gy, gz, ax, ay, az);
+  ax = imu.readFloatAccelX();
+  ay = imu.readFloatAccelY();
+  az = imu.readFloatAccelZ();
+  gx = imu.readFloatGyroX();
+  gy = imu.readFloatGyroY();
+  gz = imu.readFloatGyroZ();
+  filter.updateIMU(gx, gy, gz, ax, ay, az);
 
-      //!!!!!!!!!!!!!!! WRITE AN ALWAYS RUNNING TASK TO FILTER CURRENT
-      exp_data[data_idx].time     = millis() - start_time;
-      exp_data[data_idx].current  = analogRead(current_pin);
-      exp_data[data_idx].roll     = round(filter.getRoll());
-      exp_data[data_idx].pitch    = round(filter.getPitch());
-      exp_data[data_idx].yaw      = round(filter.getYaw());
+  // update the recorded sensor readings in memory
+  current = analogRead(current_pin);
+  roll    = filter.getRoll();
+  pitch   = filter.getPitch();
+  yaw     = filter.getYaw();
 
-      data_idx++;
+  // TODO: WRITE AN ALWAYS RUNNING TASK TO FILTER CURRENT
+  exp_data[data_idx].time     = millis() - start_time;
+  exp_data[data_idx].current  = current;
+  exp_data[data_idx].roll     = round(roll);
+  exp_data[data_idx].pitch    = round(pitch);
+  exp_data[data_idx].yaw      = round(yaw);
+  data_idx++;
 };
 
 
 void tsDataTransfer() {
-    Serial.println("Data Transfer Started");
-    char buffer[32];
-    delay(300);
-    sprintf(buffer, "meta: %d\n", (int)ceil(data_idx / 6) );
-    bleuart.write( (uint8_t*) buffer, strlen(buffer));
-    delay(300);
+  Serial.println("Data Transfer Started");
+  char buffer[32];
+  delay(300);
+  sprintf(buffer, "meta: %d\n", (int)ceil(data_idx / 6) );
+  bleuart.write( (uint8_t*) buffer, strlen(buffer));
+  delay(300);
 
-    uint8_t *P;
-    // Serial.println("SENDING DATA NOW");
-    for (int i = 0; i < data_idx; i = i+6) {                 
-        P = (uint8_t*) exp_data;
-        P += sizeof(exp_data_t) * i;
-        bleuart.write(P, sizeof(exp_data_t) * 6);
-        delay(250);
-    }
+  uint8_t *P;
+  for (int i = 0; i < data_idx; i = i+6) {                 
+      P = (uint8_t*) exp_data;
+      P += sizeof(exp_data_t) * i;
+      bleuart.write(P, sizeof(exp_data_t) * 6);
+      delay(250);
+  }
 
   Serial.println("Data Transfer Complete");
 };
