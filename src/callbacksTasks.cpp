@@ -309,7 +309,8 @@ void tsUnperchOn() {
   }
 
   // after the initial takeoff duration, do wing twist and fly away
-  if ((elapsed_time - takeoff_start_time) >= TASK_SECOND * takeoff_duration) {
+  unsigned long since_takeoff = (elapsed_time - takeoff_start_time);
+  if (!is_start_of_takeoff && since_takeoff >= TASK_SECOND * takeoff_duration) {
     esc.speed(esc_speed);
     actuator[0].setPosition(RANGE_MAX);  // maximum wing twist
     actuator[5].setPosition(RANGE_MIN);  // grasp the tail hook
