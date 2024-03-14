@@ -146,6 +146,7 @@ extern bool  is_wing_opening;
 
 extern float pre_unperch_duration;
 extern int   pre_unperch_esc;
+extern int   tilt_esc; 
 extern float takeoff_duration;
 extern int   takeoff_esc;
 extern float takeoff_pitch;

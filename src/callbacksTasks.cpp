@@ -314,7 +314,8 @@ void tsUnperchOn() {
     is_start_of_takeoff = true;  // enable the flag for later
 
     // cut off thrust and disenage the body hook
-    esc.speed(esc_min);
+    esc.speed(tilt_esc);
+    actuator[3].setPosition(RANGE_MAX);
     actuator[4].setPosition(RANGE_MAX);
   }
 

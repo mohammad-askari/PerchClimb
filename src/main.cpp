@@ -48,7 +48,7 @@ Madgwick filter;              // Madgwick sensors fusion algorithm object
 // ————— ORDER: aileron, elevator, rudder, clutch, body hook, tail hook ————— //
 const byte    servo_pin[]    = {     7,      2,      3,      4,      5,      6};
 const int     servo_offset[] = {    +0,     +0,     +0,      0,     +0,    +28};
-const int     servo_range[]  = {  +100,   +100,    +90,    +15,    +25,    +20};
+const int     servo_range[]  = {  +100,   +100,    +90,    +12,    +25,    +20};
 const float   servo_freq[]   = {    +0,     +0,     +0,     +0,     +0,     +0};
 const drive_t servo_linear[] = {  STEP,   STEP,   STEP,   STEP,   STEP,   STEP};
 const byte    servo_num      = sizeof(servo_pin) / sizeof(servo_pin[0]);
@@ -112,6 +112,7 @@ bool  is_wing_opening;                    // flag to enable wing opening
 
 float pre_unperch_duration;               // pre-unperch hover duration [s]
 int   pre_unperch_esc;                    // pre-unperch ESC speed     [μs]
+int   tilt_esc;                           // tilt ESC speed            [μs]
 float takeoff_duration;                   // initial takeoff duration   [s]
 int   takeoff_esc;                        // initial takeoff ESC speed [μs]
 float takeoff_pitch;                      // desired takeoff pitch    [deg]
@@ -169,7 +170,7 @@ void setup()
                     servo_freq[i], servo_linear[i]);
     if (DEBUG) actuator[i].print();
   }
-  actuator[3].setPosition(RANGE_MIN);
+  actuator[3].setPosition(RANGE_MAX);
 
   // arming the ESC and make it ready to take commands
   delay(1000);

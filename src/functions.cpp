@@ -257,6 +257,7 @@ void setupCLI() {
   Command cmd_set_unperch = cli.addCommand("setunperch", setUnperch);
   cmd_set_unperch.addPositionalArgument("pre_time", "20");
   cmd_set_unperch.addPositionalArgument("pre_esc", "1500");
+  cmd_set_unperch.addPositionalArgument("tilt_esc", "1000");
   cmd_set_unperch.addPositionalArgument("takeoff_time", "1");
   cmd_set_unperch.addPositionalArgument("takeoff_esc", "2000");
   cmd_set_unperch.addPositionalArgument("takeoff_pitch", "45");

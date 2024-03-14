@@ -536,17 +536,21 @@ void setUnperch(cmd *cmd_ptr) {
   Argument arg2        = c.getArgument(2);
   Argument arg3        = c.getArgument(3);
   Argument arg4        = c.getArgument(4);
+  Argument arg5        = c.getArgument(5);
   pre_unperch_duration = arg0.getValue().toFloat();
   pre_unperch_esc      = arg1.getValue().toInt();
-  takeoff_duration     = arg2.getValue().toFloat();
-  takeoff_esc          = arg3.getValue().toInt();
-  takeoff_pitch        = arg4.getValue().toFloat();
+  tilt_esc             = arg2.getValue().toInt();
+  takeoff_duration     = arg3.getValue().toFloat();
+  takeoff_esc          = arg4.getValue().toInt();
+  takeoff_pitch        = arg5.getValue().toFloat();
 
   Serial.print("Pre-unperch at ");
   Serial.print(pre_unperch_esc);
   Serial.print(" ESC for ");
   Serial.print(pre_unperch_duration);
-  Serial.print(" (s), takeoff at ");
+  Serial.print(" (s), tilt back at ");
+  Serial.print(tilt_esc);
+  Serial.print(" ESC, takeoff at ");
   Serial.print(takeoff_esc);
   Serial.print(" ESC for ");
   Serial.print(takeoff_duration);
