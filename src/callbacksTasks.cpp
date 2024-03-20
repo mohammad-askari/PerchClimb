@@ -429,6 +429,10 @@ void tsDataTransfer() {
       delay(30);
   }
 
+  // tell client that file send process is finished
+  createFileSentPacket(&packet);
+  sendPacket(&packet);
+  
   Serial.println("Data Transfer Complete");
 };
 
