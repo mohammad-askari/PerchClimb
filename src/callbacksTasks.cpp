@@ -289,6 +289,7 @@ void tsPreUnperch() {
 
   // reset the takeoff parameters for later use in the main unperching task
   is_start_of_takeoff = false;
+  is_level_flight = false;
   takeoff_start_time  = 0;
 }
 
@@ -323,7 +324,19 @@ void tsUnperchOn() {
   if (!is_start_of_takeoff && since_takeoff >= TASK_SECOND * takeoff_duration) {
     Serial.println("Fly Away Initiated");
     esc.speed(esc_speed);
-    aileron.setPosition(RANGE_MAX);    // maximum wing twist
+
+    // closed loop control
+    aileron.setPosition(pid_roll.getOutput(roll)); // always do roll control
+    
+    if (!is_level_flight && fabs(pitch) < 30.0){
+      is_level_flight = true;
+      pid_yaw.setSetpoint(yaw);
+    }
+    if (is_level_flight) { // only do pitch and yaw control when level flight
+      elevator.setPosition(pid_pitch.getOutput(pitch));
+      rudder.setPosition(pid_yaw.getOutput(yaw));
+    }
+
     tail_hook.setPosition(RANGE_MIN);  // grasp the tail hook
     ts_unperch_on.disable();
     ts_unperch_off.restartDelayed(TASK_SECOND * exp_duration);

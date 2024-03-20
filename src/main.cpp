@@ -65,6 +65,12 @@ const int  esc_arm = 500;                    // ESC arm value pulse     [μs]
 int esc_speed;                               // ESC speed parameter     [μs]
 ESC esc(esc_pin, esc_min, esc_max, esc_arm); // ESC motor object
 
+// —————————————————————————————— PID CONTROL ——————————————————————————————— //
+//                      kp,    ki,   kd,   dt,   min output, max output
+PIDController pid_roll( 1.0,   0.0,  0.2,  0.01,  -1.0, 1.0);
+PIDController pid_pitch(1.0,   0.1,  0.2,  0.01,  -1.0, 1.0);
+PIDController pid_yaw(  1.0,   0.0,  0.2,  0.01,  -1.0, 1.0);
+
 // ————————————————————— WING MOTOR & ENCODER VARIABLES ————————————————————— //
 const byte phase_pin  = 10;       // DC motor direction control pin
 const byte enable_pin = 9;        // DC motor speed control PWM pin
@@ -122,6 +128,7 @@ int   takeoff_esc;                        // initial takeoff ESC speed [μs]
 float takeoff_pitch;                      // desired takeoff pitch    [deg]
 long  takeoff_start_time;                 // initial takeoff time flag
 bool  is_start_of_takeoff;                // flag to set enable takeoff
+bool  is_level_flight;                    // flag to set level flight mode
 
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 // ———— TASK PARAMETERS: interval [ms/μs], #executions, callback function ——— //

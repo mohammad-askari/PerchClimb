@@ -16,6 +16,7 @@
 #include "actuator.h"
 #include "esc.h"
 #include "clutch.h"
+#include "pidcontroller.h"
 
 // __________________________  MAIN FUNCTION FLAGS  _________________________ //
 extern bool DEBUG;
@@ -62,6 +63,9 @@ extern const float gear_ratio;
 extern const float spool_diameter;
 extern int dc_speed;
 extern Clutch clutch;
+
+// —————————————————————————————— PID CONTROL ——————————————————————————————— //
+extern PIDController pid_roll, pid_pitch, pid_yaw;
 
 // ———————————————————————— CURRENT SENSOR VARIABLES ———————————————————————— //
 extern const byte current_pin;
@@ -119,6 +123,7 @@ extern int   takeoff_esc;
 extern float takeoff_pitch;
 extern long  takeoff_start_time;
 extern bool  is_start_of_takeoff;
+extern bool  is_level_flight;
 
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 extern TsTask ts_parser;
