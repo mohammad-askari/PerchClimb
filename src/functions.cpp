@@ -62,6 +62,18 @@ void setLED(const byte *pins, const char mode) {
   }
 }
 
+// —————————————————————————— EULER ANGLE WRAPPING —————————————————————————— //
+/**
+ * @brief Clips the input Euler angle to the range of -180 to +180 degrees.
+ * @param[in] angle input angle [deg]
+ * @return clipped angle [deg]
+ **/
+float clipAngle(float angle){
+  while (angle <= -180) { angle += 360; }
+  while (angle >  +180) { angle -= 360; }
+  return angle;
+}
+
 // —————————————————— BLE CUSTOMIZATION & ADVERTISING SETUP ————————————————— //
 /**
  * @brief Sets up the BLE peripheral device, services, and advertising packet

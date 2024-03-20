@@ -43,10 +43,10 @@ void tsSensors() {
   pitch   = filter.getPitch();
   yaw     = filter.getYaw();
 
-  // make sure euler angles are within the range of -180 to 180
-  roll = clipAngles(roll);
-  pitch = clipAngles(pitch);
-  yaw = clipAngles(yaw);
+  // ensure Euler angles are within [-180 +180] degree range
+  roll  = clipAngle(roll);
+  pitch = clipAngle(pitch);
+  yaw   = clipAngle(yaw);
 
   if (DEBUG) {
     Serial.print(">roll: "); Serial.println(roll);
@@ -337,9 +337,9 @@ void tsUnperchOn() {
     }
     // only do active control if out of gimbal lock
     if (is_level_flight) {
-      aileron.setPosition(pid_roll.getOutput(roll));
-      elevator.setPosition(pid_pitch.getOutput(pitch));
-      rudder.setPosition(pid_yaw.getOutput(yaw));
+      aileron.setPosition(pid_roll.compute(roll));
+      elevator.setPosition(pid_pitch.compute(pitch));
+      rudder.setPosition(pid_yaw.compute(yaw));
     } else{
       aileron.setPosition(RANGE_MAX); // otherwise feed forward
     }
@@ -450,15 +450,3 @@ void tsKill() {
   ts_motor_update.disable();
   ts_data_logger.disable();
 };
-
-
-// —————————————————————————— MISCELLANEOUS —————————————————————————— //
-float tsClipAngles(float angle){
-  while (angle <= -180) {
-      angle += 360;
-  }
-  while (angle > 180) {
-      angle -= 360;
-  }
-  return angle;
-}
