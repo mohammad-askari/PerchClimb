@@ -20,7 +20,7 @@
 #include "callbacksTasks.h"
 
 // __________________________  MAIN FUNCTION FLAGS  _________________________ //
-bool DEBUG = true;  // enables extra serial connection in debug mode
+bool DEBUG = false;  // enables extra serial connection in debug mode
 bool MANUAL = false; // TODO: enables manual pilotting using transmitter inputs
 
 // ————————————————————————————— BOARD VARIABLES ———————————————————————————— //
@@ -210,7 +210,7 @@ void setup()
 void loop() {
   // run the task scheduler to execute the tasks in order
   scheduler.execute();
-  for (byte i = 0; i < servo_num; i++) actuator[i]->print();
+  // for (byte i = 0; i < servo_num; i++) actuator[i]->print();
 
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UGLY FUNCTIONALITY TESTING CODE
   // if (millis()%1000 == 0) {
