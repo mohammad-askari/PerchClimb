@@ -8,26 +8,21 @@
 #include <Adafruit_TinyUSB.h>
 #include <bluefruit.h>
 #include <SimpleCLI.h>
-#include <Servo.h>
-#include <ESC.h>
 #include <LSM6DS3.h>
 #include <MadgwickAHRS.h>
-#include <Wire.h>
-#include <avr/dtostrf.h>
 #include <quadrature.h>
 #include <TSchedulerDeclarations.hpp>
 
 #include "actuator.h"
+#include "esc.h"
+#include "clutch.h"
 
 // __________________________  MAIN FUNCTION FLAGS  _________________________ //
 extern bool DEBUG;
 extern bool MANUAL;
 
 // ————————————————————————————— BOARD VARIABLES ———————————————————————————— //
-extern const int adc_res;
-extern const int pwm_res;
-extern const int adc_range;
-extern const int pwm_range;
+extern const int adc_res, pwm_res, adc_range, pwm_range;
 extern const long baud_rate;
 extern const byte led_pin[];
 
@@ -39,7 +34,6 @@ extern const byte ble_mtu;
 extern byte ble_packet_len;
 
 // —————————————————————————————— IMU VARIABLES ————————————————————————————— //
-#define SAMPLE_RATE 100
 #define LSM6DS3_CTRL1_XL 0x10
 #define LSM6DS3_CTRL2_G 0x11
 #define ACC_ODR_104Hz 0x40
@@ -49,30 +43,25 @@ extern LSM6DS3 imu;
 extern Madgwick filter;
 
 // ————————————————————————————— SERVO VARIABLES ———————————————————————————— //
-extern const byte servo_pin[];
-extern const int servo_offset[];
-extern const int servo_range[];
-extern const float servo_freq[];
-extern const drive_t servo_linear[];
+extern Actuator aileron, elevator, rudder, wing_lock, body_hook, tail_hook;
+extern Actuator* actuator[];
 extern const byte servo_num;
-extern Actuator actuator[];
 
 // —————————————————————————————— ESC VARIABLES ————————————————————————————— //
 extern const byte esc_pin;
-extern const int esc_min;
-extern const int esc_max;
-extern const int esc_arm;
+extern const int esc_min, esc_max, esc_arm;
 extern int esc_speed;
 extern ESC esc;
 
 // ————————————————————— WING MOTOR & ENCODER VARIABLES ————————————————————— //
-extern const byte encoder_pin[];
 extern const byte phase_pin;
 extern const byte enable_pin;
+extern const byte encoder_pin[];
+extern const byte cpr;
 extern const float gear_ratio;
 extern const float spool_diameter;
 extern int dc_speed;
-extern Quadrature_encoder<8, 8> encoder;
+extern Clutch clutch;
 
 // ———————————————————————— CURRENT SENSOR VARIABLES ———————————————————————— //
 extern const byte current_pin;
@@ -85,29 +74,7 @@ extern byte buffer_idx;
 extern char buffer[];
 extern const byte current_pin;
 
-// ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
-extern TsTask ts_parser;
-extern TsTask ts_sensors;
-extern TsTask ts_ble_conn;
-extern TsTask ts_ble_lost;
-extern TsTask ts_climb_on;
-extern TsTask ts_climb_off;
-extern TsTask ts_pre_descent;
-extern TsTask ts_descent_on;
-extern TsTask ts_descent_off;
-extern TsTask ts_pre_hover;
-extern TsTask ts_hover_on;
-extern TsTask ts_hover_off;
-extern TsTask ts_pre_unperch;
-extern TsTask ts_unperch_on;
-extern TsTask ts_unperch_off;
-extern TsTask ts_motor_update;
-extern TsTask ts_data_logger;
-extern TsTask ts_data_transfer;
-
-extern TsScheduler scheduler;
-
-
+// ——————————————————————— EXPERIMENTAL DATA VARIABLES —————————————————————— //
 typedef struct {
     uint16_t time;
     int16_t  current;
@@ -152,5 +119,27 @@ extern int   takeoff_esc;
 extern float takeoff_pitch;
 extern long  takeoff_start_time;
 extern bool  is_start_of_takeoff;
+
+// ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
+extern TsTask ts_parser;
+extern TsTask ts_sensors;
+extern TsTask ts_ble_conn;
+extern TsTask ts_kill;
+extern TsTask ts_climb_on;
+extern TsTask ts_climb_off;
+extern TsTask ts_pre_descent;
+extern TsTask ts_descent_on;
+extern TsTask ts_descent_off;
+extern TsTask ts_pre_hover;
+extern TsTask ts_hover_on;
+extern TsTask ts_hover_off;
+extern TsTask ts_pre_unperch;
+extern TsTask ts_unperch_on;
+extern TsTask ts_unperch_off;
+extern TsTask ts_motor_update;
+extern TsTask ts_data_logger;
+extern TsTask ts_data_transfer;
+
+extern TsScheduler scheduler;
 
 #endif

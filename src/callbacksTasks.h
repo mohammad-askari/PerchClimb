@@ -8,7 +8,7 @@ extern uint16_t ble_conn_handle;
 void tsParser();
 void tsSensors();
 void tsBLEConn();
-void tsBLELost();
+void tsKill();
 void tsClimbOn();
 void tsClimbOff();
 void tsPreDescent();

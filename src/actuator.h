@@ -9,46 +9,46 @@
 #define SERVO_MIN 0
 #define SERVO_MAX 180
 
-typedef enum
-{
+typedef enum {
   STEP = 0,
-  LINEAR = 1
-} drive_t;
+  RAMP = 1
+} signal_t;
 
-class Actuator
-{
-public:
-  int offset;
-  int range;
-  int position;
-  float frequency;
-  drive_t mode;
-  Servo servo;
+class Actuator {
+  public:
+    Actuator(const char* name, byte pin, int offset, 
+             int range, float frequency, signal_t mode);
+    void init();
 
-  Actuator() {}
+    void setOffset(int offset);
+    void setRange(int range);
+    void setPosition(int position);
+    void setFrequency(float frequency);
+    void setMode(signal_t mode);
+    void setTime(unsigned long start_time);
 
-  void init(byte pin, int offset, int range, float frequency, drive_t mode);
+    void move();
+    void reset();
+    void print();
+    void printSignal();
 
-  void setRange(int range);
-  void setOffset(int offset);
-  void setFrequency(float frequency);
-  void setPosition(int position);
-  void setTime(unsigned long start_time);
+  private:
+    const char* name;
+    byte pin;
+    int offset;
+    int range;
+    float frequency;
+    signal_t mode;
 
-  void move();
-  void reset();
-  void print();
-  void printSignal(int motor_idx);
+    int position;
+    int last_position;
+    int min_pos;
+    int max_pos;
+    unsigned long start_time;
+    Servo servo;
 
-private:
-  byte pin;
-  int min_pos;
-  int max_pos;
-  int last_position;
-  unsigned long start_time;
-
-  void setLimits();
-  void updatePosition();
+    void setLimits();
+    void updatePosition();
 };
 
 #endif

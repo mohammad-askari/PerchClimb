@@ -10,15 +10,13 @@ uint16_t ble_conn_handle;
  **/
 void tsParser() {
   // check BLE UART for user input
-  while (bleuart.available())
-  {
+  while (bleuart.available()) {
     int ch = bleuart.read(); // read a single byte from the BLE UART
     processCommand(ch, buffer_len, buffer_idx, buffer);
   }
 
   // check serial for user input
-  while (Serial.available())
-  {
+  while (Serial.available()) {
     int ch = Serial.read();  // read a single byte from the serial
     processCommand(ch, buffer_len, buffer_idx, buffer);
   }
@@ -52,7 +50,7 @@ void tsSensors() {
 };
 
 
-// ——————————————————————————— BLE TASK FUNCTIONS ——————————————————————————— //
+// ———————————————————————————— BLE TASK FUNCTION ——————————————————————————— //
 void tsBLEConn() {
   // get the reference to current connection and print connected device name
   BLEConnection* conn = Bluefruit.Connection(ble_conn_handle);
@@ -65,25 +63,6 @@ void tsBLEConn() {
   Serial.print("BLE PHY: "); Serial.println(PHY);
   Serial.print("BLE DLE: "); Serial.println(DLE);
   Serial.print("BLE MTU: "); Serial.println(MTU);
-};
-
-
-void tsBLELost() {
-  esc.speed(esc_min);
-  for(byte i = 0; i < servo_num; i++) actuator[i].reset();
-  ts_climb_on.disable();
-  ts_climb_off.disable();
-  ts_pre_descent.disable();
-  ts_descent_on.disable();
-  ts_descent_off.disable();
-  ts_pre_hover.disable();
-  ts_hover_on.disable();
-  ts_hover_off.disable();
-  ts_pre_unperch.disable();
-  ts_unperch_on.disable();
-  ts_unperch_off.disable();
-  ts_motor_update.disable();
-  ts_data_logger.disable();
 };
 
 
@@ -102,7 +81,7 @@ void tsClimbOn() {
   unsigned long now = millis();
   start_time = now;
   for(byte i = 0; i < servo_num; i++) {
-    actuator[i].setTime(now);
+    actuator[i]->setTime(now);
   }
   esc.speed(esc_speed);
 };
@@ -112,9 +91,14 @@ void tsClimbOff() {
   Serial.println("Climb Off Smooth");
   ts_data_logger.disable();
   ts_motor_update.disable();
-  for(byte i = 0; (i < servo_num-2) && (i != 1); i++) actuator[i].reset();
-  actuator[4].setPosition(actuator[4].offset - actuator[4].range);
-  actuator[5].setPosition(actuator[5].offset - actuator[5].range);
+
+  aileron.reset();
+  elevator.reset();
+  wing_lock.reset();
+
+  // enage hooks
+  body_hook.setPosition(RANGE_MIN);
+  tail_hook.setPosition(RANGE_MIN);
 
   while (esc_speed > esc_min){ // slow down propeller gradually
     esc_speed -= 10;
@@ -135,14 +119,14 @@ void tsPreDescent() {
   ts_data_logger.restart();
 
   // enage hooks
-  actuator[4].setPosition(RANGE_MIN);
-  actuator[5].setPosition(RANGE_MIN);
+  body_hook.setPosition(RANGE_MIN);
+  tail_hook.setPosition(RANGE_MIN);
 
   // synchronize the servo start times
   unsigned long now = millis();
   start_time = now;
   for(byte i = 0; i < servo_num; i++) {
-    actuator[i].setTime(now);
+    actuator[i]->setTime(now);
   }
   esc.speed(pre_descent_esc);
 };
@@ -160,8 +144,8 @@ void tsDescentOn() {
     is_start_of_transition = true;  // enable the flag for later
 
     // disenage hooks
-    actuator[4].setPosition(RANGE_MAX);
-    actuator[5].setPosition(RANGE_MAX);
+    body_hook.setPosition(RANGE_MAX);
+    tail_hook.setPosition(RANGE_MAX);
   }
 
   // if during main experiment, do a controlled descent or freefall
@@ -184,11 +168,14 @@ void tsDescentOn() {
     if (is_start_of_transition) {
       is_start_of_transition = false; // reset flag
       ts_motor_update.disable();
-      for(byte i = 0; (i < servo_num-2) && (i != 1); i++) actuator[i].reset();
+
+      aileron.reset();
+      elevator.reset();
+      wing_lock.reset();
 
       // enage hooks
-      actuator[4].setPosition(RANGE_MIN);
-      actuator[5].setPosition(RANGE_MIN);
+      body_hook.setPosition(RANGE_MIN);
+      tail_hook.setPosition(RANGE_MIN);
     }
 
     // if transition is over, trigger the descent off after post-descent hover
@@ -233,7 +220,7 @@ void tsPreHover() {
   unsigned long now = millis();
   start_time = now;
   for(byte i = 0; i < servo_num; i++) {
-    actuator[i].setTime(now);
+    actuator[i]->setTime(now);
   }
   esc.speed(pre_hover_esc);
 };
@@ -244,8 +231,8 @@ void tsHoverOn() {
     Serial.println("Hover On");
     if (hover_use_hooks)
     {
-      actuator[4].setPosition(RANGE_MIN);
-      actuator[5].setPosition(RANGE_MIN);
+      body_hook.setPosition(RANGE_MIN);
+      tail_hook.setPosition(RANGE_MIN);
     }
   }
 
@@ -265,7 +252,10 @@ void tsHoverOff() {
   Serial.println("Hover Off Smooth");
   ts_data_logger.disable();
   ts_motor_update.disable();
-  for(byte i = 0; (i < servo_num-2) && (i != 1); i++) actuator[i].reset();
+  
+  aileron.reset();
+  elevator.reset();
+  wing_lock.reset();
 
   while (esc_speed > esc_min){ // slow down propeller gradually
     esc_speed -= 10;
@@ -287,14 +277,14 @@ void tsPreUnperch() {
   ts_motor_update.enable();
 
   // punch the tail hook and start hovering
-  actuator[5].setPosition(RANGE_MAX);
+  tail_hook.setPosition(RANGE_MAX);
   esc.speed(pre_unperch_esc);
 
   // synchronize the servo start times
   unsigned long now = millis();
   start_time = now;
   for(byte i = 0; i < servo_num; i++) {
-    actuator[i].setTime(now);
+    actuator[i]->setTime(now);
   }
 
   // reset the takeoff parameters for later use in the main unperching task
@@ -315,8 +305,8 @@ void tsUnperchOn() {
 
     // cut off thrust and disenage the body hook
     esc.speed(tilt_esc);
-    actuator[3].setPosition(RANGE_MAX);
-    actuator[4].setPosition(RANGE_MAX);
+    wing_lock.setPosition(RANGE_MAX);
+    body_hook.setPosition(RANGE_MAX);
   }
 
   // start takeoff if pitch angle drops below the desired pitch for takeoff
@@ -325,7 +315,7 @@ void tsUnperchOn() {
     is_start_of_takeoff = false;  // reset flag
     takeoff_start_time  = elapsed_time;
     esc.speed(takeoff_esc);
-    actuator[1].reset();  // reset the elevator
+    elevator.reset();  // reset the elevator
   }
 
   // after the initial takeoff duration, do wing twist and fly away
@@ -333,8 +323,8 @@ void tsUnperchOn() {
   if (!is_start_of_takeoff && since_takeoff >= TASK_SECOND * takeoff_duration) {
     Serial.println("Fly Away Initiated");
     esc.speed(esc_speed);
-    actuator[0].setPosition(RANGE_MAX);  // maximum wing twist
-    actuator[5].setPosition(RANGE_MIN);  // grasp the tail hook
+    aileron.setPosition(RANGE_MAX);    // maximum wing twist
+    tail_hook.setPosition(RANGE_MIN);  // grasp the tail hook
     ts_unperch_on.disable();
     ts_unperch_off.restartDelayed(TASK_SECOND * exp_duration);
   }
@@ -348,13 +338,13 @@ void tsUnperchOff() {
 
   esc_speed = esc_min;
   esc.speed(esc_speed);
-  actuator[5].setPosition(25); // bring tail hook in - FIXME: AVOID HARD-CODED
+  tail_hook.setPosition(25); // bring tail hook in - FIXME: AVOID HARD-CODED
 }
 
 
 // ————————————————————————— MOTOR UPDATE FUNCTIONS ————————————————————————— //
 void tsMotorUpdate() {
-  for(byte i = 0; i < servo_num; i++) actuator[i].move();
+  for(byte i = 0; i < servo_num; i++) actuator[i]->move();
 
   static unsigned long start = 0;
   unsigned long dt = ts_motor_update.getInterval();
@@ -375,13 +365,15 @@ void tsMotorUpdate() {
   }
   
   if (DEBUG) {
-    for(byte i = 0; i < servo_num; i++) { actuator[i].printSignal(i); }
+    for(byte i = 0; i < servo_num; i++) { actuator[i]->printSignal(); }
   }
 };
+
 
 void tsMotorUpdateDisabled() { 
   analogWrite(enable_pin,0); 
 };
+
 
 // ———————————————————— DATA LOGGING & TRANSFER FUNCTIONS ——————————————————— //
 void tsDataLogger() {
@@ -391,7 +383,6 @@ void tsDataLogger() {
     return;
   }
 
-  // TODO: WRITE AN ALWAYS RUNNING TASK TO FILTER CURRENT
   exp_data[data_idx].time     = millis() - start_time;
   exp_data[data_idx].current  = current;
   exp_data[data_idx].roll     = round(roll);
@@ -418,4 +409,24 @@ void tsDataTransfer() {
   }
 
   Serial.println("Data Transfer Complete");
+};
+
+
+// —————————————————————————— KILL SWITCH FUNCTION —————————————————————————— //
+void tsKill() {
+  esc.speed(esc_min);
+  for(byte i = 0; i < servo_num; i++) actuator[i]->reset();
+  ts_climb_on.disable();
+  ts_climb_off.disable();
+  ts_pre_descent.disable();
+  ts_descent_on.disable();
+  ts_descent_off.disable();
+  ts_pre_hover.disable();
+  ts_hover_on.disable();
+  ts_hover_off.disable();
+  ts_pre_unperch.disable();
+  ts_unperch_on.disable();
+  ts_unperch_off.disable();
+  ts_motor_update.disable();
+  ts_data_logger.disable();
 };

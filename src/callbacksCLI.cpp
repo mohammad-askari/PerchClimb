@@ -38,7 +38,7 @@ void cliThrowError(cmd_error *err_ptr) {
  * @brief Logs the experimental data onto the QSPI memory.
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void cliLogData(cmd *cmd_ptr) {
+void cliLogData(cmd *cmd_ptr) { // TODO: IMPLEMENT THIS FUNCTION
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Serial.println("Logging IMU data at 208 Hz for 5 seconds to test.txt file.");
   delay(5200);
@@ -50,7 +50,7 @@ void cliLogData(cmd *cmd_ptr) {
  * @brief Transfers the logged data to the BLE connected central device.
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void cliTransferData(cmd *cmd_ptr) {
+void cliTransferData(cmd *cmd_ptr) { // TODO: MAKE NON-BLOCKING
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   
   // THIS IS A BLOCKING FUNCTION!
@@ -62,7 +62,7 @@ void cliTransferData(cmd *cmd_ptr) {
  * @brief Formats the on-board 2MB QSPI memory using LittleFS file system.
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void cliFormatMemory(cmd *cmd_ptr) {
+void cliFormatMemory(cmd *cmd_ptr) { // TODO: IMPLEMENT THIS FUNCTION
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Serial.print("Formatting the QSPI using LittleFS ...");
   delay(1500);
@@ -74,7 +74,7 @@ void cliFormatMemory(cmd *cmd_ptr) {
  * @brief Erases a selected file or all the logged files on the QSPI memory.
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void cliEraseFile(cmd *cmd_ptr) {
+void cliEraseFile(cmd *cmd_ptr) { // TODO: IMPLEMENT THIS FUNCTION
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Serial.print("File: ");
   int argNum = c.countArgs();
@@ -92,11 +92,10 @@ void cliEraseFile(cmd *cmd_ptr) {
  **/
 void cliMotorDrive(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-
-  Argument turn_arg = c.getArgument(0);
-  float turn_val = turn_arg.getValue().toFloat();
-  Argument is_distance_arg = c.getArgument(3);
-  bool is_distance = is_distance_arg.isSet();
+  Argument arg0    = c.getArgument(0);
+  Argument arg3    = c.getArgument(3);
+  float turn_val   = arg0.getValue().toFloat();
+  bool is_distance = arg3.isSet();
   float ticks = 0;
   float corr_factor = 1;
   if (is_distance){
@@ -116,7 +115,8 @@ void cliMotorDrive(cmd *cmd_ptr) {
   if (reverse_val) digitalWrite(phase_pin,LOW);
   else digitalWrite(phase_pin,HIGH);
 
-  long initial_pos = encoder.count();
+// FIXME: REPLACE WITH CLUTCH OBJECT
+/*   long initial_pos = encoder.count();
   analogWrite(enable_pin,power_byte);
 
   int time = millis();
@@ -129,7 +129,7 @@ void cliMotorDrive(cmd *cmd_ptr) {
   Serial.print("Reached position: ");
   Serial.println(encoder.count());
   Serial.print("Elapsed time: ");
-  Serial.println(millis()-time);
+  Serial.println(millis()-time); */
 }
 
 // —————————————————————————— MOTOR HOME COMMANDS —————————————————————————— //
@@ -140,15 +140,15 @@ void cliMotorDrive(cmd *cmd_ptr) {
  **/
 void cliMotorHome(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-
   Argument set_arg = c.getArgument(1);
-  bool set_home = set_arg.isSet();
+  bool set_home    = set_arg.isSet();
   if (set_home) {
     // encoder.reset_count();
     Serial.println("Current position set to home");
   }
 
-  Argument return_arg = c.getArgument(2);
+// FIXME: REPLACE WITH CLUTCH OBJECT
+/*   Argument return_arg = c.getArgument(2);
   bool return_home = return_arg.isSet();
   if (return_home){
     Argument power_arg = c.getArgument(0);
@@ -174,34 +174,32 @@ void cliMotorHome(cmd *cmd_ptr) {
     Serial.println(encoder.count());
     Serial.print("Elapsed time: ");
     Serial.println(millis()-time);
-  }
+  } */
 }
 
-// ———————————————————————————————————————————————————— EXPERIMENT PARAMETERS COMMANDS ———————————————————————————————————————————————————— //
+// ————————————————————— EXPERIMENT PARAMETERS COMMANDS ————————————————————— //
 /**
- * @brief //LEVY// Set the position of one or all servos
+ * @brief //LEVY// Sets the position of one or all servos
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void setPos(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-
-  Argument arg0 = c.getArgument(0);   
-  int servoID = arg0.getValue().toInt();
-  
-  Argument arg1 = c.getArgument(1);  
-  int pos = arg1.getValue().toInt();
+  Argument arg0 = c.getArgument(0);
+  Argument arg1 = c.getArgument(1);
+  int servoID   = arg0.getValue().toInt();
+  int pos       = arg1.getValue().toInt();
 
   if (servoID == 99){
     Serial.print("All servos");
     for(byte i = 0; i < servo_num; i++) {
-      actuator[i].setPosition(pos);
+      actuator[i]->setPosition(pos);
     }
   }  
   else{
     Serial.print("Servo ");
     servoID = constrain(servoID, 0, servo_num-1);
     Serial.print(servoID);
-    actuator[servoID].setPosition(pos);
+    actuator[servoID]->setPosition(pos);
   }
 
   Serial.print(" to position ");
@@ -210,72 +208,65 @@ void setPos(cmd *cmd_ptr) {
 }
 
 /**
- * @brief //LEVY// Set the frequency of all the servos
+ * @brief //LEVY// Sets the frequency of all the servos
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void setFreq(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-
-  Argument arg0 = c.getArgument(0);   
-  int servoID = arg0.getValue().toInt();
-
-  Argument arg1 = c.getArgument(1);  
-  float freq = arg1.getValue().toFloat();
+  Argument arg0 = c.getArgument(0);
+  Argument arg1 = c.getArgument(1);
+  int servoID   = arg0.getValue().toInt();
+  float freq    = arg1.getValue().toFloat();
 
   if (servoID == 99){
     Serial.print("All servos");
     for(byte i = 0; i < servo_num; i++) {
-      actuator[i].setFrequency(freq);
+      actuator[i]->setFrequency(freq);
     }
   }
   else{
     Serial.print("Servo ");
     servoID = constrain(servoID, 0, servo_num-1);
     Serial.print(servoID);
-    actuator[servoID].setFrequency(freq);
+    actuator[servoID]->setFrequency(freq);
   }
   Serial.print(" at frequency ");
   Serial.println(freq);
 }
 
 /**
- * @brief //LEVY// Set the speed of the ESC
+ * @brief //LEVY// Sets the speed of the ESC
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void setESC(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-
   Argument arg0 = c.getArgument(0);   
-  int speed = arg0.getValue().toInt();
+  esc_speed     = arg0.getValue().toInt();
 
-  esc_speed = speed;
-  esc.arm();
-  esc.speed(500);
+  esc.stop();
   Serial.print("ESC speed set to ");
-  Serial.println(speed);
+  Serial.println(esc_speed);
 }
 
 /**
- * @brief //LEVY// Set the actuation mode of one or all servos (step/linear)
+ * @brief //LEVY// Sets the actuation mode of one or all servos (step/ramp)
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void setMode(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-
-  Argument arg0 = c.getArgument(0);   
-  int servoID = arg0.getValue().toInt();
-  
+  Argument arg0 = c.getArgument(0);  
   Argument arg1 = c.getArgument(1);  
-  bool linear = arg1.isSet();
+  int servoID   = arg0.getValue().toInt();
+  bool is_ramp  = arg1.isSet();
 
   if (servoID == 99){
     Serial.print("All servos");
     for(byte i = 0; i < servo_num; i++) {
-      if (!linear){
-        actuator[i].mode = STEP;
+      if (!is_ramp){
+        actuator[i]->setMode(STEP);
       }
       else{
-        actuator[i].mode = LINEAR;
+        actuator[i]->setMode(RAMP);
       }
     }
   }  
@@ -283,27 +274,26 @@ void setMode(cmd *cmd_ptr) {
     Serial.print("Servo ");
     servoID = constrain(servoID, 0, servo_num-1);
     Serial.print(servoID);
-    if (!linear){
-      actuator[servoID].mode = STEP;
+    if (!is_ramp){
+      actuator[servoID]->setMode(STEP);
     }
     else{
-      actuator[servoID].mode = LINEAR;
+      actuator[servoID]->setMode(RAMP);
     }
   }
 
   Serial.print(" set to ");
-  Serial.println(!linear ? "STEP" : "LINEAR");
+  Serial.println(!is_ramp ? "step" : "ramp");
 }
 
 /**
- * @brief //LEVY// Set the duration of the experiment
+ * @brief //LEVY// Sets the duration of the experiment
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void setExpDuration(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-
   Argument arg0 = c.getArgument(0);   
-  exp_duration = arg0.getValue().toFloat();
+  exp_duration  = arg0.getValue().toFloat();
 
   Serial.print("Experiment duration set to ");
   Serial.print(exp_duration);
@@ -311,14 +301,13 @@ void setExpDuration(cmd *cmd_ptr) {
 }
 
 /**
- * @brief //LEVY// Set the delay of the experiment
+ * @brief //LEVY// Sets the delay of the experiment
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void setExpDelay(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-
   Argument arg0 = c.getArgument(0);   
-  int delay = arg0.getValue().toInt();
+  int delay     = arg0.getValue().toInt();
 
   exp_delayed = delay;
 
@@ -328,78 +317,73 @@ void setExpDelay(cmd *cmd_ptr) {
 }
 
 /**
- * @brief //LEVY// Set the offset of one or multiple servos
+ * @brief //LEVY// Sets the offset of one or multiple servos
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void setOffset(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-
-  Argument arg0 = c.getArgument(0);   
-  int servoID = arg0.getValue().toInt();
-
-  Argument arg1 = c.getArgument(1);  
-  int offset = arg1.getValue().toInt();
+  Argument arg0 = c.getArgument(0);
+  Argument arg1 = c.getArgument(1);
+  int servoID   = arg0.getValue().toInt();
+  int offset    = arg1.getValue().toInt();
 
   if (servoID == 99){
     Serial.print("All servos");
     for(byte i = 0; i < servo_num; i++) {
-      actuator[i].setOffset(offset);
+      actuator[i]->setOffset(offset);
     }
   }
   else{
     Serial.print("Servo ");
     servoID = constrain(servoID, 0, servo_num-1);
     Serial.print(servoID);
-    actuator[servoID].setOffset(offset);
+    actuator[servoID]->setOffset(offset);
   }
   Serial.print(" set to offset ");
   Serial.println(offset);
 }
 
 /**
- * @brief //LEVY// Set the range of one or multiple servos
+ * @brief //LEVY// Sets the range of one or multiple servos
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void setRange(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-
-  Argument arg0 = c.getArgument(0);   
-  int servoID = arg0.getValue().toInt();
-
-  Argument arg1 = c.getArgument(1);  
-  int range = arg1.getValue().toInt();
+  Argument arg0 = c.getArgument(0);
+  Argument arg1 = c.getArgument(1);
+  int servoID   = arg0.getValue().toInt();
+  int range     = arg1.getValue().toInt();
 
   if (servoID == 99){
     Serial.print("All servos");
     for(byte i = 0; i < servo_num; i++) {
-      actuator[i].setRange(range);
+      actuator[i]->setRange(range);
     }
   }
   else{
     Serial.print("Servo ");
     servoID = constrain(servoID, 0, servo_num-1);
     Serial.print(servoID);
-    actuator[servoID].setRange(range);
+    actuator[servoID]->setRange(range);
   }
   Serial.print(" set to range ");
   Serial.println(range);
 }
 
 /**
- * @brief //LEVY// Send the debug data in serial
+ * @brief //LEVY// Prints the debugging data to serial port
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void debug(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
 
-  for (int i = 0; i < 6; i++)
-  {
-    actuator[i].print();
+  for (byte i = 0; i < servo_num; i++) { 
+    actuator[i]->print(); 
   }
 }
 
 /**
- * @brief //LEVY// Set the pre-hover ascent parameters
+ * @brief //LEVY// Sets the pre-hover ascent parameters
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void setPreHover(cmd *cmd_ptr) {
@@ -422,49 +406,10 @@ void setPreHover(cmd *cmd_ptr) {
   Serial.print(", for ");
   Serial.print(pre_hover_time);
   Serial.println(" (s)");
-
-}
-
-// —————————————————————————————————————————————— RUN EXPERIMENT COMMANDS —————————————————————————————————————————————————— //
-
-/**
- * @brief //LEVY// Starts the climbing experiment with the specified delay
- * @param[in] cmd_ptr pointer to the command stuct data type
- **/
-void cliHover(cmd *cmd_ptr) {
-  Command c(cmd_ptr);  // wrapper class instance for the pointer
-  ts_pre_hover.restartDelayed(exp_delayed * TASK_SECOND);
-  Serial.print("Hovering starts in ");
-  Serial.print(exp_delayed);
-  Serial.println(" (s)");
 }
 
 /**
- * @brief //LEVY// Starts the climbing experiment with the specified delay
- * @param[in] cmd_ptr pointer to the command stuct data type
- **/
-void cliClimb(cmd *cmd_ptr) {
-  Command c(cmd_ptr);  // wrapper class instance for the pointer
-  Argument arg0 = c.getArgument(0);
-  String direction = arg0.getValue();
-  direction.toLowerCase();
-  
-  if (direction == "up") {
-    ts_climb_on.restartDelayed(exp_delayed * TASK_SECOND);
-  }
-  else if (direction == "down") {
-    ts_pre_descent.restartDelayed(exp_delayed * TASK_SECOND);
-  }
-
-  Serial.print("Climbing ");
-  Serial.print(direction);
-  Serial.print(" starts in ");
-  Serial.print(exp_delayed);
-  Serial.println(" (s)");
-}
-
-/**
- * @brief //LEVY// Set the pre-hover ascent parameters
+ * @brief //LEVY// Sets the pre-hover ascent parameters
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void setClimbDown(cmd *cmd_ptr) {
@@ -504,7 +449,7 @@ void setClimbDown(cmd *cmd_ptr) {
 }
 
 /**
- * @brief //LEVY// Starts the climbing experiment with the specified delay
+ * @brief //LEVY// Sets the wing opening parameters
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void setWingOpening(cmd *cmd_ptr) {
@@ -526,7 +471,7 @@ void setWingOpening(cmd *cmd_ptr) {
 }
 
 /**
- * @brief Set the unperch parameters
+ * @brief Sets the unperching experiment parameters
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
 void setUnperch(cmd *cmd_ptr) {
@@ -559,6 +504,44 @@ void setUnperch(cmd *cmd_ptr) {
   Serial.println(" (deg) pitch");
 }
 
+// ————————————————————————— RUN EXPERIMENT COMMANDS ———————————————————————— //
+
+/**
+ * @brief //LEVY// Starts the climbing experiment with the specified delay
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void cliHover(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+  ts_pre_hover.restartDelayed(exp_delayed * TASK_SECOND);
+  Serial.print("Hovering starts in ");
+  Serial.print(exp_delayed);
+  Serial.println(" (s)");
+}
+
+/**
+ * @brief //LEVY// Starts the climbing experiment with the specified delay
+ * @param[in] cmd_ptr pointer to the command stuct data type
+ **/
+void cliClimb(cmd *cmd_ptr) {
+  Command c(cmd_ptr);  // wrapper class instance for the pointer
+  Argument arg0    = c.getArgument(0);
+  String direction = arg0.getValue();
+  direction.toLowerCase();
+  
+  if (direction == "up") {
+    ts_climb_on.restartDelayed(exp_delayed * TASK_SECOND);
+  }
+  else if (direction == "down") {
+    ts_pre_descent.restartDelayed(exp_delayed * TASK_SECOND);
+  }
+
+  Serial.print("Climbing ");
+  Serial.print(direction);
+  Serial.print(" starts in ");
+  Serial.print(exp_delayed);
+  Serial.println(" (s)");
+}
+
 /**
  * @brief Starts the unperching experiment with the specified delay
  * @param[in] cmd_ptr pointer to the command stuct data type
@@ -579,8 +562,7 @@ void cliUnperch(cmd *cmd_ptr) {
 void cliKill(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
 
-  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UGLY WAY TO KILL THE MISSION
-  ts_ble_lost.restart();
+  ts_kill.restart();
   Serial.println("Mission aborted.");
 }
 
@@ -591,6 +573,6 @@ void cliKill(cmd *cmd_ptr) {
 void cliKillSmooth(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
 
-  ts_climb_off.restart();
+  ts_climb_off.restart(); // FIXME: only works for climb up
   Serial.println("Mission aborted with smooth falloff.");
 }

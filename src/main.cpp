@@ -20,8 +20,8 @@
 #include "callbacksTasks.h"
 
 // __________________________  MAIN FUNCTION FLAGS  _________________________ //
-bool DEBUG = false;   // enables extra serial connection in debug mode
-bool MANUAL = false; // enables manual pilotting using transmitter inputs
+bool DEBUG = true;  // enables extra serial connection in debug mode
+bool MANUAL = false; // TODO: enables manual pilotting using transmitter inputs
 
 // ————————————————————————————— BOARD VARIABLES ———————————————————————————— //
 const int adc_res = 12;                    // xiao's ADC resolution (12-bit max)
@@ -40,40 +40,44 @@ const byte ble_mtu  = ble_dle - 4; // BLE maximum transmission unit
 byte ble_packet_len = ble_mtu - 3; // BLE maximum packet/buffer length
 
 // —————————————————————————————— IMU VARIABLES ————————————————————————————— //
-float roll, pitch, yaw;       // filtered Euler angles [deg]
-LSM6DS3 imu(I2C_MODE, 0x6A);  // I2C IMU device address
-Madgwick filter;              // Madgwick sensors fusion algorithm object
+float roll, pitch, yaw;      // filtered Euler angles [deg]
+LSM6DS3 imu(I2C_MODE, 0x6A); // I2C IMU device address
+Madgwick filter;             // Madgwick sensor fusion algorithm object
 
 // ————————————————————————————— SERVO VARIABLES ———————————————————————————— //
-// ————— ORDER: aileron, elevator, rudder, clutch, body hook, tail hook ————— //
-const byte    servo_pin[]    = {     7,      2,      3,      4,      5,      6};
-const int     servo_offset[] = {    +0,     +0,     +0,      0,     +0,    +28};
-const int     servo_range[]  = {  +100,   +100,    +90,    +12,    +25,    +20};
-const float   servo_freq[]   = {    +0,     +0,     +0,     +0,     +0,     +0};
-const drive_t servo_linear[] = {  STEP,   STEP,   STEP,   STEP,   STEP,   STEP};
-const byte    servo_num      = sizeof(servo_pin) / sizeof(servo_pin[0]);
-Actuator actuator[servo_num];
+//                  name,     pin, offset, range, freq, mode
+Actuator aileron  ("aileron"  , 7, +0  , +100, +0.0, STEP);
+Actuator elevator ("elevator" , 7, +0  , +100, +0.0, STEP);
+Actuator rudder   ("rudder"   , 7, +0  , +90 , +0.0, STEP);
+Actuator wing_lock("clutch"   , 4, +0  , +12 , +0.0, STEP);
+Actuator body_hook("body hook", 5, +0  , +25 , +0.0, STEP);
+Actuator tail_hook("tail hook", 6, +28 , +20 , +0.0, STEP);
+
+Actuator* actuator[] = {&aileron,   &elevator,  &rudder, 
+                        &wing_lock, &body_hook, &tail_hook};
+const byte servo_num = sizeof(actuator) / sizeof(actuator[0]);
 
 // —————————————————————————————— ESC VARIABLES ————————————————————————————— //
-const byte esc_pin = 1;                       // ESC PWM pin
-const int  esc_min = 1000;                    // ESC minimum speed pulse [μs]
-const int  esc_max = 2000;                    // ESC maximum speed pulse [μs]
-const int  esc_arm = 500;                     // ESC arm value pulse     [μs]
-int esc_speed;                                // ESC speed parameter     [μs]
-ESC esc(esc_pin, esc_min, esc_max, esc_arm);  // ESC motor object
+const byte esc_pin = 1;                      // ESC PWM pin
+const int  esc_min = 1000;                   // ESC minimum speed pulse [μs]
+const int  esc_max = 2000;                   // ESC maximum speed pulse [μs]
+const int  esc_arm = 500;                    // ESC arm value pulse     [μs]
+int esc_speed;                               // ESC speed parameter     [μs]
+ESC esc(esc_pin, esc_min, esc_max, esc_arm); // ESC motor object
 
 // ————————————————————— WING MOTOR & ENCODER VARIABLES ————————————————————— //
-const byte encoder_pin[] = {8, 8}; // quadrature encoder pins
-const byte phase_pin  = 10;        // DC motor direction control pin
-const byte enable_pin = 9;         // DC motor speed control PWM pin
-const float gear_ratio = 297.92;   // DC motor gear ratio (faster motor: 150.58)
-const float spool_diameter = 10;   // wing-opening mechanism spool diameter [mm]
-int dc_speed = pwm_range;          // DC motor variable for adjusting speed
-Quadrature_encoder<8, 8> encoder;
+const byte phase_pin  = 10;       // DC motor direction control pin
+const byte enable_pin = 9;        // DC motor speed control PWM pin
+const byte encoder_pin[] = {2,3}; // single or dual-channel encoder pin(s) // FIXME
+const byte cpr = 12;              // dual-channel encoder counts per revolution
+const float gear_ratio = 297.92;  // DC motor gear ratio (faster motor: 150.58)
+const float spool_diameter = 10;  // wing-opening mechanism spool diameter [mm]
+int dc_speed = pwm_range;         // DC motor variable for adjusting speed
+Clutch clutch(wing_lock);         // wing-opening mechanism (clutch) object
 
 // ———————————————————————— CURRENT SENSOR VARIABLES ———————————————————————— //
-const byte current_pin = A0; // current sensor pin
-int current;                 // current sensor value [ADC]
+const byte current_pin = 0;       // current sensor analog pin
+int current;                      // current sensor value [ADC]
 
 // ———————————————————————————— PARSER VARIABLES ———————————————————————————— //
 SimpleCLI cli;                       // command line interface (CLI) object
@@ -124,7 +128,6 @@ bool  is_start_of_takeoff;                // flag to set enable takeoff
 TsTask ts_parser       (TASK_IMMEDIATE,        TASK_FOREVER, &tsParser);
 TsTask ts_sensors      (TASK_SECOND/log_freq,  TASK_FOREVER, &tsSensors);
 TsTask ts_ble_conn     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLEConn);
-TsTask ts_ble_lost     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLELost);
 TsTask ts_climb_on     (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOn);
 TsTask ts_climb_off    (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOff);
 TsTask ts_pre_descent  (TASK_IMMEDIATE,        TASK_ONCE,    &tsPreDescent);
@@ -139,6 +142,7 @@ TsTask ts_unperch_off  (TASK_IMMEDIATE,        TASK_ONCE,    &tsUnperchOff);
 TsTask ts_motor_update (TASK_SECOND/move_freq, TASK_FOREVER, &tsMotorUpdate);      
 TsTask ts_data_logger  (TASK_SECOND/log_freq,  TASK_FOREVER, &tsDataLogger);
 TsTask ts_data_transfer(TASK_HOUR,             TASK_ONCE,    &tsDataTransfer);
+TsTask ts_kill         (TASK_IMMEDIATE,        TASK_ONCE,    &tsKill);
 TsScheduler scheduler; // scheduler object to run tasks in order
 
 
@@ -150,38 +154,42 @@ void setup()
   // set up serial data communication and transmission speed
   Serial.begin(baud_rate);
   if (DEBUG) { while (!Serial) delay(10); } // wait for serial in debug mode
+  delay(1000);
 
   // set up ADC and PWM resolutions
   analogReadResolution(adc_res);
   analogWriteResolution(pwm_res);
 
   // set up general purpose input/output pin modes
-  for (byte i = 0; i < 3; i++) pinMode(led_pin[i], OUTPUT);
-  for (byte i = 0; i < 2; i++) pinMode(encoder_pin[i], INPUT);
-  pinMode(esc_pin, OUTPUT);
-  pinMode(enable_pin, OUTPUT);
-  pinMode(phase_pin, OUTPUT);
   pinMode(current_pin, INPUT);
-  analogWrite(enable_pin, 0);
 
   // initializing the servo variables and their positions
   for(byte i = 0; i < servo_num; i++) {
-    actuator[i].init(servo_pin[i], servo_offset[i], servo_range[i], 
-                    servo_freq[i], servo_linear[i]);
-    if (DEBUG) actuator[i].print();
+    actuator[i]->init();
+    if (DEBUG) actuator[i]->print();
   }
-  actuator[3].setPosition(RANGE_MAX);
+  body_hook.setPosition(RANGE_MAX); // retracting the body hook
+  tail_hook.setPosition(RANGE_MAX); // retracting the tail hook
+
+  // initializing the wing-opening mechanism variables
+  clutch.pins(phase_pin, enable_pin, encoder_pin[0], encoder_pin[1]);
+  clutch.init(wing_lock, ENGAGED, cpr, gear_ratio, spool_diameter);
+  if (DEBUG) clutch.print();
+
+  analogWrite(enable_pin, 0);
 
   // arming the ESC and make it ready to take commands
-  delay(1000);
   esc.arm();
 
   // setting up the wing-opening motor and encoder
-  encoder.begin();
+  // encoder.begin();
 
   // setting up the IMU, its registers, and the Madgwick filter
-  if (imu.begin() != 0) Serial.println("IMU error");
-  filter.begin(SAMPLE_RATE);
+  if (imu.begin() != 0) {
+    Serial.println("IMU error");
+    setLED(led_pin,'R');
+  }
+  filter.begin(log_freq);
   imu.writeRegister(LSM6DS3_CTRL1_XL, ACC_ODR_104Hz);
   // imu.writeRegister(LSM6DS3_CTRL2_G, GYRO_ODR_416Hz);
 
@@ -193,9 +201,6 @@ void setup()
 
   // configure the task scheduler and add the tasks to the scheduler
   setupTasks();
-  
-  delay(5000);
-  Serial.println("Setup done");
 }
 
 
@@ -205,13 +210,10 @@ void setup()
 void loop() {
   // run the task scheduler to execute the tasks in order
   scheduler.execute();
-
-
+  for (byte i = 0; i < servo_num; i++) actuator[i]->print();
 
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UGLY FUNCTIONALITY TESTING CODE
-  // static unsigned long prev_time = millis();
-  
-  // if (millis() - prev_time >= 2000) {
+  // if (millis()%1000 == 0) {
   //   Serial.println("ONE LINE OF DATA");
   //   bleuart.write( (uint8_t*) exp_data, sizeof(exp_data_t)*6);
   //   prev_time = millis();

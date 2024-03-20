@@ -85,7 +85,7 @@ void setupBLE() {
   // configure and start BLE UART service
   bleuart.begin();
 
-  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! METHOD TO ADD NEW CHARACTERISTIC
+  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! // TODO: METHOD TO ADD NEW CHARACTERISTIC
   /*const uint8_t BLEUART_UUID_CHR_TXD[] =
   {
       0x9E, 0xCA, 0xDC, 0x24, 0x0E, 0xE5, 0xA9, 0xE0,
@@ -181,7 +181,7 @@ void setupCLI() {
   // define servo mode command, callback, and relevant arguments
   Command cmd_mode = cli.addCommand("mode", setMode);
   cmd_mode.addPositionalArgument("id", "0");
-  cmd_mode.addFlagArgument("lin");
+  cmd_mode.addFlagArgument("r/amp");
   cmd_mode.setDescription("\tSets the mode of of all the servos.");
 
   // define servo offset command, callback, and relevant arguments
@@ -287,7 +287,7 @@ void setupTasks() {
   scheduler.addTask(ts_parser);
   scheduler.addTask(ts_sensors);
 	scheduler.addTask(ts_ble_conn);
-	scheduler.addTask(ts_ble_lost);
+	scheduler.addTask(ts_kill);
 	scheduler.addTask(ts_climb_on);
 	scheduler.addTask(ts_climb_off);
 	scheduler.addTask(ts_pre_descent);

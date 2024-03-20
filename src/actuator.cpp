@@ -1,38 +1,43 @@
-#include "Actuator.h"
+#include "actuator.h"
 
-// initializes variables, attaches servo pins, and moves to initial position
-void Actuator::init(byte pin, int offset, int range,
-                    float frequency, drive_t mode) {
+Actuator::Actuator(const char* name, byte pin, int offset,
+                   int range, float frequency, signal_t mode) {
+  this->name = name;
   this->pin = pin;
   this->position = offset;
   this->offset = offset;
   this->range = range;
   this->frequency = frequency;
   this->mode = mode;
-  this->last_position = 8888; // a random out of bound value 
-  this->start_time = millis();
-  this->servo.attach(pin);
+}
 
-  if (pin == 5) //setting the position for the hooks as retracted by default
-  {
-    this->position = offset + range;
-  }
-  
-
+void Actuator::init() {
+  this->last_position = offset + 1; // initialize differently from position
   servo.attach(pin);
   setLimits();
   setTime(millis());
   move();
 }
 
-// set variable methods
-void Actuator::setRange(int range) {
-  this->range = range;
-  setLimits();
-  setTime(millis());
-  move();
-}
+// initializes variables, attaches servo pins, and moves to initial position
+// void Actuator::init(const char* name, byte pin, int offset, int range,
+//                     float frequency, signal_t mode) {
+//   this->name = name;
+//   this->pin = pin;
+//   this->position = offset;
+//   this->last_position = offset + 1; // initialize differently from position
+//   this->offset = offset;
+//   this->range = range;
+//   this->frequency = frequency;
+//   this->mode = mode;
 
+//   servo.attach(pin);
+//   setLimits();
+//   setTime(millis());
+//   move();
+// }
+
+// set variable methods
 void Actuator::setOffset(int offset) {
   this->offset = offset;
   setLimits();
@@ -40,10 +45,11 @@ void Actuator::setOffset(int offset) {
   move();
 }
 
-void Actuator::setFrequency(float frequency) {
-  this->frequency = frequency;
+void Actuator::setRange(int range) {
+  this->range = range;
+  setLimits();
   setTime(millis());
-  // move();
+  move();
 }
 
 void Actuator::setPosition(int position) {
@@ -51,6 +57,16 @@ void Actuator::setPosition(int position) {
   setTime(millis());
   this->frequency = 0;
   move();
+}
+
+void Actuator::setFrequency(float frequency) {
+  this->frequency = frequency;
+  setTime(millis());
+}
+
+void Actuator::setMode(signal_t mode) {
+  this->mode = mode;
+  setTime(millis());
 }
 
 void Actuator::setTime(unsigned long start_time) {
@@ -63,7 +79,7 @@ void Actuator::setLimits() {
   max_pos = constrain(offset + rng, RANGE_MIN, RANGE_MAX);
 }
 
-// main methods to move the servo, or reset its position back to the neutral state
+// main methods to move the servo or reset position back to the neutral state
 void Actuator::move() {
   updatePosition();
   if (position == last_position)
@@ -89,17 +105,16 @@ void Actuator::reset() {
 
 // print variables for debugging purposes
 void Actuator::print() {
-  byte len = 80;
+  byte len = 75;
   char str[len];
-  snprintf(str, len, "pin: %d, pos: %4d, offset: %4d, range: %4d, freq: %.1f"
-                      ", mode: %d",
-            pin, position, offset, range, frequency, mode);
+  snprintf(str, len, "%-10s pos: %-+4d  offset: %-+4d  range: %-+4d  freq: "
+           "%-+.1f  mode: %d", name, position, offset, range, frequency, mode);
   Serial.println(str);
 }
 
-void Actuator::printSignal(int motor_idx) {
-  Serial.print("> Motor ");
-  Serial.print(motor_idx);
+void Actuator::printSignal() {
+  Serial.print(">");
+  Serial.print(name);
   Serial.print(":");
   Serial.println(position);
 }
@@ -130,7 +145,7 @@ void Actuator::updatePosition() {
       break;
     }
 
-    case LINEAR: {
+    case RAMP: {
       float a, b, c;
       if (frequency >= 0) {
         a = (max_pos - min_pos) / half_period;
