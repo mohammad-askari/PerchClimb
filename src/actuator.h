@@ -27,6 +27,8 @@ class Actuator {
     void setMode(signal_t mode);
     void setTime(unsigned long start_time);
 
+    float getPosition();
+
     void move();
     void reset();
     void print();

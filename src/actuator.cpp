@@ -79,6 +79,10 @@ void Actuator::setLimits() {
   max_pos = constrain(offset + rng, RANGE_MIN, RANGE_MAX);
 }
 
+float Actuator::getPosition() {
+  return position;
+}
+
 // main methods to move the servo or reset position back to the neutral state
 void Actuator::move() {
   updatePosition();
