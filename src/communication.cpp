@@ -1,9 +1,8 @@
 #include "communication.h"
 #include "crc16.h"
+#include "main.h"
 
-decodeState_t state = decodeState_t::STATE_HEADER1;
 commPacket_t packet;
-uint8_t dataIndex = 0;
 
 // ———————————————— DATA DECODE & VERIFICATION STATE MACHINE ———————————————— //
 /**
@@ -13,28 +12,31 @@ uint8_t dataIndex = 0;
  **/
 void decodeBytes(uint8_t *buffer, uint8_t bufferLen)
 {
+	static decodeState_t state = decodeState_t::STATE_HEADER1;
+	static uint8_t dataIndex = 0;
 	uint8_t index = 0;
+	
 	while(index < bufferLen)
 	{
 		switch(state)
 		{
 			case decodeState_t::STATE_HEADER1:
 			{
-        if (buffer[index] == HEADER1)
-        {
-          packet.header1 = buffer[index];
+				if (buffer[index] == HEADER1)
+				{
+					packet.header1 = buffer[index];
 					state = decodeState_t::STATE_HEADER2;
-        }
-        break;
+				}
+				break;
 			}
 			case decodeState_t::STATE_HEADER2:
 			{
-        if (buffer[index] == HEADER2)
-        {
-          packet.header2 = buffer[index];
+				if (buffer[index] == HEADER2)
+				{
+					packet.header2 = buffer[index];
 					state = decodeState_t::STATE_TYPE;
-        }
-        else
+				}
+				else
 					state = decodeState_t::STATE_HEADER1; // error
 				break;
 			}
@@ -194,7 +196,7 @@ void createFileMetadataPacket(commPacket_t *pCommPacket, const pktFileMetadata_t
  **/
 void decodeFileMetadataPacket(const commPacket_t *pCommPacket, pktFileMetadata_t* pPktMetadata)
 {
-	memcpy(pPktMetadata->packetCount, pCommPacket->data, sizeof(uint16_t));
+	memcpy(&pPktMetadata->packetCount, pCommPacket->data, sizeof(uint16_t));
 }
 
 // —————————————————————— FILE CONTENT PACKET CREATION —————————————————————— //
@@ -209,8 +211,8 @@ void createFileContentPacket(commPacket_t *pCommPacket, const pktFileContent_t* 
 	pCommPacket->header2 = HEADER2;
 	pCommPacket->type = packetTypes_t::PKT_FILE_CONTENT;
 	pCommPacket->dataLen = pFileContent->dataLen;
-	memcpy(pCommPacket->data, pFileContent->packetNo, sizeof(uint16_t));
-	memcpy(pCommPacket->data + sizeof(uint16_t), pFileContent->data, pFileContent->dataLen);
+	memcpy(pCommPacket->data, &pFileContent->packetNo, sizeof(uint16_t));
+	memcpy(pCommPacket->data + sizeof(uint16_t), &pFileContent->data, pFileContent->dataLen);
 	
 	uint8_t packetLen = pCommPacket->dataLen + COMM_PACKET_HEADER;
 	pCommPacket->crc = crc16((uint8_t*)pCommPacket, packetLen);
@@ -224,8 +226,8 @@ void createFileContentPacket(commPacket_t *pCommPacket, const pktFileContent_t* 
  **/
 void decodeFileContentPacket(const commPacket_t *pCommPacket, pktFileContent_t* pFileContent)
 {
-	memcpy(pFileContent->packetNo, pCommPacket->data, sizeof(uint16_t));
-	memcpy(pFileContent->data, pCommPacket->data + sizeof(uint16_t), pCommPacket->dataLen);
+	memcpy(&pFileContent->packetNo, pCommPacket->data, sizeof(uint16_t));
+	memcpy(&pFileContent->data, pCommPacket->data + sizeof(uint16_t), pCommPacket->dataLen);
 	pFileContent->dataLen = pCommPacket->dataLen;
 }
 
@@ -257,8 +259,8 @@ void createFileRequestPacket(commPacket_t *pCommPacket, const pktFileRequest_t* 
 	pCommPacket->header2 = HEADER2;
 	pCommPacket->type = packetTypes_t::PKT_FILE_REQUEST;
 	pCommPacket->dataLen = pFileRequest->dataLen;
-	memcpy(pCommPacket->data, pFileRequest->packetNo, sizeof(uint16_t));
-	memcpy(pCommPacket->data + sizeof(uint16_t), pFileRequest->data, pFileRequest->dataLen);
+	memcpy(pCommPacket->data, &pFileRequest->packetNo, sizeof(uint16_t));
+	memcpy(pCommPacket->data + sizeof(uint16_t), &pFileRequest->data, pFileRequest->dataLen);
 	
 	uint8_t packetLen = pCommPacket->dataLen + COMM_PACKET_HEADER;
 	pCommPacket->crc = crc16((uint8_t*)pCommPacket, packetLen);
@@ -270,20 +272,19 @@ void createFileRequestPacket(commPacket_t *pCommPacket, const pktFileRequest_t* 
  * @param[in] pCommPacket  pointer to the communication packet
  * @param[in] pFileRequest pointer to the file request packet type
  **/
-void decodeFileRequestPacket(commPacket_t *pCommPacket, const pktFileRequest_t* pFileRequest)
+void decodeFileRequestPacket(const commPacket_t *pCommPacket, pktFileRequest_t* pFileRequest)
 {
-	memcpy(pFileRequest->packetNo, pCommPacket->data, sizeof(uint16_t));
-	memcpy(pFileRequest->data, pCommPacket->data + sizeof(uint16_t), pCommPacket->dataLen);
+	memcpy(&pFileRequest->packetNo, pCommPacket->data, sizeof(uint16_t));
+	memcpy(&pFileRequest->data, pCommPacket->data + sizeof(uint16_t), pCommPacket->dataLen);
 	pFileRequest->dataLen = pCommPacket->dataLen;	
 }
 
 // ———————————————————————————— PACKET SENDING ———————————————————————————— //
-void sendCommPacket(const commPacket_t* pCommPacket)
+void sendPacket(const commPacket_t* pCommPacket)
 {
 	uint8_t buffer[MAX_BLUETOOTH_PACKET_LEN];
 	memcpy(buffer, (uint8_t*)pCommPacket, pCommPacket->dataLen + COMM_PACKET_HEADER);
 	memcpy(buffer + pCommPacket->dataLen + COMM_PACKET_HEADER, (uint8_t*)pCommPacket->crc, sizeof(uint16_t));
 	
-	// !!!!!!!!!!!!!!! SEND BUFFER OVER BLUETOOTH - BLEUART !!!!!!!!!!!!!!!
-	bluetooth.send(buffer, pCommPacket->dataLen + COMM_PACKET_HEADER_W_CRC);
+	bleuart.write(buffer, pCommPacket->dataLen + COMM_PACKET_HEADER_W_CRC);
 }

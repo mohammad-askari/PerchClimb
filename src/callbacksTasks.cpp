@@ -1,6 +1,7 @@
 #include "callbacksTasks.h"
 #include "main.h"
 #include "functions.h"
+#include "communication.h"
 
 uint16_t ble_conn_handle;
 
@@ -393,19 +394,39 @@ void tsDataLogger() {
 
 
 void tsDataTransfer() {
-  Serial.println("Data Transfer Started");
-  char buffer[32];
-  delay(300);
-  sprintf(buffer, "meta: %d\n", (int)ceil(data_idx / 6) );
-  bleuart.write( (uint8_t*) buffer, strlen(buffer));
-  delay(300);
+  commPacket_t packet;
+  pktFileMetadata_t metadata;
+  pktFileContent_t fileContent;
+  uint8_t *logArrayPointer;
+  const int8_t MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = 5; // move this to global.h or something
+  uint8_t dataLen;
 
-  uint8_t *P;
-  for (int i = 0; i < data_idx; i = i+6) {                 
-      P = (uint8_t*) exp_data;
-      P += sizeof(exp_data_t) * i;
-      bleuart.write(P, sizeof(exp_data_t) * 6);
-      delay(250);
+  Serial.println("Data Transfer Started");
+  
+  // send metadata packet so that the client would know how many packets it should expect
+  metadata.packetCount = (int)ceil(data_idx / MAX_NUMBER_OF_LOGS_IN_EACH_PACKET);
+  createFileMetadataPacket(&packet, &metadata);
+  sendPacket(&packet);
+
+  delay(300);
+  
+  for (int i = 0; i < data_idx; i = i + MAX_NUMBER_OF_LOGS_IN_EACH_PACKET)
+  {                 
+      logArrayPointer = (uint8_t*) exp_data;
+      logArrayPointer += sizeof(exp_data_t) * i;
+
+      fileContent.packetNo = i;
+      // number of log data is not always a coefficient of MAX_NUMBER_OF_LOGS_IN_EACH_PACKET
+      dataLen = data_idx - i >= MAX_NUMBER_OF_LOGS_IN_EACH_PACKET ? 
+                  sizeof(exp_data_t) * MAX_NUMBER_OF_LOGS_IN_EACH_PACKET : 
+                  sizeof(exp_data_t) * (data_idx - i);
+      memcpy(&fileContent.data, logArrayPointer, dataLen);
+      fileContent.dataLen = dataLen;
+
+      createFileContentPacket(&packet, &fileContent);
+      sendPacket(&packet);
+      
+      delay(30);
   }
 
   Serial.println("Data Transfer Complete");
