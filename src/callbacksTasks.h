@@ -24,5 +24,6 @@ void tsMotorUpdate();
 void tsMotorUpdateDisabled();
 void tsDataLogger();
 void tsDataTransfer();
+float tsClipAngles(float);
 
 #endif

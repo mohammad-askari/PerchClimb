@@ -42,13 +42,18 @@ void tsSensors() {
   roll    = filter.getRoll();
   pitch   = filter.getPitch();
   yaw     = filter.getYaw();
+
+  // make sure euler angles are within the range of -180 to 180
+  roll = clipAngles(roll);
+  pitch = clipAngles(pitch);
+  yaw = clipAngles(yaw);
+
   if (DEBUG) {
     Serial.print(">roll: "); Serial.println(roll);
     Serial.print(">pitch: "); Serial.println(pitch);
     Serial.print(">yaw: "); Serial.println(yaw);
   }
 };
-
 
 // ———————————————————————————— BLE TASK FUNCTION ——————————————————————————— //
 void tsBLEConn() {
@@ -325,16 +330,18 @@ void tsUnperchOn() {
     Serial.println("Fly Away Initiated");
     esc.speed(esc_speed);
 
-    // closed loop control
-    aileron.setPosition(pid_roll.getOutput(roll)); // always do roll control
-    
-    if (!is_level_flight && fabs(pitch) < 30.0){
+    // check if we are out of gimbal lock
+    if (!is_level_flight && fabs(pitch) < 45.0){
       is_level_flight = true;
       pid_yaw.setSetpoint(yaw);
     }
-    if (is_level_flight) { // only do pitch and yaw control when level flight
+    // only do active control if out of gimbal lock
+    if (is_level_flight) {
+      aileron.setPosition(pid_roll.getOutput(roll));
       elevator.setPosition(pid_pitch.getOutput(pitch));
       rudder.setPosition(pid_yaw.getOutput(yaw));
+    } else{
+      aileron.setPosition(RANGE_MAX); // otherwise feed forward
     }
 
     tail_hook.setPosition(RANGE_MIN);  // grasp the tail hook
@@ -443,3 +450,15 @@ void tsKill() {
   ts_motor_update.disable();
   ts_data_logger.disable();
 };
+
+
+// —————————————————————————— MISCELLANEOUS —————————————————————————— //
+float tsClipAngles(float angle){
+  while (angle <= -180) {
+      angle += 360;
+  }
+  while (angle > 180) {
+      angle -= 360;
+  }
+  return angle;
+}
