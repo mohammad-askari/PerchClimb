@@ -83,43 +83,76 @@ void tsBLEConn() {
 
 
 // ———————————————————————————— ASCENT FUNCTIONS ———————————————————————————— //
-void tsClimbOn() {
+void tsPreClimb() {
   // reset the data logger buffer and index to zero
   memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
   data_idx = 0;
 
-  Serial.println("Climb On");
-  ts_climb_off  .restartDelayed(TASK_SECOND * exp_duration);
+  Serial.println("Pre Climb On");
+
+  // if wing opening is set, account for its time
+  unsigned long delay_duration = 0;
+  if (is_wing_opening) {
+    delay_duration  = TASK_SECOND * wing_opening_duration;
+    is_wing_opening = false;
+    climb_wing_loosening = true;
+    digitalWrite(phase_pin, HIGH);
+    analogWrite(enable_pin, dc_speed);
+    Serial.println("Wing Loosening Started");
+  }
+
+  ts_climb_on   .restartDelayed(delay_duration);
   ts_data_logger.restart();
+};
+
+
+void tsClimbOn() {
+  Serial.println("Climb On");
+  ts_climb_off.restartDelayed(TASK_SECOND * exp_duration);
   ts_motor_update.enable();
+
+  // stop wing loosening if activated
+  if (climb_wing_loosening) {
+    analogWrite(enable_pin, 0);
+    Serial.println("Wing Loosening Completed");
+  }
 
   // synchronize the servo start times
   unsigned long now = millis();
   start_time = now;
-  for(byte i = 0; i < servo_num; i++) {
-    actuator[i]->setTime(now);
-  }
+  for(byte i = 0; i < servo_num; i++) actuator[i]->setTime(now);
   esc.speed(esc_speed);
 };
 
 
 void tsClimbOff() {
-  Serial.println("Climb Off Smooth");
-  ts_data_logger.disable();
-  ts_motor_update.disable();
+  if (ts_climb_off.isFirstIteration()) {
+    Serial.println("Climb Off Smooth");
 
-  aileron.reset();
-  elevator.reset();
-  wing_lock.reset();
+    aileron.reset();
+    elevator.reset();
 
-  // enage hooks
-  body_hook.setPosition(RANGE_MIN);
-  tail_hook.setPosition(RANGE_MIN);
+    // enage hooks
+    body_hook.setPosition(RANGE_MIN);
+    tail_hook.setPosition(RANGE_MIN);
 
-  while (esc_speed > esc_min){ // slow down propeller gradually
-    esc_speed -= 10;
+    // if wing loosening was activated, revert motor direction to close wings
+    if (climb_wing_loosening) {
+      is_wing_opening = true;
+      climb_wing_loosening = false;
+      digitalWrite(phase_pin, LOW);
+    }
+  }
+
+  // slow down propeller gradually if needed
+  if (esc_speed > esc_min){
+    esc_speed -= 1;
     esc.speed(esc_speed);
-    // delay(100);
+  } // otherwise stop the mission
+  else {
+    ts_climb_off.disable();
+    ts_data_logger.disable();
+    ts_motor_update.disable();
   }
 };
 
@@ -141,9 +174,7 @@ void tsPreDescent() {
   // synchronize the servo start times
   unsigned long now = millis();
   start_time = now;
-  for(byte i = 0; i < servo_num; i++) {
-    actuator[i]->setTime(now);
-  }
+  for(byte i = 0; i < servo_num; i++) actuator[i]->setTime(now);
   esc.speed(pre_descent_esc);
 };
 
@@ -235,9 +266,7 @@ void tsPreHover() {
   // synchronize the servo start times
   unsigned long now = millis();
   start_time = now;
-  for(byte i = 0; i < servo_num; i++) {
-    actuator[i]->setTime(now);
-  }
+  for(byte i = 0; i < servo_num; i++) actuator[i]->setTime(now);
   esc.speed(pre_hover_esc);
 };
 
@@ -299,9 +328,7 @@ void tsPreUnperch() {
   // synchronize the servo start times
   unsigned long now = millis();
   start_time = now;
-  for(byte i = 0; i < servo_num; i++) {
-    actuator[i]->setTime(now);
-  }
+  for(byte i = 0; i < servo_num; i++) actuator[i]->setTime(now);
 
   // reset the takeoff parameters for later use in the main unperching task
   is_start_of_takeoff = false;
@@ -369,7 +396,7 @@ void tsUnperchOff() {
 
   esc_speed = esc_min;
   esc.speed(esc_speed);
-  tail_hook.setPosition(25); // bring tail hook in - FIXME: AVOID HARD-CODED
+  tail_hook.setPosition(25); // bring tail hook in - // FIXME: AVOID HARD-CODED
 }
 
 
@@ -386,23 +413,25 @@ void tsMotorUpdate() {
     start = elapsed_time;
     is_wing_opening = false;
     analogWrite(enable_pin, dc_speed);
-    Serial.println("Wing Opening Started");
-  }
-  if (dc_speed!=0 && (elapsed_time-start) >= wing_opening_duration*TASK_SECOND)
-  {
+    Serial.println("Wing Moving Started");
+  } 
+  
+  // HACK: AVOID CLIMB FLAG HERE
+  bool time_to_stop = (elapsed_time-start) >= wing_opening_duration*TASK_SECOND;
+  if (dc_speed!=0 && !climb_wing_loosening && time_to_stop) {
     dc_speed = 0;
-    analogWrite(enable_pin, 0);
-    Serial.println("Wing Opening Completed");
+    analogWrite(enable_pin, dc_speed);
+    Serial.println("Wing Moving Completed");
   }
   
   if (DEBUG) {
-    for(byte i = 0; i < servo_num; i++) { actuator[i]->printSignal(); }
+    for(byte i = 0; i < servo_num; i++) actuator[i]->printSignal();
   }
 };
 
 
 void tsMotorUpdateDisabled() { 
-  analogWrite(enable_pin,0); 
+  analogWrite(enable_pin, 0);
 };
 
 
@@ -453,6 +482,7 @@ void tsDataTransfer() {
 // —————————————————————————— KILL SWITCH FUNCTION —————————————————————————— //
 void tsKill() {
   esc.speed(esc_min);
+  analogWrite(enable_pin, 0);
   for(byte i = 0; i < servo_num; i++) actuator[i]->reset();
   ts_climb_on.disable();
   ts_climb_off.disable();

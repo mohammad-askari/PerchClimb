@@ -9,6 +9,7 @@ void tsParser();
 void tsSensors();
 void tsBLEConn();
 void tsKill();
+void tsPreClimb();
 void tsClimbOn();
 void tsClimbOff();
 void tsPreDescent();

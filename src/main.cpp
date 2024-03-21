@@ -83,7 +83,7 @@ int dc_speed = pwm_range;         // DC motor variable for adjusting speed
 // ———————————————————————————— PARSER VARIABLES ———————————————————————————— //
 SimpleCLI cli;                       // command line interface (CLI) object
 const byte buffer_len = ble_mtu - 2; // size of the input buffer characters
-byte buffer_idx;                     // position index variable for the buffer
+byte buffer_idx = 0;                 // position index variable for the buffer
 char buffer[buffer_len];             // CLI buffer array to parse user inputs
 
 // ——————————————————————— EXPERIMENTAL DATA VARIABLES —————————————————————— //
@@ -106,9 +106,11 @@ int current_samples[filt_freq / log_freq]; // current sensor samples array [ADC]
 int current_average;                       // current sensor average value [ADC]
 
 // —————————————————————— EXPERIMENT-SPECIFIC VARIABLES ————————————————————— //
+bool  climb_wing_loosening;                // flag to loosen wings for climbing
+
 float pre_hover_time;                      // pre-hover ascent time [s]
 int   pre_hover_esc;                       // pre-hover ESC speed  [μs]
-bool  hover_use_hooks;                     // flag to set hooks usage for
+bool  hover_use_hooks;                     // flag to use hooks for hovering
 int   transition_esc;                      // transition start ESC speed
  
 float pre_descent_time;                    // pre-descent hover time  [s]
@@ -120,6 +122,7 @@ bool  is_freefall_mode;                    // flag to enable freefall mode
  
 float wing_opening_duration;               // wing opening duration [s]
 bool  is_wing_opening;                     // flag to enable wing opening
+bool  is_opening_reverse;                  // flag to switch to wing closing
  
 float pre_unperch_duration;                // pre-unperch hover duration [s]
 int   pre_unperch_esc;                     // pre-unperch ESC speed     [μs]
@@ -136,8 +139,9 @@ bool  is_level_flight;                     // flag to set level flight mode
 TsTask ts_parser       (TASK_IMMEDIATE,        TASK_FOREVER, &tsParser);
 TsTask ts_sensors      (TASK_SECOND/filt_freq, TASK_FOREVER, &tsSensors);
 TsTask ts_ble_conn     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLEConn);
+TsTask ts_pre_climb    (TASK_IMMEDIATE,        TASK_ONCE,    &tsPreClimb);
 TsTask ts_climb_on     (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOn);
-TsTask ts_climb_off    (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOff);
+TsTask ts_climb_off    (TASK_SECOND/move_freq, TASK_FOREVER, &tsClimbOff);
 TsTask ts_pre_descent  (TASK_IMMEDIATE,        TASK_ONCE,    &tsPreDescent);
 TsTask ts_descent_on   (TASK_SECOND/move_freq, TASK_FOREVER, &tsDescentOn);
 TsTask ts_descent_off  (TASK_IMMEDIATE,        TASK_ONCE,    &tsDescentOff);

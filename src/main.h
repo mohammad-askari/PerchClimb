@@ -75,13 +75,13 @@ typedef struct {
     int16_t  roll;
     int16_t  pitch;
     int16_t  yaw;
-    // int16_t  throttle;  // TODO: TEST & UNCOMMENT
-    // int16_t  aileron;
-    // int16_t  elevator;
-    // int16_t  rudder;
-    // int16_t  wing_lock;
-    // int16_t  body_hook;
-    // int16_t  tail_hook;
+    // int8_t  throttle;
+    // int8_t  aileron;
+    // int8_t  elevator;
+    // int8_t  rudder;
+    // int8_t  wing_lock;
+    // int8_t  body_hook;
+    // int8_t  tail_hook;
 } exp_data_t;
 
 extern const int drop_freq, move_freq, log_freq, filt_freq, log_max, data_len;
@@ -96,6 +96,8 @@ extern const byte current_pin;
 extern int current_samples[], current_average;
 
 // —————————————————————— EXPERIMENT-SPECIFIC VARIABLES ————————————————————— //
+extern bool  climb_wing_loosening;
+
 extern float pre_hover_time;
 extern int   pre_hover_esc, transition_esc;
 extern bool  hover_use_hooks;
@@ -105,7 +107,7 @@ extern int   pre_descent_esc, post_descent_esc;
 extern bool  is_freefall_mode;
 
 extern float wing_opening_duration;
-extern bool  is_wing_opening;
+extern bool  is_wing_opening, is_opening_reverse;
 
 extern float pre_unperch_duration, takeoff_duration, takeoff_pitch;
 extern int   pre_unperch_esc, tilt_esc, takeoff_esc;
@@ -115,10 +117,12 @@ extern bool  is_level_flight;
 
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 extern TsTask ts_parser, ts_sensors, ts_ble_conn, ts_kill, ts_motor_update;
-extern TsTask ts_climb_on, ts_climb_off;
+
+extern TsTask ts_pre_climb,   ts_climb_on,   ts_climb_off;
 extern TsTask ts_pre_descent, ts_descent_on, ts_descent_off;
-extern TsTask ts_pre_hover, ts_hover_on, ts_hover_off;
+extern TsTask ts_pre_hover,   ts_hover_on,   ts_hover_off;
 extern TsTask ts_pre_unperch, ts_unperch_on, ts_unperch_off;
+
 extern TsTask ts_data_logger, ts_data_transfer;
 
 extern TsScheduler scheduler;

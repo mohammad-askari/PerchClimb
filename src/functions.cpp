@@ -263,7 +263,8 @@ void setupCLI() {
   Command cmd_wing_time = cli.addCommand("w/ing", setWingOpening);
   cmd_wing_time.addPositionalArgument("t/ime", "1");
   cmd_wing_time.addPositionalArgument("s/peed", "100");
-  cmd_wing_time.setDescription("\tSets wing opening parameters.");
+  cmd_wing_time.addFlagArgument("r/ev/erse");
+  cmd_wing_time.setDescription("\tSets wing opening (or closing) parameters.");
 
   // define climb down command with no arguments to start delayed experiments
   Command cmd_set_unperch = cli.addCommand("setunperch", setUnperch);
@@ -285,8 +286,6 @@ void setupCLI() {
 
   // set error callback
   cli.setOnError(cliThrowError);
-
-
 }
 
 // —————————————————————— TASKS SETUP & INITIALIZATION —————————————————————— //
@@ -300,6 +299,7 @@ void setupTasks() {
   scheduler.addTask(ts_sensors);
 	scheduler.addTask(ts_ble_conn);
 	scheduler.addTask(ts_kill);
+	scheduler.addTask(ts_pre_climb);
 	scheduler.addTask(ts_climb_on);
 	scheduler.addTask(ts_climb_off);
 	scheduler.addTask(ts_pre_descent);

@@ -93,9 +93,16 @@ void cliEraseFile(cmd *cmd_ptr) { // TODO: IMPLEMENT THIS FUNCTION
 void cliMotorDrive(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0    = c.getArgument(0);
+  Argument arg1    = c.getArgument(1);
+  Argument arg2    = c.getArgument(2);
   Argument arg3    = c.getArgument(3);
   float turn_val   = arg0.getValue().toFloat();
+  int power_val    = arg1.getValue().toInt();
+  bool is_reverse  = arg2.isSet();
   bool is_distance = arg3.isSet();
+  
+  int power_byte  = map(power_val,0,100,0,pwm_range);
+
   float ticks = 0;
   float corr_factor = 1;
   if (is_distance){
@@ -105,14 +112,7 @@ void cliMotorDrive(cmd *cmd_ptr) {
     ticks = turn_val * 12 * gear_ratio;
   }
 
-  Argument power_arg = c.getArgument(1);
-  int power_val = power_arg.getValue().toInt();
-  int power_byte = map(power_val,0,100,0,pwm_range);
-
-  Argument reverse = c.getArgument(2);
-  bool reverse_val = reverse.isSet();
-
-  if (reverse_val) digitalWrite(phase_pin,LOW);
+  if (is_reverse) digitalWrite(phase_pin,LOW);
   else digitalWrite(phase_pin,HIGH);
 
 // FIXME: REPLACE WITH CLUTCH OBJECT
@@ -456,16 +456,26 @@ void setWingOpening(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);
   Argument arg1 = c.getArgument(1);
+  Argument arg2 = c.getArgument(2);
   wing_opening_duration = arg0.getValue().toFloat();
   int speed_percent     = arg1.getValue().toInt();
-  dc_speed = map(speed_percent,0,100,0,pwm_range);
+  is_opening_reverse    = arg2.isSet();
+  const char* direction_str = is_opening_reverse ? "closing" : "opening";
+
+  // set the phase pin to the desired direction // FIXME: REPLACE WITH CLUTCH
+  if (is_opening_reverse) 
+    digitalWrite(phase_pin,LOW);
+  else 
+    digitalWrite(phase_pin,HIGH);
 
   // enable the wing opening under motor update task
   is_wing_opening = true;
 
-  Serial.print("Wing opening set to ");
+  Serial.print("Wing ");
+  Serial.print(direction_str);
+  Serial.print(" set to ");
   Serial.print(speed_percent);
-  Serial.print("%% speed for ");
+  Serial.print("% speed for ");
   Serial.print(wing_opening_duration);
   Serial.println(" (s)");
 }
@@ -527,9 +537,12 @@ void cliClimb(cmd *cmd_ptr) {
   Argument arg0    = c.getArgument(0);
   String direction = arg0.getValue();
   direction.toLowerCase();
+
+  // disable the wing loosening by default, unless activated by wing command
+  climb_wing_loosening = false;
   
   if (direction == "up") {
-    ts_climb_on.restartDelayed(exp_delayed * TASK_SECOND);
+    ts_pre_climb.restartDelayed(exp_delayed * TASK_SECOND);
   }
   else if (direction == "down") {
     ts_pre_descent.restartDelayed(exp_delayed * TASK_SECOND);
