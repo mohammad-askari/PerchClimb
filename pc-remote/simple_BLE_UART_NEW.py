@@ -28,6 +28,13 @@ UUID_pitch = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA148'
 UUID_roll = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA149'
 UUID_yaw = 		'13012F01-F8C3-4F4A-A8F4-15CD926DA150'
 UUID_current = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA151'
+UUID_throttle = '13012F01-F8C3-4F4A-A8F4-15CD926DA152'
+UUID_aileron = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA153'
+UUID_elevator = '13012F01-F8C3-4F4A-A8F4-15CD926DA154'
+UUID_rudder = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA155'
+UUID_wing_lock = '13012F01-F8C3-4F4A-A8F4-15CD926DA156'
+UUID_body_hook = '13012F01-F8C3-4F4A-A8F4-15CD926DA157'
+UUID_tail_hook = '13012F01-F8C3-4F4A-A8F4-15CD926DA158'
 UUID_RXD     =  '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'
 UUID_TXD	 =  '6E400003-B5A3-F393-E0A9-E50E24DCCA9E'
 
@@ -82,7 +89,7 @@ async def run():
 											print("Metadata received: ", numberOfPackets)
 
 
-										alltext = "Time [ms], Current [adc], Roll [deg], Pitch [deg], Yaw [deg]\n"
+										alltext = "Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg],Throttle,Aileron,Elevator,Rudder,Wing Lock,Body Hook,Tail Hook\n"
 										counter = 0
 										experimental_data = []
 										while uart_connection.connected:
@@ -93,7 +100,7 @@ async def run():
 												for i in range(0, 6):
 													data = convert_exp_data_to_str(buffer[i*10 : i*10+10])
 													experimental_data.append(data)
-													alltext += str(data.time) + ',' + str(data.current) + ',' + str(data.roll) + ',' + str(data.pitch) + ',' + str(data.yaw) + '\n'
+													alltext += str(data.time) + ',' + str(data.current) + ',' + str(data.roll) + ',' + str(data.pitch) + ',' + str(data.yaw) + ',' + str(data.throttle) + ',' + str(data.aileron) + ',' + str(data.elevator) + ',' + str(data.rudder) + ',' + str(data.wing_lock) + ',' + str(data.body_hook) + ',' + str(data.tail_hook) + '\n'
 												print("packets: ", counter)
 													# try:
 													# 	print(data.time, data.current, data.roll, data.pitch, data.yaw)
@@ -201,12 +208,19 @@ async def run():
 ###################################### FUNCTIONS ##################################
 
 class DataProcessor:
-	def __init__(self, time, current, roll, pitch, yaw):
+	def __init__(self, time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, wing_lock, body_hook, tail_hook):
 		self.time = time
 		self.current = current
 		self.roll = roll
 		self.pitch = pitch
 		self.yaw = yaw
+		self.throttle = throttle
+		self.aileron = aileron
+		self.elevator = elevator
+		self.rudder = rudder
+		self.wing_lock = wing_lock
+		self.body_hook = body_hook
+		self.tail_hook = tail_hook
 
 def convert_exp_data_to_str(buffer):
 	if len(buffer) == 10:
@@ -214,10 +228,17 @@ def convert_exp_data_to_str(buffer):
 		current = int.from_bytes(buffer[2:4], byteorder='little', signed=True)
 		roll = int.from_bytes(buffer[4:6], byteorder='little', signed=True)
 		pitch = int.from_bytes(buffer[6:8], byteorder='little', signed=True)
-		yaw = int.from_bytes(buffer[8:], byteorder='little', signed=True)
+		yaw = int.from_bytes(buffer[8:10], byteorder='little', signed=True)
+		throttle = int.from_bytes(buffer[10:12], byteorder='little', signed=True)
+		aileron = int.from_bytes(buffer[12:14], byteorder='little', signed=True)
+		elevator = int.from_bytes(buffer[14:16], byteorder='little', signed=True)
+		rudder = int.from_bytes(buffer[16:18], byteorder='little', signed=True)
+		wing_lock = int.from_bytes(buffer[18:20], byteorder='little', signed=True)
+		body_hook = int.from_bytes(buffer[20:22], byteorder='little', signed=True)
+		tail_hook = int.from_bytes(buffer[22:], byteorder='little', signed=True)
 		
 
-		return DataProcessor(time, current, roll, pitch, yaw)
+		return DataProcessor(time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, wing_lock, body_hook, tail_hook)
 	else:
 		print("BAD DATA")
 		print(len(buffer))
@@ -231,7 +252,7 @@ def save_data_to_csv(self, filename):
 	df = pd.DataFrame(self.data)
 	df.to_csv(filename + dt_string + '.csv')
 
-def write_csv(rtime,rpitch,rroll,ryaw,rcurrent):
+def write_csv(rtime,rpitch,rroll,ryaw,rcurrent,rthrottle,raileron,relevator,rrudder,rwing_lock,rbody_hook,rtail_hook):
 	dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
 	dtime = rtime.split(',')
@@ -239,14 +260,28 @@ def write_csv(rtime,rpitch,rroll,ryaw,rcurrent):
 	droll = rroll.split(',')
 	dyaw = ryaw.split(',')
 	dcurrent = rcurrent.split(',')
+	dthrottle = rthrottle.split(',')
+	daileron = raileron.split(',')
+	delevator = relevator.split(',')
+	drudder = rrudder.split(',')
+	dwing_lock = rwing_lock.split(',')
+	dbody_hook = rbody_hook.split()
+	dtail_hook = rtail_hook.split()
 	print("step a")
 	dft = pd.DataFrame({'Time': dtime})
 	dfr = pd.DataFrame({'Roll':droll})
 	dfp = pd.DataFrame({'Pitch': dpitch})
 	dfy = pd.DataFrame({'Yaw': dyaw})
 	dfc = pd.DataFrame({'Current': dcurrent})
+	dftr = pd.DataFrame({'Throttle': dthrottle})
+	dfai = pd.DataFrame({'Aileron': daileron})
+	dfel = pd.DataFrame({'Elevator': delevator})
+	dfru = pd.DataFrame({'Rudder': drudder})
+	dfwl = pd.DataFrame({'Wing Lock': dwing_lock})
+	dfbh = pd.DataFrame({'Body Hook': dbody_hook})
+	dfth = pd.DataFrame({'Tail Hook': dtail_hook})
 	print("step b")
-	df = pd.concat([dft, dfp, dfr, dfy, dfc], axis=1) # Concat tolerates different array lengths
+	df = pd.concat([dft, dfp, dfr, dfy, dfc, dftr, dfai, dfel, dfru, dfwl, dfbh, dfth], axis=1) # Concat tolerates different array lengths
 	df.drop(df.tail(1).index,inplace=True) # drop last row of END OF FRAME VALUE
 	print("step c")
 	try: 

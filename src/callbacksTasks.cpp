@@ -28,30 +28,41 @@ void tsParser() {
  * @brief Filters the IMU and current sensor readings and stores them in memory.
  **/
 void tsSensors() {
-  // apply sensor fusion algorithm to filter the IMU readings
-  float ax = imu.readFloatAccelX();
-  float ay = imu.readFloatAccelY();
-  float az = imu.readFloatAccelZ();
-  float gx = imu.readFloatGyroX();
-  float gy = imu.readFloatGyroY();
-  float gz = imu.readFloatGyroZ();
-  filter.updateIMU(gx, gy, gz, ax, ay, az);
+  unsigned long n  = ts_sensors.getRunCounter() - 1;
+  int num_samples  = filt_freq / log_freq;
+  int idx = n % num_samples;
+  
+  // store current readings at a higher frequency for later filtering
+  current_samples[idx] = analogRead(current_pin);
 
-  // update the recorded sensor readings in memory
-  current = analogRead(current_pin);
-  roll    = filter.getRoll();
-  pitch   = filter.getPitch();
-  yaw     = filter.getYaw();
+  // apply moving average filter to current and sensor fusion to IMU readings
+  if (idx == 0) {
+    float ax = imu.readFloatAccelX();
+    float ay = imu.readFloatAccelY();
+    float az = imu.readFloatAccelZ();
+    float gx = imu.readFloatGyroX();
+    float gy = imu.readFloatGyroY();
+    float gz = imu.readFloatGyroZ();
+    filter.updateIMU(gx, gy, gz, ax, ay, az);
 
-  // ensure Euler angles are within [-180 +180] degree range
-  roll  = clipAngle(roll);
-  pitch = clipAngle(pitch);
-  yaw   = clipAngle(yaw);
+    // update the recorded sensor readings in memory
+    unsigned long current_sum = 0;
+    for (int i = 0; i < num_samples; i++) { current_sum += current_samples[i]; }
+    current_average = current_sum / num_samples;
+    roll  = filter.getRoll();
+    pitch = filter.getPitch();
+    yaw   = filter.getYaw();
 
-  if (DEBUG) {
-    Serial.print(">roll: "); Serial.println(roll);
-    Serial.print(">pitch: "); Serial.println(pitch);
-    Serial.print(">yaw: "); Serial.println(yaw);
+    // ensure Euler angles are within [-180 +180] degree range
+    roll  = clipAngle(roll);
+    pitch = clipAngle(pitch);
+    yaw   = clipAngle(yaw);
+
+    if (DEBUG) {
+      Serial.print(">roll: "); Serial.println(roll);
+      Serial.print(">pitch: "); Serial.println(pitch);
+      Serial.print(">yaw: "); Serial.println(yaw);
+    }
   }
 };
 
@@ -377,7 +388,7 @@ void tsMotorUpdate() {
     analogWrite(enable_pin, dc_speed);
     Serial.println("Wing Opening Started");
   }
-  if (dc_speed != 0 && (elapsed_time-start) >= wing_opening_duration*TASK_SECOND)
+  if (dc_speed!=0 && (elapsed_time-start) >= wing_opening_duration*TASK_SECOND)
   {
     dc_speed = 0;
     analogWrite(enable_pin, 0);
@@ -404,17 +415,17 @@ void tsDataLogger() {
   }
 
   exp_data[data_idx].time     = millis() - start_time;
-  exp_data[data_idx].current  = current;
+  exp_data[data_idx].current  = current_average;
   exp_data[data_idx].roll     = round(roll);
   exp_data[data_idx].pitch    = round(pitch);
   exp_data[data_idx].yaw      = round(yaw);
-  expl_data[data_idx].throttle  = esc_speed;
-  exp_data[data_idx].aileron    = round(aileron.getPosition());
-  exp_data[data_idx].elevator   = round(elevator.getPosition());
-  exp_data[data_idx].rudder     = round(rudder.getPosition());
-  exp_data[data_idx].wing_lock  = round(wing_lock.getPosition());
-  exp_data[data_idx].body_hook  = round(body_hook.getPosition());
-  exp_data[data_idx].tail_hook  = round(tail_hook.getPosition());
+  // exp_data[data_idx].throttle  = esc_speed; // TODO: TEST & UNCOMMENT
+  // exp_data[data_idx].aileron    = round(aileron.getPosition());
+  // exp_data[data_idx].elevator   = round(elevator.getPosition());
+  // exp_data[data_idx].rudder     = round(rudder.getPosition());
+  // exp_data[data_idx].wing_lock  = round(wing_lock.getPosition());
+  // exp_data[data_idx].body_hook  = round(body_hook.getPosition());
+  // exp_data[data_idx].tail_hook  = round(tail_hook.getPosition());
   data_idx++;
 };
 

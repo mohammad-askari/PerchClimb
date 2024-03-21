@@ -117,41 +117,25 @@ void Clutch::countPulseSingle() {
 //              1	      1	      1	      0         +1
 //              1	      1	      1	      1     no movement
 //
-// void Clutch::countPulseDual() {
-//   byte s = readings & 3;             // retains "old pin 2" and "old pin 1" bits
-//   if (digitalRead(enc1_pin)) s |= 4; // adds "new pin 1" state as the 3rd bit
-//   if (digitalRead(enc2_pin)) s |= 8; // adds "new pin 2" state as the 4th bit
-//   switch (s) {
-//     case 0: case 5: case 10: case 15:
-//       direction = STOP; break;
-//     case 1: case 7: case 8: case 14:
-//       counts++; 
-//       direction = OPEN; break;
-//     case 2: case 4: case 11: case 13:
-//       counts--;
-//       direction = CLOSE; break;
-//     case 3: case 12:
-//       counts += 2;
-//       direction = OPEN; break;
-//     default:
-//       counts -= 2;
-//       direction = CLOSE; break;
-//   }
-//   readings = (s >> 2);
-// }
-
-// TODO: CHECK THIS COMPARED TO THE ABOVE AND DELETE IF NOT NEEDED
 void Clutch::countPulseDual() {
-  if (is_dual_encoder) {
-    int enc1 = digitalRead(enc1_pin);
-    int enc2 = digitalRead(enc2_pin);
-    int dir = (enc1 << 1) | enc2;
-    switch (dir) {
-      case 1: case 3: counts++; break;
-      case 0: case 2: counts--; break;
-    }
+  byte s = readings & 3;             // retains "old pin 2" and "old pin 1" bits
+  if (digitalRead(enc1_pin)) s |= 4; // adds "new pin 1" state as the 3rd bit
+  if (digitalRead(enc2_pin)) s |= 8; // adds "new pin 2" state as the 4th bit
+  switch (s) {
+    case 0: case 5: case 10: case 15:
+      direction = STOP; break;
+    case 1: case 7: case 8: case 14:
+      counts++; 
+      direction = OPEN; break;
+    case 2: case 4: case 11: case 13:
+      counts--;
+      direction = CLOSE; break;
+    case 3: case 12:
+      counts += 2;
+      direction = OPEN; break;
+    default:
+      counts -= 2;
+      direction = CLOSE; break;
   }
-  else {
-    counts++;
-  }
+  readings = (s >> 2);
 }
