@@ -7,9 +7,12 @@ from adafruit_ble.services.nordic import UARTService
 import time
 import threading
 import communication
+import signal, sys
 
 bluetoothMutex = threading.Lock()
-#ioMutex = threading.Lock()
+continueThread = True
+thereIsDataToSend = False
+dataToSend = bytearray()
 
 UUID = 			'13012F01-F8C3-4F4A-A8F4-15CD926DA146'
 UUID_time = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA147'
@@ -23,6 +26,11 @@ UUID_TXD	 =  '6E400003-B5A3-F393-E0A9-E50E24DCCA9E'
 #################################### RUN FUNCTION ###################################
 
 async def run():
+	global bluetoothMutex
+	global thereIsDataToSend
+	global dataToSend
+	global continueThread
+
 	print('Looking for nRF58240 Peripheral Device...')
 	
 	# scan bluetooth and connect
@@ -47,20 +55,28 @@ async def run():
 	#print("Sent log request. Receiving...")
 
 	# start the CLI thread
-	cliThreadHandle = threading.Thread(target=cliThread, args=(uart_service))
+	cliThreadHandle = threading.Thread(target=cliThread, args=(uart_service,))
+	cliThreadHandle.start()
 	
 	# main bluetooth read loop
-	while True:
+	while continueThread:
 		packetCount = 0
 		fileContentPackets = []
 		MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = 5
 		LOG_DATA_LEN = 10
 		
-		bluetoothMutex.acquire()
+		#bluetoothMutex.acquire()
+		# if there is data to send, send first
+		if thereIsDataToSend == True:
+			uart_service.write(dataToSend)
+			thereIsDataToSend = False
+		
+		# read data from bluetooth
 		buffer = uart_service.read(64)
-		bluetoothMutex.release()
+		#bluetoothMutex.release()
 		
 		if isinstance(buffer, bytearray):
+			print("Received: ", len(buffer), buffer)
 			# decodedPackets contains packets that decoded and each element in the list can be a different type
 			decodedPackets = communication.decodeBytes(buffer)
 			for packet in decodedPackets:
@@ -126,8 +142,19 @@ def connectToBLuetooth():
 
 # the thread that reads user input and sends the given command to the device via bluetooth
 def cliThread(uart_service):
-	while True:
-		command = input()
+	global bluetoothMutex
+	global thereIsDataToSend
+	global dataToSend
+	global continueThread
+
+	print("CLI thread started. Enter your command:")
+	
+	while continueThread:
+		# wait until the entered command is sent
+		while thereIsDataToSend == True:
+			time.sleep(0.050)
+
+		command = input(">")
 		pktString = communication.pktString_t()
 		pktString.str = command + "\n"
 		pktString.strLen = len(pktString.str)
@@ -136,9 +163,11 @@ def cliThread(uart_service):
 		communication.createStringPacket(commPacket, pktString)
 		sendBuffer = communication.convertCommPacketToByteArray(commPacket)
 		
-		bluetoothMutex.acquire()		
-		uart_service.write(sendBuffer)
-		bluetoothMutex.release()
+		#bluetoothMutex.acquire()
+		print("Sending out: ", sendBuffer)
+		thereIsDataToSend = True
+		dataToSend = sendBuffer
+		#bluetoothMutex.release()
 
 ###################################### FUNCTIONS ##################################
 
@@ -164,9 +193,22 @@ def convert_exp_data_to_str(buffer):
 
 
 
+def signal_handler(sig, frame):
+	global continueThread
+	global loop
+	
+	continueThread = False
+	loop.stop()
+	sys.exit(0)
+
 ######################################### MAIN ######################################
-					
+# detect ctrl+c to kill the thread
+signal.signal(signal.SIGINT, signal_handler)
+
 loop = asyncio.get_event_loop()
 asyncio.ensure_future(run())
 loop.run_forever()
+
+
+
 

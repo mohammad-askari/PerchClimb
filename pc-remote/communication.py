@@ -102,6 +102,8 @@ def decodeBytes(buffer):
             if dataIndex < packet.dataLen:
                 packet.data[dataIndex] = buffer[index]
                 dataIndex += 1
+                if dataIndex == packet.dataLen:
+                    state = STATE_CRC1
             else:
                 state = STATE_CRC1
         elif state == STATE_CRC1:
@@ -274,10 +276,10 @@ crc16Table = [
 
 def crc16(pCommPacket):
     buffer = convertCommPacketToByteArray(pCommPacket, False)
+    print("Going to calculate crc for: ", bytes(buffer).hex())
     crc = 0xDEAD; #seed
     for counter in range(len(buffer)):
-        crc = (crc << 8) ^ crc16Table[((crc >> 8) ^ buffer[counter]) & 0x00FF]
-        crc &= 0xFFFF
+        crc = ((crc << 8) & 0xFFFF) ^ crc16Table[((crc >> 8) ^ buffer[counter]) & 0x00FF]
         counter += 1
     return crc
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

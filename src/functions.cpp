@@ -24,6 +24,8 @@ void processCommandSerial(const char c) {
     case '\n':
       if (!buffer_idx) break;  // skip leading delimeters if buffer is empty
       buffer[buffer_idx] = '\0';  // adding terminating null byte
+      Serial.print("Going to parse: ");
+      Serial.println(buffer);
       cli.parse(buffer);
       buffer_idx = 0;
       break;
@@ -301,8 +303,6 @@ void setupCLI() {
 
   // set error callback
   cli.setOnError(cliThrowError);
-
-
 }
 
 // —————————————————————— TASKS SETUP & INITIALIZATION —————————————————————— //

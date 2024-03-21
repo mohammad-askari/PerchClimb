@@ -202,6 +202,9 @@ void setup()
 
   // configure the task scheduler and add the tasks to the scheduler
   setupTasks();
+
+  // this message will help to identify restart of the system
+  Serial.println("Setup completed. Starting the main loop...");
 }
 
 

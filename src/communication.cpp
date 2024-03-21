@@ -72,7 +72,12 @@ void decodeBytes(uint8_t *buffer, uint8_t bufferLen)
 			case decodeState_t::STATE_DATA:
 			{
 				if(dataIndex < packet.dataLen)
+				{
 					packet.data[dataIndex++] = buffer[index];
+					// if we got the last byte, we should switch to CRC1
+					if(dataIndex == packet.dataLen)
+						state = decodeState_t::STATE_CRC1;
+				}
 				else
 					state = decodeState_t::STATE_CRC1;
 				break;
@@ -106,6 +111,7 @@ void decodeBytes(uint8_t *buffer, uint8_t bufferLen)
  **/
 void decodePacket()
 {
+	Serial.println("Packet received from BLE");
 	switch(packet.type)
 	{
 		case packetTypes_t::PKT_STRING:
@@ -296,17 +302,24 @@ void sendStringAsStringPacketViaBLE(String str)
 {
 	commPacket_t commPacket;
 	pktString_t stringPacket;
+	//str = "help\n";
 	int16_t index = 0, remainingCharacters = str.length(), charactersToSend;
 
 	if(str.length() == 0)
 		return;
 
+	Serial.print("Going to send this text to bluetooth: ");
+	Serial.println(str);
 	do
 	{
 		charactersToSend = remainingCharacters < MAX_INNER_PACKET_DATALEN ? remainingCharacters : MAX_INNER_PACKET_DATALEN;
 		
 		memcpy(stringPacket.str, str.substring(index, charactersToSend).c_str(), charactersToSend);
 		stringPacket.strLen = charactersToSend;
+		Serial.print("stringPacket.str: ");
+		Serial.print((char*)stringPacket.str);
+		Serial.print(" | stringPacket.strLen: ");
+		Serial.println(stringPacket.strLen);
 		createStringPacket(&commPacket, &stringPacket);
 		sendPacketViaBLE(&commPacket);
 
@@ -314,4 +327,5 @@ void sendStringAsStringPacketViaBLE(String str)
 		index += charactersToSend;
 		
 	} while (remainingCharacters > 0);
+	Serial.println("Text sent to bluetooth");
 }

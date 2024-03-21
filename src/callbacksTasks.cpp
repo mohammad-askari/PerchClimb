@@ -11,22 +11,34 @@ uint16_t ble_conn_handle;
  **/
 void tsParser() {
   // check serial for user input
-  while (Serial.available()) {
+  if(Serial.available())
+  {
     int ch = Serial.read();  // read a single byte from the serial
     processCommandSerial(ch);
   }
+  //else
+  //  delay(10);
 };
 
 void tsBleParser() {
   uint8_t bleBuffer[MAX_BLUETOOTH_PACKET_LEN];
   uint8_t bleDataLen = 0;
-
-  // check BLE UART for user input
-  while (bleuart.available()) {
+  
+  // read BLE data
+  if(bleuart.available())
+  {
     bleDataLen = bleuart.read(bleBuffer, MAX_BLUETOOTH_PACKET_LEN);
+    Serial.print("Read BLE ");
+    Serial.print(bleDataLen);
+    Serial.println(" bytes");
     if(bleDataLen > 0)
       decodeBytes(bleBuffer, bleDataLen);
   }
+  //else
+  //{
+    //delay(10);
+    //Serial.println("No BLE Data");
+  //}
 };
 
 
