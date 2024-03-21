@@ -67,6 +67,10 @@ def decodeBytes(buffer):
     decodedPackets = []
     index = 0
 
+    global packet
+    global state
+    global dataIndex
+
     while index < len(buffer):
         if state == STATE_HEADER1:
             if buffer[index] == HEADER1:
@@ -116,6 +120,8 @@ def decodeBytes(buffer):
     return decodedPackets
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def decodePacket():
+    global packet
+    
     if packet.type == PKT_STRING:
         return decodeStringPacket(packet)
     elif packet.type == PKT_FILE_METADATA:
