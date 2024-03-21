@@ -79,7 +79,7 @@ void Actuator::setLimits() {
   max_pos = constrain(offset + rng, RANGE_MIN, RANGE_MAX);
 }
 
-float Actuator::getPosition() {
+int Actuator::getPosition() {
   return position;
 }
 

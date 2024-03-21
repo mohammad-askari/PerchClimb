@@ -25,6 +25,8 @@ public:
   void setStopPulse(int stop_pulse);
   void setCalibDelay(int calib_delay);
 
+  int getSpeed();
+
 private:
   byte pin;
   int pulse;

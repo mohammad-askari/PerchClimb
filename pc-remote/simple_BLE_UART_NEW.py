@@ -89,16 +89,16 @@ async def run():
 											print("Metadata received: ", numberOfPackets)
 
 
-										alltext = "Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg],Throttle,Aileron,Elevator,Rudder,Wing Lock,Body Hook,Tail Hook\n"
+										alltext = "Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg],Throttle [us],Aileron,Elevator,Rudder,Clutch,Body Hook,Tail Hook\n"
 										counter = 0
 										experimental_data = []
 										while uart_connection.connected:
-											buffer = uart_service.read(60)
+											buffer = uart_service.read(3*18)
 											if isinstance(buffer, bytearray):
 												counter += 1
 												# print("Buffer size is: {0}".format(len(buffer)))
 												for i in range(0, 6):
-													data = convert_exp_data_to_str(buffer[i*10 : i*10+10])
+													data = convert_exp_data_to_str(buffer[i*18 : i*18+18])
 													experimental_data.append(data)
 													alltext += str(data.time) + ',' + str(data.current) + ',' + str(data.roll) + ',' + str(data.pitch) + ',' + str(data.yaw) + ',' + str(data.throttle) + ',' + str(data.aileron) + ',' + str(data.elevator) + ',' + str(data.rudder) + ',' + str(data.wing_lock) + ',' + str(data.body_hook) + ',' + str(data.tail_hook) + '\n'
 												print("packets: ", counter)
@@ -223,19 +223,19 @@ class DataProcessor:
 		self.tail_hook = tail_hook
 
 def convert_exp_data_to_str(buffer):
-	if len(buffer) == 10:
+	if len(buffer) == 18:
 		time = int.from_bytes(buffer[0:2], byteorder='little', signed=False)
 		current = int.from_bytes(buffer[2:4], byteorder='little', signed=True)
 		roll = int.from_bytes(buffer[4:6], byteorder='little', signed=True)
 		pitch = int.from_bytes(buffer[6:8], byteorder='little', signed=True)
 		yaw = int.from_bytes(buffer[8:10], byteorder='little', signed=True)
 		throttle = int.from_bytes(buffer[10:12], byteorder='little', signed=True)
-		aileron = int.from_bytes(buffer[12:14], byteorder='little', signed=True)
-		elevator = int.from_bytes(buffer[14:16], byteorder='little', signed=True)
-		rudder = int.from_bytes(buffer[16:18], byteorder='little', signed=True)
-		wing_lock = int.from_bytes(buffer[18:20], byteorder='little', signed=True)
-		body_hook = int.from_bytes(buffer[20:22], byteorder='little', signed=True)
-		tail_hook = int.from_bytes(buffer[22:], byteorder='little', signed=True)
+		aileron = int.from_bytes(buffer[12:13], byteorder='little', signed=True)
+		elevator = int.from_bytes(buffer[13:14], byteorder='little', signed=True)
+		rudder = int.from_bytes(buffer[14:15], byteorder='little', signed=True)
+		wing_lock = int.from_bytes(buffer[15:16], byteorder='little', signed=True)
+		body_hook = int.from_bytes(buffer[16:17], byteorder='little', signed=True)
+		tail_hook = int.from_bytes(buffer[17:18], byteorder='little', signed=True)
 		
 
 		return DataProcessor(time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, wing_lock, body_hook, tail_hook)

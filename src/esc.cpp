@@ -41,3 +41,7 @@ void ESC::setMaxPulse  (int max_pulse  ) { this->max_pulse   = max_pulse;   }
 void ESC::setArmPulse  (int arm_pulse  ) { this->arm_pulse   = arm_pulse;   }
 void ESC::setStopPulse (int stop_pulse ) { this->stop_pulse  = stop_pulse;  }
 void ESC::setCalibDelay(int calib_delay) { this->calib_delay = calib_delay; }
+
+int ESC::getSpeed() {
+  return pulse;
+}

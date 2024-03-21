@@ -443,18 +443,18 @@ void tsDataLogger() {
     return;
   }
 
-  exp_data[data_idx].time     = millis() - start_time;
-  exp_data[data_idx].current  = current_average;
-  exp_data[data_idx].roll     = round(roll);
-  exp_data[data_idx].pitch    = round(pitch);
-  exp_data[data_idx].yaw      = round(yaw);
-  // exp_data[data_idx].throttle  = esc_speed; // TODO: TEST & UNCOMMENT
-  // exp_data[data_idx].aileron    = round(aileron.getPosition());
-  // exp_data[data_idx].elevator   = round(elevator.getPosition());
-  // exp_data[data_idx].rudder     = round(rudder.getPosition());
-  // exp_data[data_idx].wing_lock  = round(wing_lock.getPosition());
-  // exp_data[data_idx].body_hook  = round(body_hook.getPosition());
-  // exp_data[data_idx].tail_hook  = round(tail_hook.getPosition());
+  exp_data[data_idx].time      = millis() - start_time;
+  exp_data[data_idx].current   = current_average;
+  exp_data[data_idx].roll      = round(roll);
+  exp_data[data_idx].pitch     = round(pitch);
+  exp_data[data_idx].yaw       = round(yaw);
+  exp_data[data_idx].throttle  = esc.getSpeed();
+  exp_data[data_idx].aileron   = aileron  .getPosition();
+  exp_data[data_idx].elevator  = elevator .getPosition();
+  exp_data[data_idx].rudder    = rudder   .getPosition();
+  exp_data[data_idx].clutch    = wing_lock.getPosition();
+  exp_data[data_idx].body_hook = body_hook.getPosition();
+  exp_data[data_idx].tail_hook = tail_hook.getPosition();
   data_idx++;
 };
 
