@@ -243,7 +243,7 @@ void setESC(cmd *cmd_ptr) {
   Argument arg0 = c.getArgument(0);   
   esc_speed     = arg0.getValue().toInt();
 
-  esc.stop();
+  esc.arm(); // TODO: check why arming in the setup does not work
   Serial.print("ESC speed set to ");
   Serial.println(esc_speed);
 }
