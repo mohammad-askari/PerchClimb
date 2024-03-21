@@ -10,16 +10,20 @@ uint16_t ble_conn_handle;
  * @brief Processes incoming serial/ble data bytes and parses into the CLI.
  **/
 void tsParser() {
+  uint8_t bleBuffer[MAX_BLUETOOTH_PACKET_LEN];
+  uint8_t bleDataLen = 0;
+
   // check BLE UART for user input
   while (bleuart.available()) {
-    int ch = bleuart.read(); // read a single byte from the BLE UART
-    processCommand(ch, buffer_len, buffer_idx, buffer);
+    bleDataLen = bleuart.read(bleBuffer, MAX_BLUETOOTH_PACKET_LEN);
+    if(bleDataLen > 0)
+      decodeBytes(bleBuffer, bleDataLen);
   }
 
   // check serial for user input
   while (Serial.available()) {
     int ch = Serial.read();  // read a single byte from the serial
-    processCommand(ch, buffer_len, buffer_idx, buffer);
+    processCommand(ch, buffer_len, buffer_idx, cliBuffer);
   }
 };
 
@@ -406,7 +410,7 @@ void tsDataTransfer() {
   // send metadata packet so that the client would know how many packets it should expect
   metadata.packetCount = (int)ceil(data_idx / MAX_NUMBER_OF_LOGS_IN_EACH_PACKET);
   createFileMetadataPacket(&packet, &metadata);
-  sendPacket(&packet);
+  sendPacketViaBLE(&packet);
 
   delay(300);
   
@@ -424,14 +428,14 @@ void tsDataTransfer() {
       fileContent.dataLen = dataLen;
 
       createFileContentPacket(&packet, &fileContent);
-      sendPacket(&packet);
+      sendPacketViaBLE(&packet);
       
       delay(30);
   }
 
   // tell client that file send process is finished
   createFileSentPacket(&packet);
-  sendPacket(&packet);
+  sendPacketViaBLE(&packet);
   
   Serial.println("Data Transfer Complete");
 };

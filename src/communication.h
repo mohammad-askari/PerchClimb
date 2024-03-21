@@ -2,6 +2,7 @@
 #define COMMUNICATION_H
 
 #include <Arduino.h>
+#include <WString.h>
 
 #define COMM_PACKET_HEADER	4
 #define COMM_PACKET_HEADER_W_CRC COMM_PACKET_HEADER + 2
@@ -72,6 +73,7 @@ void decodeFileContentPacket(const commPacket_t *pCommPacket, pktFileContent_t* 
 void createFileSentPacket(commPacket_t *pCommPacket);
 void createFileRequestPacket(commPacket_t *pCommPacket, const pktFileRequest_t* pFileRequest);
 void decodeFileRequestPacket(const commPacket_t *pCommPacket, pktFileRequest_t* pFileRequest);
-void sendPacket(const commPacket_t* pCommPacket);
+void sendPacketViaBLE(const commPacket_t* pCommPacket);
+void sendStringAsStringPacketViaBLE(String str);
 
 #endif

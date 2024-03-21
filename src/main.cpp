@@ -83,7 +83,7 @@ int current;                      // current sensor value [ADC]
 SimpleCLI cli;                       // command line interface (CLI) object
 const byte buffer_len = ble_mtu - 2; // size of the input buffer characters
 byte buffer_idx;                     // position index variable for the buffer
-char buffer[buffer_len];             // CLI buffer array to parse user inputs
+char cliBuffer[buffer_len];             // CLI buffer array to parse user inputs
 
 // ——————————————————————— EXPERIMENTAL DATA VARIABLES —————————————————————— //
 const int drop_freq = 10;                 // gradual ESC speed drop rate  [Hz]

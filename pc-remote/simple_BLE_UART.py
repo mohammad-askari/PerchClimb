@@ -5,8 +5,11 @@ from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
 from adafruit_ble.services.nordic import UARTService
 import time
+import threading
 import communication
 
+bluetoothMutex = threading.Lock()
+#ioMutex = threading.Lock()
 
 UUID = 			'13012F01-F8C3-4F4A-A8F4-15CD926DA146'
 UUID_time = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA147'
@@ -34,13 +37,18 @@ async def run():
 		print("There was a problem connecting to the device. Exiting...")
 		return
 
-	input("Enter anything to start file transfer: ")
-
 	uart_service = uart_connection[UARTService]
 
-	uart_service.write("transfer\n".encode("utf-8"))
-	print("Sent log request. Receiving...")
+	#input("Enter anything to start file transfer: ")
 
+	#uart_service = uart_connection[UARTService]
+
+	#uart_service.write("transfer\n".encode("utf-8"))
+	#print("Sent log request. Receiving...")
+
+	# start the CLI thread
+	cliThreadHandle = threading.Thread(target=cliThread, args=(uart_service))
+	
 	# main bluetooth read loop
 	while True:
 		packetCount = 0
@@ -48,7 +56,10 @@ async def run():
 		MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = 5
 		LOG_DATA_LEN = 10
 		
+		bluetoothMutex.acquire()
 		buffer = uart_service.read(64)
+		bluetoothMutex.release()
+		
 		if isinstance(buffer, bytearray):
 			# decodedPackets contains packets that decoded and each element in the list can be a different type
 			decodedPackets = communication.decodeBytes(buffer)
@@ -56,12 +67,13 @@ async def run():
 				
 				# String packet
 				if isinstance(packet, communication.pktString_t):
-					pass
+					print(packet.str)
 				
 				# Metadata packet
 				elif isinstance(packet, communication.pktFileMetadata_t):
 					packetCount = packet.packetCount
 					fileContentPackets = [None] * packetCount
+					print("Metadata received. {0} packets will be sent".format(packetCount))
 				
 				# FileContent packet
 				elif isinstance(packet, communication.pktFileContent_t):
@@ -111,6 +123,22 @@ def connectToBLuetooth():
 		time.sleep(0.5)
 		tries += 1
 	return None
+
+# the thread that reads user input and sends the given command to the device via bluetooth
+def cliThread(uart_service):
+	while True:
+		command = input()
+		pktString = communication.pktString_t()
+		pktString.str = command + "\n"
+		pktString.strLen = len(pktString.str)
+
+		commPacket = communication.commPacket_t()
+		communication.createStringPacket(commPacket, pktString)
+		sendBuffer = communication.convertCommPacketToByteArray(commPacket)
+		
+		bluetoothMutex.acquire()		
+		uart_service.write(sendBuffer)
+		bluetoothMutex.release()
 
 ###################################### FUNCTIONS ##################################
 

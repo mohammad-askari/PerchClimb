@@ -1,6 +1,7 @@
 #include "callbacksCLI.h"
 #include "main.h"
 #include "functions.h"
+#include "communication.h"
 
 // ———————————————————————— CLI USAGE HELPER CALLBACK ——————————————————————— //
 /**
@@ -10,6 +11,7 @@
 void cliHelp(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Serial.print(cli.toString());
+  sendStringAsStringPacketViaBLE(cli.toString());
 }
 
 // —————————————————————————— INPUT ERROR CALLBACK —————————————————————————— //

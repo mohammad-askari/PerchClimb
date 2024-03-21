@@ -169,7 +169,7 @@ def createFileContentPacket(pCommPacket, pFileContent):
     crc = crc16(pCommPacket)
     pCommPacket.crc = crc
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-def decodeFileContentPacket(pCommPacket)
+def decodeFileContentPacket(pCommPacket):
     pFileContent = pktFileContent_t()
     pFileContent.packetNo = int.from_bytes(pCommPacket.data[0:2], byteorder='little', signed=False)
     pFileContent.data = pCommPacket.data[:2]

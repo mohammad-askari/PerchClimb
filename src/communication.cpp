@@ -1,6 +1,7 @@
 #include "communication.h"
 #include "crc16.h"
 #include "main.h"
+#include "functions.h"
 
 commPacket_t packet;
 
@@ -111,6 +112,8 @@ void decodePacket()
 		{
 			pktString_t pktString;
 			decodeStringPacket(&packet, &pktString);
+			for(uint8_t i = 0; i < pktString.strLen; i++)
+				processCommand(pktString.str[i], buffer_len, buffer_idx, cliBuffer);
 			break;
 		}
 		case packetTypes_t::PKT_FILE_METADATA:
@@ -280,11 +283,35 @@ void decodeFileRequestPacket(const commPacket_t *pCommPacket, pktFileRequest_t* 
 }
 
 // ———————————————————————————— PACKET SENDING ———————————————————————————— //
-void sendPacket(const commPacket_t* pCommPacket)
+void sendPacketViaBLE(const commPacket_t* pCommPacket)
 {
 	uint8_t buffer[MAX_BLUETOOTH_PACKET_LEN];
 	memcpy(buffer, (uint8_t*)pCommPacket, pCommPacket->dataLen + COMM_PACKET_HEADER);
 	memcpy(buffer + pCommPacket->dataLen + COMM_PACKET_HEADER, (uint8_t*)pCommPacket->crc, sizeof(uint16_t));
 	
 	bleuart.write(buffer, pCommPacket->dataLen + COMM_PACKET_HEADER_W_CRC);
+}
+
+void sendStringAsStringPacketViaBLE(String str)
+{
+	commPacket_t commPacket;
+	pktString_t stringPacket;
+	int16_t index = 0, remainingCharacters = str.length(), charactersToSend;
+
+	if(str.length() == 0)
+		return;
+
+	do
+	{
+		charactersToSend = remainingCharacters < MAX_INNER_PACKET_DATALEN ? remainingCharacters : MAX_INNER_PACKET_DATALEN;
+		
+		memcpy(stringPacket.str, str.substring(index, charactersToSend).c_str(), charactersToSend);
+		stringPacket.strLen = charactersToSend;
+		createStringPacket(&commPacket, &stringPacket);
+		sendPacketViaBLE(&commPacket);
+
+		remainingCharacters -= charactersToSend;
+		index += charactersToSend;
+		
+	} while (remainingCharacters > 0);
 }
