@@ -103,33 +103,34 @@ void cliMotorDrive(cmd *cmd_ptr) {
   
   int power_byte  = map(power_val,0,100,0,pwm_range);
 
-  float ticks = 0;
-  float corr_factor = 1;
-  if (is_distance){
-    ticks = (turn_val *12 * gear_ratio / (spool_diameter * PI)) * corr_factor;
-  }
-  else {
-    ticks = turn_val * 12 * gear_ratio;
-  }
+  // float ticks = 0;
+  // float corr_factor = 1;
+  // if (is_distance){
+  //   ticks = (turn_val *12 * gear_ratio / (spool_diameter * PI)) * corr_factor;
+  // }
+  // else {
+  //   ticks = turn_val * 12 * gear_ratio;
+  // }
 
   if (is_reverse) digitalWrite(phase_pin,LOW);
   else digitalWrite(phase_pin,HIGH);
 
 // FIXME: REPLACE WITH CLUTCH OBJECT
-/*   long initial_pos = encoder.count();
+// long initial_pos = encoder.count();
   analogWrite(enable_pin,power_byte);
 
   int time = millis();
 
-  while ((abs(encoder.count() - initial_pos) < ticks) && (millis()-time) < turn_val*100)
+  // while ((abs(encoder.count() - initial_pos) < ticks) && (millis()-time) < turn_val*100)
+  while ((millis()-time) < turn_val*100)
   {
     delay(10);
   }
   analogWrite(enable_pin,0);
-  Serial.print("Reached position: ");
-  Serial.println(encoder.count());
+  // Serial.print("Reached position: ");
+  // Serial.println(encoder.count());
   Serial.print("Elapsed time: ");
-  Serial.println(millis()-time); */
+  Serial.println(millis()-time);
 }
 
 // —————————————————————————— MOTOR HOME COMMANDS —————————————————————————— //
@@ -243,7 +244,6 @@ void setESC(cmd *cmd_ptr) {
   Argument arg0 = c.getArgument(0);   
   esc_speed     = arg0.getValue().toInt();
 
-  esc.arm(); // TODO: check why arming in the setup does not work
   Serial.print("ESC speed set to ");
   Serial.println(esc_speed);
 }

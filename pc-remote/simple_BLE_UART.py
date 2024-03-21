@@ -72,10 +72,18 @@ async def run():
 								try:
 									if uart_connection and uart_connection.connected:
 										uart_service = uart_connection[UARTService]
+										uart_service.reset_input_buffer()
 										uart_service.write(input_str.encode("utf-8"))
 										print("Connected ...")
-										uart_service = uart_connection[UARTService]
+										# uart_service = uart_connection[UARTService]
+										
 										line = uart_service.readline().decode("utf-8")
+										# for i in range(0, 100):
+										# 	try:
+										# 		line = uart_service.readline().decode("utf-8")
+										# 	except Exception as e:
+										#       print(i)
+										# 		print(" failed")
 										numberOfPackets = 0
 										if line[:4] == "meta":
 											numberOfPackets = int(line[6:])

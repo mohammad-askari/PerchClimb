@@ -60,7 +60,7 @@ const byte servo_num = sizeof(actuator) / sizeof(actuator[0]);
 const byte esc_pin = 1;                      // ESC PWM pin
 const int  esc_min = 1000;                   // ESC minimum speed pulse [μs]
 const int  esc_max = 2000;                   // ESC maximum speed pulse [μs]
-const int  esc_arm = 500;                    // ESC arm value pulse     [μs]
+const int  esc_arm = 1000;                   // ESC arm value pulse     [μs]
 int esc_speed;                               // ESC speed parameter     [μs]
 ESC esc(esc_pin, esc_min, esc_max, esc_arm); // ESC motor object
 
@@ -78,7 +78,7 @@ const byte cpr = 12;              // dual-channel encoder counts per revolution
 const float gear_ratio = 297.92;  // DC motor gear ratio (faster motor: 150.58)
 const float spool_diameter = 10;  // wing-opening mechanism spool diameter [mm]
 int dc_speed = pwm_range;         // DC motor variable for adjusting speed
-// Clutch clutch(wing_lock);         // wing-opening mechanism (clutch) object
+Clutch clutch(wing_lock);         // wing-opening mechanism (clutch) object
 
 // ———————————————————————————— PARSER VARIABLES ———————————————————————————— //
 SimpleCLI cli;                       // command line interface (CLI) object
@@ -184,7 +184,7 @@ void setup()
   tail_hook.setPosition(RANGE_MAX); // retracting the tail hook
 
   // initializing the wing-opening mechanism variables
-  // clutch.pins(phase_pin, enable_pin, encoder_pin[0]);
+  clutch.pins(phase_pin, enable_pin, encoder_pin[0]);
   // clutch.init(wing_lock, ENGAGED, cpr, gear_ratio, spool_diameter);
   // if (DEBUG) clutch.print();
   analogWrite(enable_pin, 0);
