@@ -69,10 +69,6 @@ extern int current;
 
 // ———————————————————————————— PARSER VARIABLES ———————————————————————————— //
 extern SimpleCLI cli;
-extern const byte buffer_len;
-extern byte buffer_idx;
-extern char cliBuffer[];
-extern const byte current_pin;
 
 // ——————————————————————— EXPERIMENTAL DATA VARIABLES —————————————————————— //
 typedef struct {

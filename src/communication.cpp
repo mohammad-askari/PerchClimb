@@ -113,7 +113,7 @@ void decodePacket()
 			pktString_t pktString;
 			decodeStringPacket(&packet, &pktString);
 			for(uint8_t i = 0; i < pktString.strLen; i++)
-				processCommand(pktString.str[i], buffer_len, buffer_idx, cliBuffer);
+				processCommandBLE(pktString.str[i]);
 			break;
 		}
 		case packetTypes_t::PKT_FILE_METADATA:

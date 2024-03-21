@@ -23,7 +23,7 @@ void tsParser() {
   // check serial for user input
   while (Serial.available()) {
     int ch = Serial.read();  // read a single byte from the serial
-    processCommand(ch, buffer_len, buffer_idx, cliBuffer);
+    processCommandSerial(ch);
   }
 };
 
