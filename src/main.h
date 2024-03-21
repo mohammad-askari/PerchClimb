@@ -118,6 +118,7 @@ extern bool  is_start_of_takeoff;
 
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 extern TsTask ts_parser;
+extern TsTask ts_ble_parser;
 extern TsTask ts_sensors;
 extern TsTask ts_ble_conn;
 extern TsTask ts_kill;

@@ -126,6 +126,7 @@ bool  is_start_of_takeoff;                // flag to set enable takeoff
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 // ———— TASK PARAMETERS: interval [ms/μs], #executions, callback function ——— //
 TsTask ts_parser       (TASK_IMMEDIATE,        TASK_FOREVER, &tsParser);
+TsTask ts_ble_parser   (TASK_IMMEDIATE,        TASK_FOREVER, &tsBleParser);
 TsTask ts_sensors      (TASK_SECOND/log_freq,  TASK_FOREVER, &tsSensors);
 TsTask ts_ble_conn     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLEConn);
 TsTask ts_climb_on     (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOn);

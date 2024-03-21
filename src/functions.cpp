@@ -313,6 +313,7 @@ void setupTasks() {
   scheduler.init();
 	
   scheduler.addTask(ts_parser);
+  scheduler.addTask(ts_ble_parser);
   scheduler.addTask(ts_sensors);
 	scheduler.addTask(ts_ble_conn);
 	scheduler.addTask(ts_kill);
@@ -333,5 +334,6 @@ void setupTasks() {
 	
   ts_motor_update.setOnDisable(&tsMotorUpdateDisabled); 
   ts_parser.enable();
+  ts_ble_parser.enable();
   ts_sensors.enable();
 }

@@ -6,6 +6,7 @@
 extern uint16_t ble_conn_handle;
 
 void tsParser();
+void tsBleParser();
 void tsSensors();
 void tsBLEConn();
 void tsKill();
