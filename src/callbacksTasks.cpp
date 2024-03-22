@@ -96,8 +96,8 @@ void tsPreClimb() {
     delay_duration  = TASK_SECOND * wing_opening_duration;
     is_wing_opening = false;
     climb_wing_loosening = true;
-    digitalWrite(phase_pin, HIGH);
-    analogWrite(enable_pin, dc_speed);
+    clutch.forward();
+    clutch.speed(dc_speed);
     Serial.println("Wing Loosening Started");
   }
 
@@ -111,15 +111,18 @@ void tsClimbOn() {
   ts_climb_off.restartDelayed(TASK_SECOND * exp_duration);
   ts_motor_update.enable();
 
+    // disenage hooks
+    body_hook.setPosition(RANGE_MIN);
+    tail_hook.setPosition(RANGE_MIN); // FIXME: AVOID HARD-CODED (TREE-CLIMBING)
+
   // stop wing loosening if activated
   if (climb_wing_loosening) {
-    analogWrite(enable_pin, 0);
+    clutch.stop();
     Serial.println("Wing Loosening Completed");
   }
 
   // synchronize the servo start times
   unsigned long now = millis();
-  start_time = now;
   for(byte i = 0; i < servo_num; i++) actuator[i]->setTime(now);
   esc.speed(esc_speed);
 };
@@ -130,7 +133,7 @@ void tsClimbOff() {
     Serial.println("Climb Off Smooth");
 
     aileron.reset();
-    elevator.reset();
+    rudder.reset();
 
     // enage hooks
     body_hook.setPosition(RANGE_MIN);
@@ -140,7 +143,7 @@ void tsClimbOff() {
     if (climb_wing_loosening) {
       is_wing_opening = true;
       climb_wing_loosening = false;
-      digitalWrite(phase_pin, LOW);
+      clutch.reverse();
     }
   }
 
@@ -173,7 +176,6 @@ void tsPreDescent() {
 
   // synchronize the servo start times
   unsigned long now = millis();
-  start_time = now;
   for(byte i = 0; i < servo_num; i++) actuator[i]->setTime(now);
   esc.speed(pre_descent_esc);
 };
@@ -265,7 +267,6 @@ void tsPreHover() {
 
   // synchronize the servo start times
   unsigned long now = millis();
-  start_time = now;
   for(byte i = 0; i < servo_num; i++) actuator[i]->setTime(now);
   esc.speed(pre_hover_esc);
 };
@@ -327,7 +328,6 @@ void tsPreUnperch() {
 
   // synchronize the servo start times
   unsigned long now = millis();
-  start_time = now;
   for(byte i = 0; i < servo_num; i++) actuator[i]->setTime(now);
 
   // reset the takeoff parameters for later use in the main unperching task
@@ -412,7 +412,7 @@ void tsMotorUpdate() {
   if (is_wing_opening) {
     start = elapsed_time;
     is_wing_opening = false;
-    analogWrite(enable_pin, dc_speed);
+    clutch.speed(dc_speed);
     Serial.println("Wing Moving Started");
   } 
   
@@ -420,7 +420,7 @@ void tsMotorUpdate() {
   bool time_to_stop = (elapsed_time-start) >= wing_opening_duration*TASK_SECOND;
   if (dc_speed!=0 && !climb_wing_loosening && time_to_stop) {
     dc_speed = 0;
-    analogWrite(enable_pin, dc_speed);
+    clutch.stop();
     Serial.println("Wing Moving Completed");
   }
   
@@ -431,12 +431,15 @@ void tsMotorUpdate() {
 
 
 void tsMotorUpdateDisabled() { 
-  analogWrite(enable_pin, 0);
+  clutch.stop();
 };
 
 
 // ———————————————————— DATA LOGGING & TRANSFER FUNCTIONS ——————————————————— //
 void tsDataLogger() {
+  static unsigned long start_time = 0;
+  if (ts_data_logger.isFirstIteration()) start_time = millis();
+
   if (data_idx >= data_len) {
     Serial.println("Data Logger Buffer Full!");
     ts_data_logger.disable();
@@ -448,46 +451,62 @@ void tsDataLogger() {
   exp_data[data_idx].roll      = round(roll);
   exp_data[data_idx].pitch     = round(pitch);
   exp_data[data_idx].yaw       = round(yaw);
-  // exp_data[data_idx].throttle  = esc.getSpeed();
-  // exp_data[data_idx].aileron   = aileron  .getPosition();
-  // exp_data[data_idx].elevator  = elevator .getPosition();
-  // exp_data[data_idx].rudder    = rudder   .getPosition();
-  // exp_data[data_idx].clutch    = wing_lock.getPosition();
-  // exp_data[data_idx].body_hook = body_hook.getPosition();
-  // exp_data[data_idx].tail_hook = tail_hook.getPosition();
+  cmd_data[data_idx].throttle  = esc.getSpeed();
+  cmd_data[data_idx].aileron   = aileron  .getPosition();
+  cmd_data[data_idx].elevator  = elevator .getPosition();
+  cmd_data[data_idx].rudder    = rudder   .getPosition();
+  cmd_data[data_idx].clutch    = wing_lock.getPosition();
+  cmd_data[data_idx].body_hook = body_hook.getPosition();
+  cmd_data[data_idx].tail_hook = tail_hook.getPosition();
+  cmd_data[data_idx].wing_open = clutch.getSpeed();
   data_idx++;
 };
 
 
 void tsDataTransfer() {
   Serial.println("Data Transfer Started");
-  char buffer[32];
-  delay(300);
-  sprintf(buffer, "meta: %d\n", (int)ceil(data_idx / 6) );
-  bleuart.write( (uint8_t*) buffer, strlen(buffer));
-  delay(300);
+  const byte packet_len  = 60;
+  const int python_delay = 250;
+  char meta_str[32];
 
-  uint8_t *P;
-  for (int i = 0; i < data_idx; i = i+6) {                 
-      P = (uint8_t*) exp_data;
-      P += sizeof(exp_data_t) * i;
-      bleuart.write(P, sizeof(exp_data_t) * 6);
-      delay(250);
+  // transfer only logged sensor data
+  if (!transfer_include_commands) {
+    sprintf(meta_str, "meta: %d\n", (int)ceil(data_idx / 6) );
+    bleuart.write( (uint8_t*) meta_str, strlen(meta_str));
+    delay(python_delay);
+    
+    uint8_t *P;
+    int bytes_written = 0;
+    for (int i = 0; i < data_idx; i+6) {
+        P = (uint8_t*) exp_data;
+        P += sizeof(exp_data_t) * i;
+        bleuart.write(P, sizeof(exp_data_t) * 6);
+        delay(python_delay);
   }
+  }
+  // transfer logged sensor data combined with actuator commands
+  else {
+    const int sets_per_packet = packet_len / (sizeof(exp_data_t) + sizeof(cmd_data_t));
+    sprintf(buffer, "meta: %d\n", (int)ceil(data_idx / 3) );
+    bleuart.write( (uint8_t*) buffer, strlen(buffer));
+    delay(python_delay);
 
-  // char buffer[32];
-  // delay(300);
-  // sprintf(buffer, "meta: %d\n", (int)ceil(data_idx / 3) );
-  // bleuart.write( (uint8_t*) buffer, strlen(buffer));
-  // delay(300);
+    uint8_t packet[packet_len];
+    int packet_idx = 0;
+    for (int i = 0; i < data_idx; i++) {
+      memcpy(packet + packet_idx, &exp_data[i], sizeof(exp_data_t));
+      packet_idx += sizeof(exp_data_t);
+      memcpy(packet + packet_idx, &cmd_data[i], sizeof(cmd_data_t));
+      packet_idx += sizeof(cmd_data_t);
 
-  // uint8_t *P;
-  // for (int i = 0; i < data_idx; i = i+3) {                 
-  //     P = (uint8_t*) exp_data;
-  //     P += sizeof(exp_data_t) * i;
-  //     bleuart.write(P, sizeof(exp_data_t) * 3);
-  //     delay(250);
-  // }
+      // send the packet once it is full or all data has been copied
+      if ((i + 1) % sets_per_packet == 0 || i == data_idx - 1) {
+          bleuart.write(packet, packet_len);
+          delay(250); // Delay between packets
+          packet_idx = 0;
+      }
+    }
+  }
 
   Serial.println("Data Transfer Complete");
 };
@@ -496,8 +515,11 @@ void tsDataTransfer() {
 // —————————————————————————— KILL SWITCH FUNCTION —————————————————————————— //
 void tsKill() {
   esc.speed(esc_min);
-  analogWrite(enable_pin, 0);
-  for(byte i = 0; i < servo_num; i++) actuator[i]->reset();
+  clutch.stop();
+  aileron.reset();
+  elevator.reset();
+  rudder.reset();
+  ts_pre_climb.disable();
   ts_climb_on.disable();
   ts_climb_off.disable();
   ts_pre_descent.disable();

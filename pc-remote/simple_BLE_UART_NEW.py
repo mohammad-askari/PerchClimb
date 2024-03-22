@@ -35,6 +35,7 @@ UUID_rudder = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA155'
 clutch = 		'13012F01-F8C3-4F4A-A8F4-15CD926DA156'
 UUID_body_hook = '13012F01-F8C3-4F4A-A8F4-15CD926DA157'
 UUID_tail_hook = '13012F01-F8C3-4F4A-A8F4-15CD926DA158'
+UUID_wing_open = '13012F01-F8C3-4F4A-A8F4-15CD926DA159'
 UUID_RXD     =  '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'
 UUID_TXD	 =  '6E400003-B5A3-F393-E0A9-E50E24DCCA9E'
 
@@ -50,9 +51,10 @@ async def run():
 	found = False
 	uart_connection = None
 	devices = await discover()
+	robot = 'PerchClimb'
 
 	for d in devices:       
-		if 'PerchClimb' == d.name:
+		if robot == d.name:
 			print('Found ', str(d.name))
 			found = True
 
@@ -79,6 +81,7 @@ async def run():
 								try:
 									if uart_connection and uart_connection.connected:
 										uart_service = uart_connection[UARTService]
+										uart_service.reset_input_buffer()
 										uart_service.write(input_str.encode("utf-8"))
 										print("Connected ...")
 										uart_service = uart_connection[UARTService]
@@ -88,42 +91,55 @@ async def run():
 											numberOfPackets = int(line[6:])
 											print("Metadata received: ", numberOfPackets)
 
-
-										alltext = "Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg],Throttle [us],Aileron,Elevator,Rudder,Clutch,Body Hook,Tail Hook\n"
-										counter = 0
-										experimental_data = []
-										while uart_connection.connected:
-											buffer = uart_service.read(3*18)
-											if isinstance(buffer, bytearray):
-												counter += 1
-												# print("Buffer size is: {0}".format(len(buffer)))
-												for i in range(0, 3):
-													data = convert_exp_data_to_str(buffer[i*18 : i*18+18])
-													experimental_data.append(data)
-													alltext += str(data.time) + ',' + str(data.current) + ',' + str(data.roll) + ',' + str(data.pitch) + ',' + str(data.yaw) + ',' + str(data.throttle) + ',' + str(data.aileron) + ',' + str(data.elevator) + ',' + str(data.rudder) + ',' + str(data.clutch) + ',' + str(data.body_hook) + ',' + str(data.tail_hook) + '\n'
-												print("packets: ", counter)
-													# try:
-													# 	print(data.time, data.current, data.roll, data.pitch, data.yaw)
-													# except Exception as e:
-													# 	pass
-												
-												if counter == numberOfPackets:
-													print("Writing to file...")
-													dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-													try:
-														os.mkdir('sensordata')
-													except Exception as e:
-														pass
-													h = open('sensordata/climb' + dt_string + '.csv', "+w")
-													h.write(alltext)
-													h.close()	
-													print("Data saved to file")
-													break
-													# for i in range(0, 600):
-													# 	print(experimental_data[i].time, experimental_data[i].current, experimental_data[i].roll, experimental_data[i].pitch, experimental_data[i].yaw)
-													# 	counter = 0
-													# ble.disconnect()
-													# exit(0)
+										if "-f" not in input_str:
+											# save the sensor data only (excl. actuator commands) if "-full" flag is not present
+											alltext = "Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg]\n"
+											counter = 0
+											experimental_data = []
+											while uart_connection.connected:
+												buffer = uart_service.read(60)
+												if isinstance(buffer, bytearray):
+													counter += 1
+													# print("Buffer size is: {0}".format(len(buffer)))
+													for i in range(0, 6):
+														data = convert_exp_data_to_str(buffer[i*10 : i*10+10])
+														experimental_data.append(data)
+														alltext += str(data.time) + ',' + str(data.current) + ',' + str(data.roll) + ',' + str(data.pitch) + ',' + str(data.yaw) + '\n'
+													print("packets: ", counter)
+														# try:
+														# 	print(data.time, data.current, data.roll, data.pitch, data.yaw)
+														# except Exception as e:
+														# 	pass
+													
+													if counter == numberOfPackets:
+														save_exp_data_as_csv(alltext)
+														break
+										
+										
+										else:
+											# save full experimental data only (incl. actuator commands) if "-full" flag is used
+											alltext = "Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg],Throttle [us],Aileron,Elevator,Rudder,Clutch,Body Hook,Tail Hook,Wing Open [pwm]\n"
+											counter = 0
+											experimental_data = []
+											while uart_connection.connected:
+												buffer = uart_service.read(60)
+												if isinstance(buffer, bytearray):
+													counter += 1
+													# print("Buffer size is: {0}".format(len(buffer)))
+													for i in range(0, 3):
+														data = convert_exp_data_to_str(buffer[i*20 : i*20+20])
+														experimental_data.append(data)
+														alltext += str(data.time) + ',' + str(data.current) + ',' + str(data.roll) + ',' + str(data.pitch) + ',' + str(data.yaw) + ',' + str(data.throttle) + ',' + str(data.aileron) + ',' + str(data.elevator) + ',' + str(data.rudder) + ',' + str(data.clutch) + ',' + str(data.body_hook) + ',' + str(data.tail_hook) + ',' + str(data.wing_open) + '\n'
+													print("packets: ", counter)
+														# try:
+														# 	print(data.time, data.current, data.roll, data.pitch, data.yaw)
+														# except Exception as e:
+														# 	pass
+													
+													if counter == numberOfPackets:
+														save_exp_data_as_csv(alltext)
+														break
+														
 														
 									
 								
@@ -202,13 +218,13 @@ async def run():
 					except BleakError as e:
 						print("Could not connect, retrying")
 	if not found:
-		print('Could not find PerchClimb')
+		print('Could not find ' + robot)
 
 
 ###################################### FUNCTIONS ##################################
 
 class DataProcessor:
-	def __init__(self, time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, clutch, body_hook, tail_hook):
+	def __init__(self, time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, clutch, body_hook, tail_hook, wing_open):
 		self.time = time
 		self.current = current
 		self.roll = roll
@@ -221,9 +237,19 @@ class DataProcessor:
 		self.clutch = clutch
 		self.body_hook = body_hook
 		self.tail_hook = tail_hook
+		self.wing_open = wing_open
 
 def convert_exp_data_to_str(buffer):
-	if len(buffer) == 18:
+	if len(buffer) == 10:
+		time = int.from_bytes(buffer[0:2], byteorder='little', signed=False)
+		current = int.from_bytes(buffer[2:4], byteorder='little', signed=True)
+		roll = int.from_bytes(buffer[4:6], byteorder='little', signed=True)
+		pitch = int.from_bytes(buffer[6:8], byteorder='little', signed=True)
+		yaw = int.from_bytes(buffer[8:], byteorder='little', signed=True)
+
+		return DataProcessor(time, current, roll, pitch, yaw)
+
+	elif len(buffer) == 20:
 		time = int.from_bytes(buffer[0:2], byteorder='little', signed=False)
 		current = int.from_bytes(buffer[2:4], byteorder='little', signed=True)
 		roll = int.from_bytes(buffer[4:6], byteorder='little', signed=True)
@@ -236,14 +262,26 @@ def convert_exp_data_to_str(buffer):
 		clutch = int.from_bytes(buffer[15:16], byteorder='little', signed=True)
 		body_hook = int.from_bytes(buffer[16:17], byteorder='little', signed=True)
 		tail_hook = int.from_bytes(buffer[17:18], byteorder='little', signed=True)
+		wing_open = int.from_bytes(buffer[18:20], byteorder='little', signed=True)
 		
+		return DataProcessor(time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, clutch, body_hook, tail_hook, wing_open)
 
-		return DataProcessor(time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, clutch, body_hook, tail_hook)
 	else:
 		print("BAD DATA")
 		print(len(buffer))
 
 
+def save_exp_data_as_csv(alltext):
+	print("Writing to file...")
+	dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+	try:
+		os.mkdir('sensordata')
+	except Exception as e:
+		pass
+	h = open('sensordata/exp_' + dt_string + '.csv', "+w")
+	h.write(alltext)
+	h.close()	
+	print("Data saved to file")
 
 
 
@@ -252,7 +290,7 @@ def save_data_to_csv(self, filename):
 	df = pd.DataFrame(self.data)
 	df.to_csv(filename + dt_string + '.csv')
 
-def write_csv(rtime,rpitch,rroll,ryaw,rcurrent,rthrottle,raileron,relevator,rrudder,rclutch,rbody_hook,rtail_hook):
+def write_csv(rtime,rpitch,rroll,ryaw,rcurrent,rthrottle,raileron,relevator,rrudder,rclutch,rbody_hook,rtail_hook,rwing_open):
 	dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
 	dtime = rtime.split(',')
@@ -267,6 +305,7 @@ def write_csv(rtime,rpitch,rroll,ryaw,rcurrent,rthrottle,raileron,relevator,rrud
 	dclutch = rclutch.split(',')
 	dbody_hook = rbody_hook.split()
 	dtail_hook = rtail_hook.split()
+	dwing_open = rwing_open.split()
 	print("step a")
 	dft = pd.DataFrame({'Time': dtime})
 	dfr = pd.DataFrame({'Roll':droll})
@@ -277,15 +316,16 @@ def write_csv(rtime,rpitch,rroll,ryaw,rcurrent,rthrottle,raileron,relevator,rrud
 	dfai = pd.DataFrame({'Aileron': daileron})
 	dfel = pd.DataFrame({'Elevator': delevator})
 	dfru = pd.DataFrame({'Rudder': drudder})
-	dfwl = pd.DataFrame({'Clutch': dclutch})
+	dfcl = pd.DataFrame({'Clutch': dclutch})
 	dfbh = pd.DataFrame({'Body Hook': dbody_hook})
 	dfth = pd.DataFrame({'Tail Hook': dtail_hook})
+	dfwo = pd.DataFrame({'Wing Open': dwing_open})
 	print("step b")
-	df = pd.concat([dft, dfp, dfr, dfy, dfc, dftr, dfai, dfel, dfru, dfwl, dfbh, dfth], axis=1) # Concat tolerates different array lengths
+	df = pd.concat([dft, dfp, dfr, dfy, dfc, dftr, dfai, dfel, dfru, dfcl, dfbh, dfth, dfwo], axis=1) # Concat tolerates different array lengths
 	df.drop(df.tail(1).index,inplace=True) # drop last row of END OF FRAME VALUE
 	print("step c")
 	try: 
-		df.to_csv('sensordata/climb' + dt_string + '.csv')
+		df.to_csv('sensordata/exp_' + dt_string + '.csv')
 	except Exception as e: 
 		print(e)
 	print("step end")

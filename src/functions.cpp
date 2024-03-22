@@ -156,11 +156,8 @@ void setupCLI() {
 
   // define BLE transfer command, callback, and relevant arguments
   Command cmd_ble = cli.addCommand("transfer", cliTransferData);
-  cmd_ble.addFlagArgument("info");
-  cmd_ble.addFlagArgument("time");
-  cmd_ble.addFlagArgument("imu");
-  cmd_ble.addFlagArgument("current");
-  cmd_ble.setDescription("\tEstablishes file transfer via BLE");
+  cmd_ble.addFlagArgument("f/ull");
+  cmd_ble.setDescription("\tEstablishes data transfer via BLE");
 
   // define motor drive command, callback, and relevant arguments
   Command cmd_drive = cli.addCommand("m/otor,d/rive", cliMotorDrive);

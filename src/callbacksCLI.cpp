@@ -52,7 +52,9 @@ void cliLogData(cmd *cmd_ptr) { // TODO: IMPLEMENT THIS FUNCTION
  **/
 void cliTransferData(cmd *cmd_ptr) { // TODO: MAKE NON-BLOCKING
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-  
+  Argument arg0 = c.getArgument(0);
+  transfer_include_commands = arg0.isSet();
+
   // THIS IS A BLOCKING FUNCTION!
   ts_data_transfer.restart();
 }
@@ -112,12 +114,12 @@ void cliMotorDrive(cmd *cmd_ptr) {
   //   ticks = turn_val * 12 * gear_ratio;
   // }
 
-  if (is_reverse) digitalWrite(phase_pin,LOW);
-  else digitalWrite(phase_pin,HIGH);
+  if (is_reverse) clutch.reverse();
+  else clutch.forward();
 
 // FIXME: REPLACE WITH CLUTCH OBJECT
 // long initial_pos = encoder.count();
-  analogWrite(enable_pin,power_byte);
+  clutch.speed(power_byte);
 
   int time = millis();
 
@@ -126,7 +128,7 @@ void cliMotorDrive(cmd *cmd_ptr) {
   {
     delay(10);
   }
-  analogWrite(enable_pin,0);
+  clutch.stop();
   // Serial.print("Reached position: ");
   // Serial.println(encoder.count());
   Serial.print("Elapsed time: ");
@@ -158,10 +160,10 @@ void cliMotorHome(cmd *cmd_ptr) {
 
     long initial_position = encoder.count();
     bool reverse = (initial_position > 0);
-    if (reverse) digitalWrite(phase_pin,LOW);
-    else digitalWrite(phase_pin,HIGH);
+    if (reverse) clutch.reverse();
+    else clutch.forward();
 
-    analogWrite(enable_pin,power_byte);
+    clutch.speed(power_byte);
 
     int time = millis();
 
@@ -169,7 +171,7 @@ void cliMotorHome(cmd *cmd_ptr) {
     {
       delay(10);
     }
-    analogWrite(0,0);
+    clutch.stop();
 
     Serial.print("Reached position: ");
     Serial.println(encoder.count());
@@ -464,9 +466,9 @@ void setWingOpening(cmd *cmd_ptr) {
 
   // set the phase pin to the desired direction // FIXME: REPLACE WITH CLUTCH
   if (is_opening_reverse) 
-    digitalWrite(phase_pin,LOW);
+    clutch.reverse();
   else 
-    digitalWrite(phase_pin,HIGH);
+    clutch.forward();
 
   // enable the wing opening under motor update task
   is_wing_opening = true;

@@ -71,9 +71,9 @@ PIDController pid_pitch(1.0,   0.1,  0.2,  0.01,    -1.0, +1.0);
 PIDController pid_yaw(  1.0,   0.0,  0.2,  0.01,    -1.0, +1.0);
 
 // ————————————————————— WING MOTOR & ENCODER VARIABLES ————————————————————— //
-const byte phase_pin  = 10;       // DC motor direction control pin
+const byte encoder_pin[] = {8};   // single or dual-channel encoder pin(s) // FIXME pin 8
 const byte enable_pin = 9;        // DC motor speed control PWM pin
-const byte encoder_pin[] = {8,8}; // single or dual-channel encoder pin(s) // FIXME pin 8
+const byte phase_pin  = 10;       // DC motor direction control pin
 const byte cpr = 12;              // dual-channel encoder counts per revolution
 const float gear_ratio = 297.92;  // DC motor gear ratio (faster motor: 150.58)
 const float spool_diameter = 10;  // wing-opening mechanism spool diameter [mm]
@@ -97,8 +97,9 @@ int   data_idx = 0;                        // position index of the data arrays
 char  exp_info[200];                       // experimental information string
 float exp_duration = 10;                   // experimental duration    [s]
 int   exp_delayed = 10;                    // experimental start delay [s]
-unsigned long start_time;                  // start time of the experiment
-exp_data_t exp_data[data_len];             // experimental data array
+exp_data_t exp_data[data_len];             // logged time and sensor data array
+cmd_data_t cmd_data[data_len];             // logged actuator commands data array
+bool transfer_include_commands;            // flag to enable full data transfer
 
 // ———————————————————————— CURRENT SENSOR VARIABLES ———————————————————————— //
 const byte current_pin = 0;                // current sensor analog pin
@@ -184,12 +185,11 @@ void setup()
   tail_hook.setPosition(RANGE_MAX); // retracting the tail hook
 
   // initializing the wing-opening mechanism variables
-  clutch.pins(phase_pin, enable_pin, encoder_pin[0]);
-  // clutch.init(wing_lock, ENGAGED, cpr, gear_ratio, spool_diameter);
-  // if (DEBUG) clutch.print();
-  analogWrite(enable_pin, 0);
+  clutch.pins(enable_pin, phase_pin, encoder_pin[0]);
+  clutch.init(wing_lock, ENGAGED, cpr, gear_ratio, spool_diameter, pwm_range);
+  if (DEBUG) clutch.print();
 
-  // arming the ESC and make it ready to take commands
+  // arming the ESC and making it ready to take commands
   esc.arm();
 
   // setting up the IMU, its registers, and the Madgwick filter

@@ -19,7 +19,26 @@ typedef enum {
 
 class Clutch {
   public:
-    unsigned int speed;
+    Clutch(Actuator &servo);
+    void pins(byte dir_pin, byte pwm_pin, byte enc1_pin, byte enc2_pin = UNDEFINED);
+    void init(Actuator servo, clutch_t state, byte cpr, float gear, float spool, int pwm_max);
+
+    void engage();
+    void disengage();
+    void forward();
+    void reverse();
+    void stop();
+    void speed(int speed);
+    
+    int  getSpeed();
+    long getCounts();
+    void resetCounts();
+
+
+    void print();
+    // void printSignal(int motor_idx);
+
+  private:
     float        gear;
     float        spool;
     byte         cpr;
@@ -27,23 +46,10 @@ class Clutch {
     direction_t  direction;
     Actuator     &servo;
 
-    Clutch(Actuator &servo);
-    void pins(byte dir_pin, byte pwm_pin, byte enc1_pin, byte enc2_pin = UNDEFINED);
-    void init(Actuator servo, clutch_t state, byte cpr, float gear, float spool);
-
-    void engage();
-    void disengage();
-    void forward();
-    void reverse();
-    long getCounts();
-    void resetCounts();
-
-    void print();
-    // void printSignal(int motor_idx);
-
-  private:
-    byte dir_pin;
+    int  pwm;
+    int  pwm_max;
     byte pwm_pin;
+    byte dir_pin;
     byte enc1_pin;
     byte enc2_pin;
     bool is_dual_encoder;
