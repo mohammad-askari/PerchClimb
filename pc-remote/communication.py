@@ -276,10 +276,11 @@ crc16Table = [
 
 def crc16(pCommPacket):
     buffer = convertCommPacketToByteArray(pCommPacket, False)
-    print("Going to calculate crc for: ", bytes(buffer).hex())
+    
     crc = 0xDEAD; #seed
     for counter in range(len(buffer)):
-        crc = ((crc << 8) & 0xFFFF) ^ crc16Table[((crc >> 8) ^ buffer[counter]) & 0x00FF]
+        crc = (crc << 8) ^ crc16Table[((crc >> 8) ^ buffer[counter]) & 0x00FF]
+        crc &= 0xFFFF
         counter += 1
     return crc
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

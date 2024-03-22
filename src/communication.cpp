@@ -293,7 +293,7 @@ void sendPacketViaBLE(const commPacket_t* pCommPacket)
 {
 	uint8_t buffer[MAX_BLUETOOTH_PACKET_LEN];
 	memcpy(buffer, (uint8_t*)pCommPacket, pCommPacket->dataLen + COMM_PACKET_HEADER);
-	memcpy(buffer + pCommPacket->dataLen + COMM_PACKET_HEADER, (uint8_t*)pCommPacket->crc, sizeof(uint16_t));
+	memcpy(buffer + pCommPacket->dataLen + COMM_PACKET_HEADER, (uint8_t*)&pCommPacket->crc, sizeof(uint16_t));
 	
 	bleuart.write(buffer, pCommPacket->dataLen + COMM_PACKET_HEADER_W_CRC);
 }
@@ -302,29 +302,25 @@ void sendStringAsStringPacketViaBLE(String str)
 {
 	commPacket_t commPacket;
 	pktString_t stringPacket;
-	//str = "help\n";
 	int16_t index = 0, remainingCharacters = str.length(), charactersToSend;
 
 	if(str.length() == 0)
 		return;
 
-	Serial.print("Going to send this text to bluetooth: ");
-	Serial.println(str);
 	do
 	{
-		charactersToSend = remainingCharacters < MAX_INNER_PACKET_DATALEN ? remainingCharacters : MAX_INNER_PACKET_DATALEN;
+		charactersToSend = remainingCharacters < 50 ? remainingCharacters : 50;
 		
-		memcpy(stringPacket.str, str.substring(index, charactersToSend).c_str(), charactersToSend);
+		memcpy(stringPacket.str, str.substring(index, index + charactersToSend).c_str(), charactersToSend);
 		stringPacket.strLen = charactersToSend;
-		Serial.print("stringPacket.str: ");
-		Serial.print((char*)stringPacket.str);
-		Serial.print(" | stringPacket.strLen: ");
-		Serial.println(stringPacket.strLen);
+				
 		createStringPacket(&commPacket, &stringPacket);
 		sendPacketViaBLE(&commPacket);
 
 		remainingCharacters -= charactersToSend;
 		index += charactersToSend;
+
+		delay(150);
 		
 	} while (remainingCharacters > 0);
 	Serial.println("Text sent to bluetooth");

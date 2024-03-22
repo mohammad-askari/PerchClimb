@@ -76,14 +76,14 @@ async def run():
 		#bluetoothMutex.release()
 		
 		if isinstance(buffer, bytearray):
-			print("Received: ", len(buffer), buffer)
+			#print("Received: ", len(buffer), buffer)
 			# decodedPackets contains packets that decoded and each element in the list can be a different type
 			decodedPackets = communication.decodeBytes(buffer)
 			for packet in decodedPackets:
 				
 				# String packet
 				if isinstance(packet, communication.pktString_t):
-					print(packet.str)
+					print(packet.str, end='')
 				
 				# Metadata packet
 				elif isinstance(packet, communication.pktFileMetadata_t):
@@ -164,7 +164,7 @@ def cliThread(uart_service):
 		sendBuffer = communication.convertCommPacketToByteArray(commPacket)
 		
 		#bluetoothMutex.acquire()
-		print("Sending out: ", sendBuffer)
+		#print("Sending out: ", sendBuffer)
 		thereIsDataToSend = True
 		dataToSend = sendBuffer
 		#bluetoothMutex.release()
