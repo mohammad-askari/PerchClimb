@@ -113,7 +113,7 @@ void tsClimbOn() {
 
     // disenage hooks
     body_hook.setPosition(RANGE_MIN);
-    tail_hook.setPosition(RANGE_MIN); // FIXME: AVOID HARD-CODED (TREE-CLIMBING)
+    tail_hook.setPosition(+30); // FIXME: AVOID HARD-CODED (TREE-CLIMBING)
 
   // stop wing loosening if activated
   if (climb_wing_loosening) {
@@ -476,8 +476,7 @@ void tsDataTransfer() {
     delay(python_delay);
     
     uint8_t *P;
-    int bytes_written = 0;
-    for (int i = 0; i < data_idx; i+6) {
+    for (int i = 0; i < data_idx; i=i+6) {
         P = (uint8_t*) exp_data;
         P += sizeof(exp_data_t) * i;
         bleuart.write(P, sizeof(exp_data_t) * 6);
@@ -500,7 +499,8 @@ void tsDataTransfer() {
       packet_idx += sizeof(cmd_data_t);
 
       // send the packet once it is full or all data has been copied
-      if ((i + 1) % sets_per_packet == 0 || i == data_idx - 1) {
+      // if ((i + 1) % sets_per_packet == 0 || i == data_idx - 1) {
+      if ((i + 1) % sets_per_packet == 0) {
           bleuart.write(packet, packet_len);
           delay(250); // Delay between packets
           packet_idx = 0;

@@ -84,7 +84,6 @@ async def run():
 										uart_service.reset_input_buffer()
 										uart_service.write(input_str.encode("utf-8"))
 										print("Connected ...")
-										uart_service = uart_connection[UARTService]
 										line = uart_service.readline().decode("utf-8")
 										numberOfPackets = 0
 										if line[:4] == "meta":
@@ -117,7 +116,7 @@ async def run():
 										
 										
 										else:
-											# save full experimental data only (incl. actuator commands) if "-full" flag is used
+											# save full experimental data (incl. actuator commands) only if "-full" flag is used
 											alltext = "Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg],Throttle [us],Aileron,Elevator,Rudder,Clutch,Body Hook,Tail Hook,Wing Open [pwm]\n"
 											counter = 0
 											experimental_data = []
@@ -224,48 +223,38 @@ async def run():
 ###################################### FUNCTIONS ##################################
 
 class DataProcessor:
-	def __init__(self, time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, clutch, body_hook, tail_hook, wing_open):
-		self.time = time
-		self.current = current
-		self.roll = roll
-		self.pitch = pitch
-		self.yaw = yaw
-		self.throttle = throttle
-		self.aileron = aileron
-		self.elevator = elevator
-		self.rudder = rudder
-		self.clutch = clutch
-		self.body_hook = body_hook
-		self.tail_hook = tail_hook
-		self.wing_open = wing_open
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
 def convert_exp_data_to_str(buffer):
 	if len(buffer) == 10:
-		time = int.from_bytes(buffer[0:2], byteorder='little', signed=False)
-		current = int.from_bytes(buffer[2:4], byteorder='little', signed=True)
-		roll = int.from_bytes(buffer[4:6], byteorder='little', signed=True)
-		pitch = int.from_bytes(buffer[6:8], byteorder='little', signed=True)
-		yaw = int.from_bytes(buffer[8:], byteorder='little', signed=True)
-
-		return DataProcessor(time, current, roll, pitch, yaw)
-
+		data = {
+			'time':      int.from_bytes(buffer[0:2],  byteorder='little', signed=False),
+			'current':   int.from_bytes(buffer[2:4],  byteorder='little', signed=True),
+			'roll':      int.from_bytes(buffer[4:6],  byteorder='little', signed=True),
+			'pitch':     int.from_bytes(buffer[6:8],  byteorder='little', signed=True),
+			'yaw':       int.from_bytes(buffer[8:10], byteorder='little', signed=True)
+		}
+		return DataProcessor(**data)
+	
 	elif len(buffer) == 20:
-		time = int.from_bytes(buffer[0:2], byteorder='little', signed=False)
-		current = int.from_bytes(buffer[2:4], byteorder='little', signed=True)
-		roll = int.from_bytes(buffer[4:6], byteorder='little', signed=True)
-		pitch = int.from_bytes(buffer[6:8], byteorder='little', signed=True)
-		yaw = int.from_bytes(buffer[8:10], byteorder='little', signed=True)
-		throttle = int.from_bytes(buffer[10:12], byteorder='little', signed=True)
-		aileron = int.from_bytes(buffer[12:13], byteorder='little', signed=True)
-		elevator = int.from_bytes(buffer[13:14], byteorder='little', signed=True)
-		rudder = int.from_bytes(buffer[14:15], byteorder='little', signed=True)
-		clutch = int.from_bytes(buffer[15:16], byteorder='little', signed=True)
-		body_hook = int.from_bytes(buffer[16:17], byteorder='little', signed=True)
-		tail_hook = int.from_bytes(buffer[17:18], byteorder='little', signed=True)
-		wing_open = int.from_bytes(buffer[18:20], byteorder='little', signed=True)
-		
-		return DataProcessor(time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, clutch, body_hook, tail_hook, wing_open)
-
+		data = { 
+			'time':      int.from_bytes(buffer[0:2],   byteorder='little', signed=False),
+			'current':   int.from_bytes(buffer[2:4],   byteorder='little', signed=True),
+			'roll':      int.from_bytes(buffer[4:6],   byteorder='little', signed=True),
+			'pitch':     int.from_bytes(buffer[6:8],   byteorder='little', signed=True),
+			'yaw':       int.from_bytes(buffer[8:10],  byteorder='little', signed=True),
+			'throttle':  int.from_bytes(buffer[10:12], byteorder='little', signed=True),
+			'aileron':   int.from_bytes(buffer[12:13], byteorder='little', signed=True),
+			'elevator':  int.from_bytes(buffer[13:14], byteorder='little', signed=True),
+			'rudder':    int.from_bytes(buffer[14:15], byteorder='little', signed=True),
+			'clutch':    int.from_bytes(buffer[15:16], byteorder='little', signed=True),
+			'body_hook': int.from_bytes(buffer[16:17], byteorder='little', signed=True),
+			'tail_hook': int.from_bytes(buffer[17:18], byteorder='little', signed=True),
+			'wing_open': int.from_bytes(buffer[18:20], byteorder='little', signed=True)
+		}
+		return DataProcessor(**data)
+	
 	else:
 		print("BAD DATA")
 		print(len(buffer))
