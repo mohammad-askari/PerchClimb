@@ -323,5 +323,4 @@ void sendStringAsStringPacketViaBLE(String str)
 		delay(150);
 		
 	} while (remainingCharacters > 0);
-	Serial.println("Text sent to bluetooth");
 }
