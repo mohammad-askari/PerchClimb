@@ -32,7 +32,7 @@ UUID_throttle = '13012F01-F8C3-4F4A-A8F4-15CD926DA152'
 UUID_aileron = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA153'
 UUID_elevator = '13012F01-F8C3-4F4A-A8F4-15CD926DA154'
 UUID_rudder = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA155'
-UUID_wing_lock = '13012F01-F8C3-4F4A-A8F4-15CD926DA156'
+clutch = 		'13012F01-F8C3-4F4A-A8F4-15CD926DA156'
 UUID_body_hook = '13012F01-F8C3-4F4A-A8F4-15CD926DA157'
 UUID_tail_hook = '13012F01-F8C3-4F4A-A8F4-15CD926DA158'
 UUID_RXD     =  '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'
@@ -97,10 +97,10 @@ async def run():
 											if isinstance(buffer, bytearray):
 												counter += 1
 												# print("Buffer size is: {0}".format(len(buffer)))
-												for i in range(0, 6):
+												for i in range(0, 3):
 													data = convert_exp_data_to_str(buffer[i*18 : i*18+18])
 													experimental_data.append(data)
-													alltext += str(data.time) + ',' + str(data.current) + ',' + str(data.roll) + ',' + str(data.pitch) + ',' + str(data.yaw) + ',' + str(data.throttle) + ',' + str(data.aileron) + ',' + str(data.elevator) + ',' + str(data.rudder) + ',' + str(data.wing_lock) + ',' + str(data.body_hook) + ',' + str(data.tail_hook) + '\n'
+													alltext += str(data.time) + ',' + str(data.current) + ',' + str(data.roll) + ',' + str(data.pitch) + ',' + str(data.yaw) + ',' + str(data.throttle) + ',' + str(data.aileron) + ',' + str(data.elevator) + ',' + str(data.rudder) + ',' + str(data.clutch) + ',' + str(data.body_hook) + ',' + str(data.tail_hook) + '\n'
 												print("packets: ", counter)
 													# try:
 													# 	print(data.time, data.current, data.roll, data.pitch, data.yaw)
@@ -208,7 +208,7 @@ async def run():
 ###################################### FUNCTIONS ##################################
 
 class DataProcessor:
-	def __init__(self, time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, wing_lock, body_hook, tail_hook):
+	def __init__(self, time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, clutch, body_hook, tail_hook):
 		self.time = time
 		self.current = current
 		self.roll = roll
@@ -218,7 +218,7 @@ class DataProcessor:
 		self.aileron = aileron
 		self.elevator = elevator
 		self.rudder = rudder
-		self.wing_lock = wing_lock
+		self.clutch = clutch
 		self.body_hook = body_hook
 		self.tail_hook = tail_hook
 
@@ -233,12 +233,12 @@ def convert_exp_data_to_str(buffer):
 		aileron = int.from_bytes(buffer[12:13], byteorder='little', signed=True)
 		elevator = int.from_bytes(buffer[13:14], byteorder='little', signed=True)
 		rudder = int.from_bytes(buffer[14:15], byteorder='little', signed=True)
-		wing_lock = int.from_bytes(buffer[15:16], byteorder='little', signed=True)
+		clutch = int.from_bytes(buffer[15:16], byteorder='little', signed=True)
 		body_hook = int.from_bytes(buffer[16:17], byteorder='little', signed=True)
 		tail_hook = int.from_bytes(buffer[17:18], byteorder='little', signed=True)
 		
 
-		return DataProcessor(time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, wing_lock, body_hook, tail_hook)
+		return DataProcessor(time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, clutch, body_hook, tail_hook)
 	else:
 		print("BAD DATA")
 		print(len(buffer))
@@ -252,7 +252,7 @@ def save_data_to_csv(self, filename):
 	df = pd.DataFrame(self.data)
 	df.to_csv(filename + dt_string + '.csv')
 
-def write_csv(rtime,rpitch,rroll,ryaw,rcurrent,rthrottle,raileron,relevator,rrudder,rwing_lock,rbody_hook,rtail_hook):
+def write_csv(rtime,rpitch,rroll,ryaw,rcurrent,rthrottle,raileron,relevator,rrudder,rclutch,rbody_hook,rtail_hook):
 	dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
 	dtime = rtime.split(',')
@@ -264,7 +264,7 @@ def write_csv(rtime,rpitch,rroll,ryaw,rcurrent,rthrottle,raileron,relevator,rrud
 	daileron = raileron.split(',')
 	delevator = relevator.split(',')
 	drudder = rrudder.split(',')
-	dwing_lock = rwing_lock.split(',')
+	dclutch = rclutch.split(',')
 	dbody_hook = rbody_hook.split()
 	dtail_hook = rtail_hook.split()
 	print("step a")
@@ -277,7 +277,7 @@ def write_csv(rtime,rpitch,rroll,ryaw,rcurrent,rthrottle,raileron,relevator,rrud
 	dfai = pd.DataFrame({'Aileron': daileron})
 	dfel = pd.DataFrame({'Elevator': delevator})
 	dfru = pd.DataFrame({'Rudder': drudder})
-	dfwl = pd.DataFrame({'Wing Lock': dwing_lock})
+	dfwl = pd.DataFrame({'Clutch': dclutch})
 	dfbh = pd.DataFrame({'Body Hook': dbody_hook})
 	dfth = pd.DataFrame({'Tail Hook': dtail_hook})
 	print("step b")

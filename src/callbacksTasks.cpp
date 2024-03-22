@@ -448,13 +448,13 @@ void tsDataLogger() {
   exp_data[data_idx].roll      = round(roll);
   exp_data[data_idx].pitch     = round(pitch);
   exp_data[data_idx].yaw       = round(yaw);
-  exp_data[data_idx].throttle  = esc.getSpeed();
-  exp_data[data_idx].aileron   = aileron  .getPosition();
-  exp_data[data_idx].elevator  = elevator .getPosition();
-  exp_data[data_idx].rudder    = rudder   .getPosition();
-  exp_data[data_idx].clutch    = wing_lock.getPosition();
-  exp_data[data_idx].body_hook = body_hook.getPosition();
-  exp_data[data_idx].tail_hook = tail_hook.getPosition();
+  // exp_data[data_idx].throttle  = esc.getSpeed();
+  // exp_data[data_idx].aileron   = aileron  .getPosition();
+  // exp_data[data_idx].elevator  = elevator .getPosition();
+  // exp_data[data_idx].rudder    = rudder   .getPosition();
+  // exp_data[data_idx].clutch    = wing_lock.getPosition();
+  // exp_data[data_idx].body_hook = body_hook.getPosition();
+  // exp_data[data_idx].tail_hook = tail_hook.getPosition();
   data_idx++;
 };
 
@@ -474,6 +474,20 @@ void tsDataTransfer() {
       bleuart.write(P, sizeof(exp_data_t) * 6);
       delay(250);
   }
+
+  // char buffer[32];
+  // delay(300);
+  // sprintf(buffer, "meta: %d\n", (int)ceil(data_idx / 3) );
+  // bleuart.write( (uint8_t*) buffer, strlen(buffer));
+  // delay(300);
+
+  // uint8_t *P;
+  // for (int i = 0; i < data_idx; i = i+3) {                 
+  //     P = (uint8_t*) exp_data;
+  //     P += sizeof(exp_data_t) * i;
+  //     bleuart.write(P, sizeof(exp_data_t) * 3);
+  //     delay(250);
+  // }
 
   Serial.println("Data Transfer Complete");
 };

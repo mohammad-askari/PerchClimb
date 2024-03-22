@@ -75,13 +75,13 @@ typedef struct {
     int16_t  roll;
     int16_t  pitch;
     int16_t  yaw;
-    int16_t  throttle;
-    int8_t   aileron;
-    int8_t   elevator;
-    int8_t   rudder;
-    int8_t   clutch;
-    int8_t   body_hook;
-    int8_t   tail_hook;
+    // int16_t  throttle;
+    // int8_t   aileron;
+    // int8_t   elevator;
+    // int8_t   rudder;
+    // int8_t   clutch;
+    // int8_t   body_hook;
+    // int8_t   tail_hook;
 } exp_data_t;
 
 extern const int drop_freq, move_freq, log_freq, filt_freq, log_max, data_len;
