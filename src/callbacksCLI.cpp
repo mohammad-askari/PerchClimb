@@ -11,7 +11,7 @@
 void cliHelp(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Serial.print(cli.toString());
-  sendStringAsStringPacketViaBLE(cli.toString());
+  sendStringAsStringPacketViaBLE(cli.toString() + String("\n"));
 }
 
 // —————————————————————————— INPUT ERROR CALLBACK —————————————————————————— //
@@ -26,12 +26,16 @@ void cliThrowError(cmd_error *err_ptr) {
   Serial.print("ERROR:\t");
   Serial.println(e.toString());
 
+  sendStringAsStringPacketViaBLE(String("ERROR:\t") + e.toString() + String("\n"));
+
   // print command usage
   if (e.hasCommand()) {
     bool show_description = false;
     Serial.print("\tDid you mean \"");
     Serial.print(e.getCommand().toString(show_description));
     Serial.println("\"?");
+
+    sendStringAsStringPacketViaBLE(String("\tDid you mean \"") + e.getCommand().toString(show_description) + String("\"?\n"));
   }
 }
 
@@ -42,9 +46,14 @@ void cliThrowError(cmd_error *err_ptr) {
  **/
 void cliLogData(cmd *cmd_ptr) { // TODO: IMPLEMENT THIS FUNCTION
   Command c(cmd_ptr);  // wrapper class instance for the pointer
+  
   Serial.println("Logging IMU data at 208 Hz for 5 seconds to test.txt file.");
+  sendStringAsStringPacketViaBLE(String("Logging IMU data at 208 Hz for 5 seconds to test.txt file.\n"));
+
   delay(5200);
+  
   Serial.println("Data logging completed.");
+  sendStringAsStringPacketViaBLE(String("Data logging completed.\n"));
 }
 
 // ——————————————————— EXPERIMENTAL DATA TRANSFER COMMANDS —————————————————— //
@@ -66,9 +75,14 @@ void cliTransferData(cmd *cmd_ptr) { // TODO: MAKE NON-BLOCKING
  **/
 void cliFormatMemory(cmd *cmd_ptr) { // TODO: IMPLEMENT THIS FUNCTION
   Command c(cmd_ptr);  // wrapper class instance for the pointer
+  
   Serial.print("Formatting the QSPI using LittleFS ...");
+  sendStringAsStringPacketViaBLE(String("Formatting the QSPI using LittleFS ...\n"));
+  
   delay(1500);
+  
   Serial.println("Done.");
+  sendStringAsStringPacketViaBLE(String("Done.\n"));
 }
 
 // ————————————————————————————— QSPI FILE ERASE ———————————————————————————— //
@@ -78,13 +92,18 @@ void cliFormatMemory(cmd *cmd_ptr) { // TODO: IMPLEMENT THIS FUNCTION
  **/
 void cliEraseFile(cmd *cmd_ptr) { // TODO: IMPLEMENT THIS FUNCTION
   Command c(cmd_ptr);  // wrapper class instance for the pointer
+  
   Serial.print("File: ");
+  sendStringAsStringPacketViaBLE(String("File: "));
+
   int argNum = c.countArgs();
   for (int i = 0; i < argNum; i++) {
     Serial.print(c.getArgument(i).getValue());
+    sendStringAsStringPacketViaBLE(c.getArgument(i).getValue());
   }
   delay(100);
   Serial.println(" successfully deleted.");
+  sendStringAsStringPacketViaBLE(String(" successfully deleted.\n"));
 }
 
 // —————————————————————————— MOTOR DRIVE COMMANDS —————————————————————————— //
@@ -147,6 +166,7 @@ void cliMotorHome(cmd *cmd_ptr) {
   if (set_home) {
     // encoder.reset_count();
     Serial.println("Current position set to home");
+    sendStringAsStringPacketViaBLE(String("Current position set to home\n"));
   }
 
 // FIXME: REPLACE WITH CLUTCH OBJECT
@@ -193,19 +213,24 @@ void setPos(cmd *cmd_ptr) {
 
   if (servoID == 99){
     Serial.print("All servos");
+    sendStringAsStringPacketViaBLE(String("All servos"));
+
     for(byte i = 0; i < servo_num; i++) {
       actuator[i]->setPosition(pos);
     }
   }  
   else{
-    Serial.print("Servo ");
     servoID = constrain(servoID, 0, servo_num-1);
-    Serial.print(servoID);
     actuator[servoID]->setPosition(pos);
+    
+    Serial.print("Servo ");
+    Serial.print(servoID);
+    sendStringAsStringPacketViaBLE(String("Servo ") + String(servoID));
   }
 
   Serial.print(" to position ");
   Serial.println(pos);
+  sendStringAsStringPacketViaBLE(String(" to position ") + String(pos) + String("\n"));
 
 }
 
@@ -222,18 +247,24 @@ void setFreq(cmd *cmd_ptr) {
 
   if (servoID == 99){
     Serial.print("All servos");
+    sendStringAsStringPacketViaBLE(String("All servos"));
+
     for(byte i = 0; i < servo_num; i++) {
       actuator[i]->setFrequency(freq);
     }
   }
   else{
     Serial.print("Servo ");
+    sendStringAsStringPacketViaBLE(String("Servo "));
+    
     servoID = constrain(servoID, 0, servo_num-1);
     Serial.print(servoID);
     actuator[servoID]->setFrequency(freq);
   }
+  
   Serial.print(" at frequency ");
   Serial.println(freq);
+  sendStringAsStringPacketViaBLE(String(" at frequency ") + String(freq) + String("\n"));
 }
 
 /**
@@ -248,6 +279,7 @@ void setESC(cmd *cmd_ptr) {
   esc.stop();
   Serial.print("ESC speed set to ");
   Serial.println(esc_speed);
+  sendStringAsStringPacketViaBLE(String("ESC speed set to ") + String(esc_speed) + String("\n"));
 }
 
 /**
@@ -263,6 +295,8 @@ void setMode(cmd *cmd_ptr) {
 
   if (servoID == 99){
     Serial.print("All servos");
+    sendStringAsStringPacketViaBLE(String("All servos"));
+
     for(byte i = 0; i < servo_num; i++) {
       if (!is_ramp){
         actuator[i]->setMode(STEP);
@@ -274,6 +308,8 @@ void setMode(cmd *cmd_ptr) {
   }  
   else{
     Serial.print("Servo ");
+    sendStringAsStringPacketViaBLE(String("Servo "));
+
     servoID = constrain(servoID, 0, servo_num-1);
     Serial.print(servoID);
     if (!is_ramp){
@@ -286,6 +322,7 @@ void setMode(cmd *cmd_ptr) {
 
   Serial.print(" set to ");
   Serial.println(!is_ramp ? "step" : "ramp");
+  sendStringAsStringPacketViaBLE(String(" set to ") + String(!is_ramp ? "step" : "ramp") + String("\n"));
 }
 
 /**
@@ -300,6 +337,7 @@ void setExpDuration(cmd *cmd_ptr) {
   Serial.print("Experiment duration set to ");
   Serial.print(exp_duration);
   Serial.println(" (s)");
+  sendStringAsStringPacketViaBLE(String("Experiment duration set to ") + String(exp_duration) + String(" (s)\n"));
 }
 
 /**
@@ -316,6 +354,7 @@ void setExpDelay(cmd *cmd_ptr) {
   Serial.print("Experiment delay set to ");
   Serial.print(delay);
   Serial.println(" (s)");
+  sendStringAsStringPacketViaBLE(String("Experiment delay set to ") + String(delay) + String(" (s)\n"));
 }
 
 /**
@@ -331,18 +370,24 @@ void setOffset(cmd *cmd_ptr) {
 
   if (servoID == 99){
     Serial.print("All servos");
+    sendStringAsStringPacketViaBLE(String("All servos"));
+
     for(byte i = 0; i < servo_num; i++) {
       actuator[i]->setOffset(offset);
     }
   }
   else{
     Serial.print("Servo ");
+    sendStringAsStringPacketViaBLE(String("Servo "));
+
     servoID = constrain(servoID, 0, servo_num-1);
     Serial.print(servoID);
     actuator[servoID]->setOffset(offset);
   }
+
   Serial.print(" set to offset ");
   Serial.println(offset);
+  sendStringAsStringPacketViaBLE(String(" set to offset ") + String(offset) + String("\n"));
 }
 
 /**
@@ -358,18 +403,24 @@ void setRange(cmd *cmd_ptr) {
 
   if (servoID == 99){
     Serial.print("All servos");
+    sendStringAsStringPacketViaBLE(String("All servos"));
+
     for(byte i = 0; i < servo_num; i++) {
       actuator[i]->setRange(range);
     }
   }
   else{
     Serial.print("Servo ");
+    sendStringAsStringPacketViaBLE(String("Servo "));
+
     servoID = constrain(servoID, 0, servo_num-1);
     Serial.print(servoID);
     actuator[servoID]->setRange(range);
   }
+
   Serial.print(" set to range ");
   Serial.println(range);
+  sendStringAsStringPacketViaBLE(String(" set to range ") + String(range) + String("\n"));
 }
 
 /**
@@ -401,13 +452,18 @@ void setPreHover(cmd *cmd_ptr) {
 
   Serial.print("Pre-hovering set to ESC speed of ");
   Serial.print(pre_hover_esc);
+  sendStringAsStringPacketViaBLE(String("Pre-hovering set to ESC speed of ") + String(pre_hover_esc));
+
   if (hover_use_hooks) {
     Serial.print(", with transition from ");
     Serial.print(transition_esc);
+    sendStringAsStringPacketViaBLE(String(", with transition from ") + String(transition_esc));
   }
+
   Serial.print(", for ");
   Serial.print(pre_hover_time);
   Serial.println(" (s)");
+  sendStringAsStringPacketViaBLE(String(", for ") + String(pre_hover_time) + String(" (s)\n"));
 }
 
 /**
@@ -441,12 +497,21 @@ void setClimbDown(cmd *cmd_ptr) {
   Serial.print(post_descent_time);
   Serial.print(" (s), with descent ESC transition of ");
   Serial.print(transition_esc);
-  if (is_freefall_mode) 
+  sendStringAsStringPacketViaBLE(String("Pre-descent at ") + String(pre_descent_esc) + String(" ESC for ") + String(pre_descent_time) + 
+                                 String(" (s), post-descent at ") + String(post_descent_esc) + String(" ESC for ") + String(post_descent_time) + 
+                                 String(" (s), with descent ESC transition of ") + String(transition_esc));
+  
+  if (is_freefall_mode)
+  {
     Serial.println(" in free-fall mode");
-  else {
+    sendStringAsStringPacketViaBLE(String(" in free-fall mode\n"));
+  }
+  else
+  {
     Serial.print(" at ");
     Serial.print(descent_freq);
     Serial.println(" Hz");
+    sendStringAsStringPacketViaBLE(String(" at ") + String(descent_freq) + String(" Hz\n"));
   }
 }
 
@@ -470,6 +535,7 @@ void setWingOpening(cmd *cmd_ptr) {
   Serial.print("%% speed for ");
   Serial.print(wing_opening_duration);
   Serial.println(" (s)");
+  sendStringAsStringPacketViaBLE(String("Wing opening set to ") + String(speed_percent) + String("%% speed for ") + String(wing_opening_duration) + String(" (s)\n"));
 }
 
 /**
@@ -504,6 +570,9 @@ void setUnperch(cmd *cmd_ptr) {
   Serial.print(" (s), at the desired ");
   Serial.print(takeoff_pitch);
   Serial.println(" (deg) pitch");
+  sendStringAsStringPacketViaBLE(String("Pre-unperch at ") + String(pre_unperch_esc) + String(" ESC for ") + String(pre_unperch_duration) + 
+                                 String(" (s), tilt back at ") + String(tilt_esc) + String(" ESC, takeoff at ") + String(takeoff_esc) + 
+                                 String(" ESC for ") + String(takeoff_duration) + String(" (s), at the desired ") + String(takeoff_pitch) + String(" (deg) pitch\n"));
 }
 
 // ————————————————————————— RUN EXPERIMENT COMMANDS ———————————————————————— //
@@ -515,9 +584,11 @@ void setUnperch(cmd *cmd_ptr) {
 void cliHover(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   ts_pre_hover.restartDelayed(exp_delayed * TASK_SECOND);
+  
   Serial.print("Hovering starts in ");
   Serial.print(exp_delayed);
   Serial.println(" (s)");
+  sendStringAsStringPacketViaBLE(String("Hovering starts in ") + String(exp_delayed) + String(" (s)\n"));
 }
 
 /**
@@ -542,6 +613,7 @@ void cliClimb(cmd *cmd_ptr) {
   Serial.print(" starts in ");
   Serial.print(exp_delayed);
   Serial.println(" (s)");
+  sendStringAsStringPacketViaBLE(String("Climbing ") + direction + String(" starts in ") + String(exp_delayed) + String(" (s)\n"));
 }
 
 /**
@@ -552,9 +624,11 @@ void cliUnperch(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   
   ts_pre_unperch.restartDelayed(exp_delayed * TASK_SECOND);
+  
   Serial.print("Unperching starts in ");
   Serial.print(exp_delayed);
   Serial.println(" (s)");
+  sendStringAsStringPacketViaBLE(String("Unperching starts in ") + String(exp_delayed) + String(" (s)\n"));
 }
 
 /**
@@ -566,6 +640,7 @@ void cliKill(cmd *cmd_ptr) {
 
   ts_kill.restart();
   Serial.println("Mission aborted.");
+  sendStringAsStringPacketViaBLE(String("Mission aborted.\n"));
 }
 
 /**
@@ -577,4 +652,5 @@ void cliKillSmooth(cmd *cmd_ptr) {
 
   ts_climb_off.restart(); // FIXME: only works for climb up
   Serial.println("Mission aborted with smooth falloff.");
+  sendStringAsStringPacketViaBLE(String("Mission aborted with smooth falloff.\n"));
 }

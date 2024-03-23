@@ -76,29 +76,36 @@ def cliThread():
 
 	print("CLI thread started. Enter your command:")
 	
-	while continueRunning:
-		# wait until the entered command is sent
-		while thereIsDataToSend == True:
-			time.sleep(0.050)
+	try:
+		while continueRunning:
+			# wait until the entered command is sent
+			while thereIsDataToSend == True:
+				time.sleep(0.050)
 
-		command = input(">")
-		pktString = communication.pktString_t()
-		pktString.str = command + "\n"
-		pktString.strLen = len(pktString.str)
+			command = input(">")
+			if command != "":
+				pktString = communication.pktString_t()
+				pktString.str = command + "\n"
+				pktString.strLen = len(pktString.str)
 
-		commPacket = communication.commPacket_t()
-		communication.createStringPacket(commPacket, pktString)
-		sendBuffer = communication.convertCommPacketToByteArray(commPacket)
-		
-		thereIsDataToSend = True
-		dataToSend = sendBuffer
+				commPacket = communication.commPacket_t()
+				communication.createStringPacket(commPacket, pktString)
+				sendBuffer = communication.convertCommPacketToByteArray(commPacket)
+				
+				thereIsDataToSend = True
+				dataToSend = sendBuffer
+	except Exception as e:
+		pass
 #---------------------------------------------------------------------------------------------------------------------
 # find and connect to the PerchClimb device
 async def connectBluetooth():
+	perchClimbDevice = None
+	
+	print('Looking for nRF58240 Peripheral Device...')
+
 	# scan until we find the device
 	while True:
 		# scan nearby bluetooth devices
-		print('Looking for nRF58240 Peripheral Device...')
 		foundDevices = await BleakScanner.discover(timeout=2.0)
 		for device in foundDevices:
 			if device.name == 'PerchClimb':
@@ -132,12 +139,13 @@ async def run():
 
 		bleClient = BleakClient(perchClimbDevice, disconnected_callback=disconnectCallback)
 		await bleClient.connect()
-		print("Connected to the device")
+		print("Connected to the device\n")
 		
 		# show services of the device
 		print("Available services: ", len(bleClient.services.services))
 		for service in bleClient.services.services:
 			print(bleClient.services.get_service(service))
+		print("\n")
 		
 		# set read callback function
 		await bleClient.start_notify(UUID_TXD, dataReceiveCallback)
@@ -153,9 +161,8 @@ async def run():
 				await bleClient.write_gatt_char(UUID_RXD, dataToSend)
 				thereIsDataToSend = False
 			
-			await asyncio.sleep(0.1)
+			await asyncio.sleep(0.2)
 #---------------------------------------------------------------------------------------------------------------------			
-###################################### FUNCTIONS ##################################
 class DataProcessor:
 	def __init__(self, time, current, roll, pitch, yaw):
 		self.time = time
@@ -164,7 +171,7 @@ class DataProcessor:
 		self.pitch = pitch
 		self.yaw = yaw
 
-def convert_exp_data_to_str(buffer):
+def convert_exp_data_to_str(buffer: bytearray):
 	if len(buffer) == 10:
 		time = int.from_bytes(buffer[0:2], byteorder='little', signed=False)
 		current = int.from_bytes(buffer[2:4], byteorder='little', signed=True)

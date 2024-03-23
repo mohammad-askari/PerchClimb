@@ -320,7 +320,7 @@ void sendStringAsStringPacketViaBLE(String str)
 		remainingCharacters -= charactersToSend;
 		index += charactersToSend;
 
-		delay(20);
+		delay(10);
 		
 	} while (remainingCharacters > 0);
 }
