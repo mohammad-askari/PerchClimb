@@ -213,7 +213,6 @@ void setup()
 void loop() {  
   // run the task scheduler to execute the tasks in order
   scheduler.execute();
-  
   // for (byte i = 0; i < servo_num; i++) actuator[i]->print();
 
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UGLY FUNCTIONALITY TESTING CODE
