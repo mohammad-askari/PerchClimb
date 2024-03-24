@@ -18,7 +18,7 @@ iTX = find(cell2mat(cellfun(@(x) any(contains(x,"Write")) , ...
 uuidCharRX  = chars.CharacteristicUUID(iRX);
 uuidCharTX  = chars.CharacteristicUUID(iTX);
 rx = characteristic(conn, uuidService, uuidCharRX);
-tx = characteristic(conn, uuidService, uuidCharTX);
+% tx = characteristic(conn, uuidService, uuidCharTX);
 
 
 MTU = 244; 

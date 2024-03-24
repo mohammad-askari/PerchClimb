@@ -6,38 +6,17 @@ from bleak import BleakClient
 from bleak import BleakScanner
 from bleak import discover
 from bleak import BleakError
-import re, os
+import os
 from datetime import datetime
-import csv 
-import pandas as pd
 
 from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
 from adafruit_ble.services.nordic import UARTService
 import time
-# import pygame
-
-# import os
-# print(os.listdir())
-# print(os.getcwd())
 
 
-UUID = 			'13012F01-F8C3-4F4A-A8F4-15CD926DA146'
-UUID_time = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA147'
-UUID_pitch = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA148'
-UUID_roll = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA149'
-UUID_yaw = 		'13012F01-F8C3-4F4A-A8F4-15CD926DA150'
-UUID_current = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA151'
-UUID_throttle = '13012F01-F8C3-4F4A-A8F4-15CD926DA152'
-UUID_aileron = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA153'
-UUID_elevator = '13012F01-F8C3-4F4A-A8F4-15CD926DA154'
-UUID_rudder = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA155'
-clutch = 		'13012F01-F8C3-4F4A-A8F4-15CD926DA156'
-UUID_body_hook = '13012F01-F8C3-4F4A-A8F4-15CD926DA157'
-UUID_tail_hook = '13012F01-F8C3-4F4A-A8F4-15CD926DA158'
-UUID_wing_open = '13012F01-F8C3-4F4A-A8F4-15CD926DA159'
-UUID_RXD     =  '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'
-UUID_TXD	 =  '6E400003-B5A3-F393-E0A9-E50E24DCCA9E'
+UUID_RXD = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'
+UUID_TXD = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E'
 
 ble = BLERadio()
 
@@ -46,7 +25,7 @@ uart_connection = None
 #################################### RUN FUNCTION ###################################
 
 async def run():
-	print('Looking for nRF58240 Peripheral Device...')
+	print('Looking for nRF58240 Peripheral Device ...')
 
 	found = False
 	uart_connection = None
@@ -99,16 +78,11 @@ async def run():
 												buffer = uart_service.read(60)
 												if isinstance(buffer, bytearray):
 													counter += 1
-													# print("Buffer size is: {0}".format(len(buffer)))
 													for i in range(0, 6):
 														data = convert_exp_data_to_str(buffer[i*10 : i*10+10])
 														experimental_data.append(data)
 														alltext += str(data.time) + ',' + str(data.current) + ',' + str(data.roll) + ',' + str(data.pitch) + ',' + str(data.yaw) + '\n'
 													print("packets: ", counter)
-														# try:
-														# 	print(data.time, data.current, data.roll, data.pitch, data.yaw)
-														# except Exception as e:
-														# 	pass
 													
 													if counter == numberOfPackets:
 														save_exp_data_as_csv(alltext)
@@ -124,63 +98,16 @@ async def run():
 												buffer = uart_service.read(60)
 												if isinstance(buffer, bytearray):
 													counter += 1
-													# print("Buffer size is: {0}".format(len(buffer)))
 													for i in range(0, 3):
 														data = convert_exp_data_to_str(buffer[i*20 : i*20+20])
 														experimental_data.append(data)
 														alltext += str(data.time) + ',' + str(data.current) + ',' + str(data.roll) + ',' + str(data.pitch) + ',' + str(data.yaw) + ',' + str(data.throttle) + ',' + str(data.aileron) + ',' + str(data.elevator) + ',' + str(data.rudder) + ',' + str(data.clutch) + ',' + str(data.body_hook) + ',' + str(data.tail_hook) + ',' + str(data.wing_open) + '\n'
 													print("packets: ", counter)
-														# try:
-														# 	print(data.time, data.current, data.roll, data.pitch, data.yaw)
-														# except Exception as e:
-														# 	pass
 													
 													if counter == numberOfPackets:
 														save_exp_data_as_csv(alltext)
 														break
-														
-														
-									
-								
-										
-
-								# alltext = ""
-								# numberofdata = 0
-								# try:
-								# 	if uart_connection and uart_connection.connected:
-								# 		uart_service = uart_connection[UARTService]
-								# 		while uart_connection.connected:
-								# 			# uart_service.write(input_str.encode("utf-8"))
-								# 			# uart_service.write(b'\n')
-								# 			line = uart_service.readline().decode("utf-8")
-								# 			numberofdata += 1
-								# 			#print(line)
-								# 			alltext += line 
-
-								# 			if numberofdata == 1000:
-								# 				break
-								# 			# break
-								# except Exception as e:
-								# 	print(e)
-								# 	BLEconnected = False
-								# 	break
-
-									# print("step 01")
-									# rpitch = await client.read_gatt_char(UUID_pitch)
-									# print("step 02")
-									# # try:
-									# rroll = await client.read_gatt_char(UUID_roll)
-									# # except Exception as e: 
-									# # 	print(e)
-									# print("step 03")
-									# ryaw = await client.read_gatt_char(UUID_yaw)
-									# print("step 04")
-									# rcurrent = await client.read_gatt_char(UUID_current)
-									# print("step 1")
-									# write_csv(rtime.decode(), rpitch.decode(),rpitch.decode(),ryaw.decode(),rcurrent.decode())
-									# print("step 2")
-
-									# print(rtime.decode() )
+													
 									await asyncio.sleep(0.1)
 								except Exception as e:
 									BLEconnected = False
@@ -208,12 +135,8 @@ async def run():
 											break
 								except Exception as e:
 									pass
-									#print("error:", e)
-									# BLEconnected = False
-									#break
 									
-							
-							# await asyncio.sleep(0.1)
+									
 					except BleakError as e:
 						print("Could not connect, retrying")
 	if not found:
@@ -271,79 +194,3 @@ def save_exp_data_as_csv(alltext):
 	h.write(alltext)
 	h.close()	
 	print("Data saved to file")
-
-
-
-def save_data_to_csv(self, filename):
-	dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-	df = pd.DataFrame(self.data)
-	df.to_csv(filename + dt_string + '.csv')
-
-def write_csv(rtime,rpitch,rroll,ryaw,rcurrent,rthrottle,raileron,relevator,rrudder,rclutch,rbody_hook,rtail_hook,rwing_open):
-	dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-
-	dtime = rtime.split(',')
-	dpitch = rpitch.split(',')
-	droll = rroll.split(',')
-	dyaw = ryaw.split(',')
-	dcurrent = rcurrent.split(',')
-	dthrottle = rthrottle.split(',')
-	daileron = raileron.split(',')
-	delevator = relevator.split(',')
-	drudder = rrudder.split(',')
-	dclutch = rclutch.split(',')
-	dbody_hook = rbody_hook.split()
-	dtail_hook = rtail_hook.split()
-	dwing_open = rwing_open.split()
-	print("step a")
-	dft = pd.DataFrame({'Time': dtime})
-	dfr = pd.DataFrame({'Roll':droll})
-	dfp = pd.DataFrame({'Pitch': dpitch})
-	dfy = pd.DataFrame({'Yaw': dyaw})
-	dfc = pd.DataFrame({'Current': dcurrent})
-	dftr = pd.DataFrame({'Throttle': dthrottle})
-	dfai = pd.DataFrame({'Aileron': daileron})
-	dfel = pd.DataFrame({'Elevator': delevator})
-	dfru = pd.DataFrame({'Rudder': drudder})
-	dfcl = pd.DataFrame({'Clutch': dclutch})
-	dfbh = pd.DataFrame({'Body Hook': dbody_hook})
-	dfth = pd.DataFrame({'Tail Hook': dtail_hook})
-	dfwo = pd.DataFrame({'Wing Open': dwing_open})
-	print("step b")
-	df = pd.concat([dft, dfp, dfr, dfy, dfc, dftr, dfai, dfel, dfru, dfcl, dfbh, dfth, dfwo], axis=1) # Concat tolerates different array lengths
-	df.drop(df.tail(1).index,inplace=True) # drop last row of END OF FRAME VALUE
-	print("step c")
-	try: 
-		df.to_csv('sensordata/exp_' + dt_string + '.csv')
-	except Exception as e: 
-		print(e)
-	print("step end")
-	# try:
-	# 	with open(filename, newline='') as csvfile:
-	# 		print("step c")
-	# 		# fieldnames = ['Time [ms]','Yaw', 'Pitch', 'Roll', 'Current']
-	# 		writer = csv.writer(csvfile)
-	# 		writer.writerow(['Time [ms]','Yaw', 'Pitch', 'Roll', 'Current'])
-	# 		print("step d")
-	# 		for i in range(len(dtime)):
-	# 			writer.writerow(dtime[i], dpitch[i], droll[i], dyaw[i], dcurrent[i])
-	# 			print("step e")
-	# except Exception as e: 
-	# 	print(e)
-			
-
-
-######################################### MAIN ######################################
-					
-loop = asyncio.get_event_loop()
-asyncio.ensure_future(run())
-loop.run_forever()
-
-
-
-# try:
-# 	loop.run_until_complete(run())
-# except KeyboardInterrupt:
-# 	print('\nReceived Keyboard Interrupt')
-# finally:
-# 	print('Program finished')
