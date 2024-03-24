@@ -313,14 +313,16 @@ void sendStringAsStringPacketViaBLE(String str)
 		
 		memcpy(stringPacket.str, str.substring(index, index + charactersToSend).c_str(), charactersToSend);
 		stringPacket.strLen = charactersToSend;
-				
+		//Serial.print(stringPacket.strLen);
+		//Serial.print(" -> ");
+		//Serial.println((char*)stringPacket.str);	
 		createStringPacket(&commPacket, &stringPacket);
 		sendPacketViaBLE(&commPacket);
 
 		remainingCharacters -= charactersToSend;
 		index += charactersToSend;
 
-		delay(10);
+		delay(20);
 		
 	} while (remainingCharacters > 0);
 }

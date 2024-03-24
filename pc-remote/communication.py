@@ -95,6 +95,7 @@ def decodeBytes(buffer):
                     state = STATE_CRC1
                 else:
                     state = STATE_DATA
+                    packet.data = bytearray(packet.dataLen)
                     dataIndex = 0
             else:
                 state = STATE_HEADER1 # error

@@ -19,7 +19,7 @@ packetCount = 0
 fileContentPackets = []
 #---------------------------------------------------------------------------------------------------------------------
 # callback function when data is received
-def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
+async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 	# decodedPackets contains packets that has been decoded. each element in the list can be a different type
 	decodedPackets = communication.decodeBytes(buffer)
 	

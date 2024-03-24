@@ -115,7 +115,7 @@ void Actuator::print() {
   snprintf(str, len, "%-10s pos: %-+4d  offset: %-+4d  range: %-+4d  freq: "
            "%-+.1f  mode: %d", name, position, offset, range, frequency, mode);
   Serial.println(str);
-  sendStringAsStringPacketViaBLE(str);
+  sendStringAsStringPacketViaBLE(str + String("\n"));
 }
 
 void Actuator::printSignal() {
