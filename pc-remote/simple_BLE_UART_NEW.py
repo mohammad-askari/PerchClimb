@@ -2,12 +2,13 @@
 
 import asyncio
 
-from bleak import BleakClient
+# from bleak import BleakClient
+# from bleak import BleakScanner
 from bleak import BleakScanner
-from bleak import discover
 from bleak import BleakError
 import os
 from datetime import datetime
+import communication
 
 from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
@@ -29,15 +30,13 @@ async def run():
 
 	found = False
 	uart_connection = None
-	devices = await discover()
+	devices = await BleakScanner.discover()
 	robot = 'PerchClimb'
 
 	for d in devices:       
 		if robot == d.name:
 			print('Found ', str(d.name))
 			found = True
-
-			BLEconnected = False
 
 			while True:
 				await asyncio.sleep(0.1)
@@ -110,7 +109,6 @@ async def run():
 													
 									await asyncio.sleep(0.1)
 								except Exception as e:
-									BLEconnected = False
 									print(e)
 									break
 
@@ -194,3 +192,9 @@ def save_exp_data_as_csv(alltext):
 	h.write(alltext)
 	h.close()	
 	print("Data saved to file")
+
+
+######################################### MAIN ######################################
+loop = asyncio.get_event_loop()
+asyncio.ensure_future(run())
+loop.run_forever()
