@@ -65,10 +65,10 @@ int esc_speed;                               // ESC speed parameter     [μs]
 ESC esc(esc_pin, esc_min, esc_max, esc_arm); // ESC motor object
 
 // ——————————————————————————————— PID CONTROL —————————————————————————————— //
-//                       kp,    ki,   kd,    dt,   min output, max output
-PIDController pid_roll( 1.0,   0.0,  0.2,  0.01,    -1.0, +1.0);
-PIDController pid_pitch(1.0,   0.1,  0.2,  0.01,    -1.0, +1.0);
-PIDController pid_yaw(  1.0,   0.0,  0.2,  0.01,    -1.0, +1.0);
+//            kp ,  ki ,  kd ,   dt ,  min out,  max out
+PID pid_roll (1.0,  0.0,  0.2,  0.01,    -1.0 ,    +1.0);
+PID pid_pitch(1.0,  0.1,  0.2,  0.01,    -1.0 ,    +1.0);
+PID pid_yaw  (1.0,  0.0,  0.2,  0.01,    -1.0 ,    +1.0);
 
 // ————————————————————— WING MOTOR & ENCODER VARIABLES ————————————————————— //
 const byte encoder_pin[] = {8};   // single or dual-channel encoder pin(s) // FIXME pin 8

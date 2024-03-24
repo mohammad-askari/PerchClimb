@@ -16,7 +16,7 @@
 #include "actuator.h"
 #include "esc.h"
 #include "clutch.h"
-#include "pidcontroller.h"
+#include "pid.h"
 
 // __________________________  MAIN FUNCTION FLAGS  _________________________ //
 extern bool DEBUG, MANUAL;
@@ -60,7 +60,7 @@ extern int dc_speed;
 extern Clutch clutch;
 
 // —————————————————————————————— PID CONTROL ——————————————————————————————— //
-extern PIDController pid_roll, pid_pitch, pid_yaw;
+extern PID pid_roll, pid_pitch, pid_yaw;
 
 // ———————————————————————————— PARSER VARIABLES ———————————————————————————— //
 extern SimpleCLI cli;

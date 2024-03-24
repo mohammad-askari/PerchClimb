@@ -1,13 +1,13 @@
-#include "pidcontroller.h"
+#include "pid.h"
 
-PIDController::PIDController(float kp, float ki, float kd, float dt, float min_output, float max_output) :
+PID::PID(float kp, float ki, float kd, float dt, float min_output, float max_output) :
   kp_(kp), ki_(ki), kd_(kd), dt_(dt), setpoint_(0), integral_(0), prev_error_(0), min_output_(min_output), max_output_(max_output) {}
 
-void PIDController::setSetpoint(float setpoint) {
+void PID::setSetpoint(float setpoint) {
   setpoint_ = setpoint;
 }
 
-float PIDController::compute(float measurement) {
+float PID::compute(float measurement) {
   float error = setpoint_ - measurement;
   integral_ += error * dt_;
   
