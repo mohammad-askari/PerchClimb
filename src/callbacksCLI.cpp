@@ -349,14 +349,14 @@ void setExpDuration(cmd *cmd_ptr) {
 void setExpDelay(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);   
-  int delay     = arg0.getValue().toInt();
+  int delay_sec = arg0.getValue().toInt();
 
-  exp_delayed = delay;
+  exp_delayed = delay_sec;
 
   Serial.print("Experiment delay set to ");
-  Serial.print(delay);
+  Serial.print(delay_sec);
   Serial.println(" (s)");
-  sendStringAsStringPacketViaBLE(String("Experiment delay set to ") + String(delay) + String(" (s)\n"));
+  sendStringAsStringPacketViaBLE(String("Experiment delay set to ") + String(delay_sec) + String(" (s)\n"));
 }
 
 /**

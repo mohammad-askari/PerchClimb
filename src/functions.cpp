@@ -221,7 +221,7 @@ void setupCLI() {
   Command cmd_mode = cli.addCommand("mode", setMode);
   cmd_mode.addPositionalArgument("id", "0");
   cmd_mode.addFlagArgument("r/amp");
-  cmd_mode.setDescription("\tSets the mode of of all the servos.");
+  cmd_mode.setDescription("\tSets the mode of all the servos.");
 
   // define servo offset command, callback, and relevant arguments
   Command cmd_offset = cli.addCommand("offset", setOffset);
@@ -305,7 +305,7 @@ void setupCLI() {
 
   // define tilt back command and start delayed experiments
   Command cmd_unperch = cli.addCommand("unperch", cliUnperch);
-  cmd_unperch.setDescription("\tStarts unperching experiment");
+  cmd_unperch.setDescription("\tStarts unperching experiment.");
 
   // define debug command, callback, and relevant arguments
   Command cmd_debug = cli.addCommand("debug", debug);

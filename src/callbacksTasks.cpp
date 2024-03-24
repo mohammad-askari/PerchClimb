@@ -538,9 +538,9 @@ void tsDataTransfer() {
   }
   // transfer logged sensor data combined with actuator commands
   else {
-    const int sets_per_packet = packet_len / (sizeof(exp_data_t) + sizeof(cmd_data_t));
-    sprintf(buffer, "meta: %d\n", (int)ceil(data_idx / 3) );
-    bleuart.write( (uint8_t*) buffer, strlen(buffer));
+    int logs_per_packet = packet_len / (sizeof(exp_data_t) + sizeof(cmd_data_t));
+    sprintf(meta_str, "meta: %d\n", (int)ceil(data_idx / 3) );
+    bleuart.write( (uint8_t*) meta_str, strlen(meta_str));
     delay(python_delay);
 
     uint8_t packet[packet_len];
@@ -552,8 +552,8 @@ void tsDataTransfer() {
       packet_idx += sizeof(cmd_data_t);
 
       // send the packet once it is full or all data has been copied
-      // if ((i + 1) % sets_per_packet == 0 || i == data_idx - 1) {
-      if ((i + 1) % sets_per_packet == 0) {
+      // if ((i + 1) % logs_per_packet == 0 || i == data_idx - 1) {
+      if ((i + 1) % logs_per_packet == 0) {
           bleuart.write(packet, packet_len);
           delay(250); // Delay between packets
           packet_idx = 0;
