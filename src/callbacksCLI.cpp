@@ -154,6 +154,7 @@ void cliMotorDrive(cmd *cmd_ptr) {
   // Serial.println(encoder.count());
   Serial.print("Elapsed time: ");
   Serial.println(millis()-time);
+  sendStringAsStringPacketViaBLE(String("Elapsed time: ") + String(millis()-time) + String("\n"));
 }
 
 // —————————————————————————— MOTOR HOME COMMANDS —————————————————————————— //
@@ -261,7 +262,10 @@ void setFreq(cmd *cmd_ptr) {
     sendStringAsStringPacketViaBLE(String("Servo "));
     
     servoID = constrain(servoID, 0, servo_num-1);
+    
     Serial.print(servoID);
+    sendStringAsStringPacketViaBLE(String(servoID));
+    
     actuator[servoID]->setFrequency(freq);
   }
   
@@ -313,7 +317,10 @@ void setMode(cmd *cmd_ptr) {
     sendStringAsStringPacketViaBLE(String("Servo "));
 
     servoID = constrain(servoID, 0, servo_num-1);
+    
     Serial.print(servoID);
+    sendStringAsStringPacketViaBLE(String(servoID));
+    
     if (!is_ramp){
       actuator[servoID]->setMode(STEP);
     }
@@ -383,7 +390,10 @@ void setOffset(cmd *cmd_ptr) {
     sendStringAsStringPacketViaBLE(String("Servo "));
 
     servoID = constrain(servoID, 0, servo_num-1);
+    
     Serial.print(servoID);
+    sendStringAsStringPacketViaBLE(String(servoID));
+    
     actuator[servoID]->setOffset(offset);
   }
 
@@ -416,7 +426,10 @@ void setRange(cmd *cmd_ptr) {
     sendStringAsStringPacketViaBLE(String("Servo "));
 
     servoID = constrain(servoID, 0, servo_num-1);
+    
     Serial.print(servoID);
+    sendStringAsStringPacketViaBLE(String(servoID));
+    
     actuator[servoID]->setRange(range);
   }
 

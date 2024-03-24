@@ -1,4 +1,5 @@
 #include "actuator.h"
+#include "communication.h"
 
 Actuator::Actuator(const char* name, byte pin, int offset,
                    int range, float frequency, signal_t mode) {
@@ -114,6 +115,7 @@ void Actuator::print() {
   snprintf(str, len, "%-10s pos: %-+4d  offset: %-+4d  range: %-+4d  freq: "
            "%-+.1f  mode: %d", name, position, offset, range, frequency, mode);
   Serial.println(str);
+  sendStringAsStringPacketViaBLE(str);
 }
 
 void Actuator::printSignal() {
@@ -121,6 +123,7 @@ void Actuator::printSignal() {
   Serial.print(name);
   Serial.print(":");
   Serial.println(position);
+  sendStringAsStringPacketViaBLE(String(">") + String(name) + String(":") + String(position) + String("\n"));
 }
 
 
