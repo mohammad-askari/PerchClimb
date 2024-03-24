@@ -219,9 +219,9 @@ void createFileContentPacket(commPacket_t *pCommPacket, const pktFileContent_t* 
 	pCommPacket->header1 = HEADER1;
 	pCommPacket->header2 = HEADER2;
 	pCommPacket->type = packetTypes_t::PKT_FILE_CONTENT;
-	pCommPacket->dataLen = pFileContent->dataLen;
+	pCommPacket->dataLen = pFileContent->dataLen + sizeof(uint16_t);
 	memcpy(pCommPacket->data, &pFileContent->packetNo, sizeof(uint16_t));
-	memcpy(pCommPacket->data + sizeof(uint16_t), &pFileContent->data, pFileContent->dataLen);
+	memcpy(pCommPacket->data + sizeof(uint16_t), pFileContent->data, pFileContent->dataLen);
 	
 	uint8_t packetLen = pCommPacket->dataLen + COMM_PACKET_HEADER;
 	pCommPacket->crc = crc16((uint8_t*)pCommPacket, packetLen);
@@ -313,9 +313,6 @@ void sendStringAsStringPacketViaBLE(String str)
 		
 		memcpy(stringPacket.str, str.substring(index, index + charactersToSend).c_str(), charactersToSend);
 		stringPacket.strLen = charactersToSend;
-		//Serial.print(stringPacket.strLen);
-		//Serial.print(" -> ");
-		//Serial.println((char*)stringPacket.str);	
 		createStringPacket(&commPacket, &stringPacket);
 		sendPacketViaBLE(&commPacket);
 

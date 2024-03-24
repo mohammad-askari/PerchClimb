@@ -17,9 +17,14 @@ cliThreadHandle = None
 dataToSend = bytearray()
 packetCount = 0
 fileContentPackets = []
+alltext = ""
 #---------------------------------------------------------------------------------------------------------------------
 # callback function when data is received
 async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
+	global packetCount
+	global fileContentPackets
+	global alltext
+
 	# decodedPackets contains packets that has been decoded. each element in the list can be a different type
 	decodedPackets = communication.decodeBytes(buffer)
 	
@@ -31,8 +36,8 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 		# Metadata packet
 		elif isinstance(packet, communication.pktFileMetadata_t):
 			packetCount = packet.packetCount
-			fileContentPackets = [None] * packetCount
-			print("Metadata received. {0} packets will be sent".format(packetCount))
+			fileContentPackets = [None] * (packetCount + 1)
+			print("Metadata received. {0} packets will be received".format(packetCount))
 		
 		# FileContent packet
 		elif isinstance(packet, communication.pktFileContent_t):
@@ -42,7 +47,7 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 		elif isinstance(packet, communication.pktFileSend_t):
 			print("File send process is finished. Checking missing packets...")
 			# TODO: check missing parts
-
+			
 			# create CSV from the packets
 			alltext = "Packet No, Time [ms], Current [adc], Roll [deg], Pitch [deg], Yaw [deg]\n"
 			
@@ -51,7 +56,8 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 				if fileContentPackets[i] != None:
 					for j in range(MAX_NUMBER_OF_LOGS_IN_EACH_PACKET):
 						logData = convert_exp_data_to_str(fileContentPackets[i].data[j * LOG_DATA_LEN : j * LOG_DATA_LEN + LOG_DATA_LEN])
-						alltext += str(i) + ',' +str(logData.time) + ',' + str(logData.current) + ',' + str(logData.roll) + ',' + str(logData.pitch) + ',' + str(logData.yaw) + '\n'
+						if logData != None:
+							alltext += str(i) + ',' +str(logData.time) + ',' + str(logData.current) + ',' + str(logData.roll) + ',' + str(logData.pitch) + ',' + str(logData.yaw) + '\n'
 						
 						# check if next loop has data. otherwise break the inner loop
 						if j * LOG_DATA_LEN + LOG_DATA_LEN >= fileContentPackets[i].dataLen:

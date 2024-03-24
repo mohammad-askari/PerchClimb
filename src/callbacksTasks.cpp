@@ -486,32 +486,33 @@ void tsDataTransfer() {
   Serial.println("Data Transfer Started");
 
   
-//   // send metadata packet so that the client would know how many packets it should expect
-//   metadata.packetCount = (int)ceil(data_idx / MAX_NUMBER_OF_LOGS_IN_EACH_PACKET);
-//   createFileMetadataPacket(&packet, &metadata);
-//   sendPacketViaBLE(&packet);
+  // send metadata packet so that the client would know how many packets it should expect
+  metadata.packetCount = (int)ceil(data_idx / MAX_NUMBER_OF_LOGS_IN_EACH_PACKET);
+  createFileMetadataPacket(&packet, &metadata);
+  sendPacketViaBLE(&packet);
 
-//   delay(300);
+  delay(100);
   
-//   for (int i = 0; i < data_idx; i = i + MAX_NUMBER_OF_LOGS_IN_EACH_PACKET)
-//   {                 
-//       logArrayPointer = (uint8_t*) exp_data;
-//       logArrayPointer += sizeof(exp_data_t) * i;
+  for (int i = 0; i < data_idx; i = i + MAX_NUMBER_OF_LOGS_IN_EACH_PACKET)
+  {                 
+      logArrayPointer = (uint8_t*) exp_data;
+      logArrayPointer += sizeof(exp_data_t) * i;
 
-//       fileContent.packetNo = i;
-//       // number of log data is not always a coefficient of MAX_NUMBER_OF_LOGS_IN_EACH_PACKET
-//       dataLen = data_idx - i >= MAX_NUMBER_OF_LOGS_IN_EACH_PACKET ? 
-//                   sizeof(exp_data_t) * MAX_NUMBER_OF_LOGS_IN_EACH_PACKET : 
-//                   sizeof(exp_data_t) * (data_idx - i);
-//       memcpy(&fileContent.data, logArrayPointer, dataLen);
-//       fileContent.dataLen = dataLen;
+      fileContent.packetNo = i / MAX_NUMBER_OF_LOGS_IN_EACH_PACKET;
+      // number of log data is not always a coefficient of MAX_NUMBER_OF_LOGS_IN_EACH_PACKET
+      dataLen = data_idx - i >= MAX_NUMBER_OF_LOGS_IN_EACH_PACKET ? 
+                  sizeof(exp_data_t) * MAX_NUMBER_OF_LOGS_IN_EACH_PACKET : 
+                  sizeof(exp_data_t) * (data_idx - i);
+      memcpy(fileContent.data, logArrayPointer, dataLen);
+      fileContent.dataLen = dataLen;
 
-//       createFileContentPacket(&packet, &fileContent);
-//       sendPacketViaBLE(&packet);
+      createFileContentPacket(&packet, &fileContent);
+      sendPacketViaBLE(&packet);
       
-//       delay(30);
+      delay(20);
+  }
 
-  const byte packet_len  = 60;
+  /*const byte packet_len  = 60;
   const int python_delay = 250;
   char meta_str[32];
 
@@ -552,11 +553,11 @@ void tsDataTransfer() {
           packet_idx = 0;
       }
     }
-  }
+  }*/
 
-//   // tell client that file send process is finished
-//   createFileSentPacket(&packet);
-//   sendPacketViaBLE(&packet);
+  // tell client that file send process is finished
+  createFileSentPacket(&packet);
+  sendPacketViaBLE(&packet);
   
   Serial.println("Data Transfer Complete");
 };

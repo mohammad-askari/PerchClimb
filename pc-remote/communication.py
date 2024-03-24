@@ -164,7 +164,7 @@ def createFileMetadataPacket(pCommPacket, pPktMetadata):
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def decodeFileMetadataPacket(pCommPacket):
     pPktMetadata = pktFileMetadata_t()
-    pktFileMetadata_t.packetCount = int.from_bytes(pCommPacket.data[0:2], byteorder='little', signed=False)
+    pPktMetadata.packetCount = int.from_bytes(pCommPacket.data, byteorder='little', signed=False)
     return pPktMetadata
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def createFileContentPacket(pCommPacket, pFileContent):
@@ -181,7 +181,7 @@ def createFileContentPacket(pCommPacket, pFileContent):
 def decodeFileContentPacket(pCommPacket):
     pFileContent = pktFileContent_t()
     pFileContent.packetNo = int.from_bytes(pCommPacket.data[0:2], byteorder='little', signed=False)
-    pFileContent.data = pCommPacket.data[:2]
+    pFileContent.data = pCommPacket.data[2:]
     pFileContent.dataLen = len(pFileContent.data)
     return pFileContent
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
