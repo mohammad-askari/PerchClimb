@@ -18,6 +18,13 @@ UUID_pitch = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA148'
 UUID_roll = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA149'
 UUID_yaw = 		'13012F01-F8C3-4F4A-A8F4-15CD926DA150'
 UUID_current = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA151'
+UUID_throttle = '13012F01-F8C3-4F4A-A8F4-15CD926DA152'
+UUID_aileron = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA153'
+UUID_elevator = '13012F01-F8C3-4F4A-A8F4-15CD926DA154'
+UUID_rudder = 	'13012F01-F8C3-4F4A-A8F4-15CD926DA155'
+UUID_wing_lock = '13012F01-F8C3-4F4A-A8F4-15CD926DA156'
+UUID_body_hook = '13012F01-F8C3-4F4A-A8F4-15CD926DA157'
+UUID_tail_hook = '13012F01-F8C3-4F4A-A8F4-15CD926DA158'
 
 
 #################################### RUN FUNCTION ###################################
@@ -112,10 +119,25 @@ async def run():
 												ryaw = await client.read_gatt_char(UUID_yaw)
 												print("step 04")
 												rcurrent = await client.read_gatt_char(UUID_current)
+												print("step 05")
+												rthrottle = await client.read_gatt_char(UUID_throttle)
+												print("step 06")
+												raileron = await client.read_gatt_char(UUID_aileron)
+												print("step 07")
+												relevator = await client.read_gatt_char(UUID_elevator)
+												print("step 08")
+												rudder = await client.read_gatt_char(UUID_rudder)
+												print("step 09")
+												rwing_lock = await client.read_gatt_char(UUID_wing_lock)
+												print("step 010")
+												rbody_hook = await client.read_gatt_char(UUID_body_hook)
+												print("step 011")
+												rtail_hook = await client.read_gatt_char(UUID_tail_hook)
 												print("step 1")
 
 												# write data to csv file
-												write_csv(rtime.decode(), rpitch.decode(),rroll.decode(),ryaw.decode(),rcurrent.decode())
+												write_csv(rtime.decode(), rpitch.decode(),rroll.decode(),ryaw.decode(),rcurrent.decode(),
+					  										rthrottle.decode(),raileron.decode(),relevator.decode(),rudder.decode(),rwing_lock.decode(),rbody_hook.decode(),rtail_hook.decode())
 												print("step 2")
 
 												# print(rtime.decode() )
@@ -145,7 +167,7 @@ async def run():
 
 ###################################### FUNCTIONS ##################################
 
-def write_csv(rtime,rpitch,rroll,ryaw,rcurrent):
+def write_csv(rtime,rpitch,rroll,ryaw,rcurrent,rthrottle,raileron,relevator,rudder,rwing_lock,rbody_hook,rtail_hook):
 	dt_string = datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
 	dtime = rtime.split(',')
@@ -153,13 +175,20 @@ def write_csv(rtime,rpitch,rroll,ryaw,rcurrent):
 	droll = rroll.split(',')
 	dyaw = ryaw.split(',')
 	dcurrent = rcurrent.split(',')
+	dthrottle = rthrottle.split(',')
+	daileron = raileron.split(',')
+	delevator = relevator.split(',')
+	dudder = rudder.split(',')
+	dwing_lock = rwing_lock.split(',')
+	dbody_hook = rbody_hook.split(',')
+	dtail_hook = rtail_hook.split(',')
 
 	with open('sensordata/climb'+ dt_string + '.csv',newline='') as csvfile:
 		# fieldnames = ['Time [ms]','Yaw', 'Pitch', 'Roll', 'Current']
 		writer = csv.writer(csvfile)
-		writer.writerow(['Time [ms]','Yaw', 'Pitch', 'Roll', 'Current'])
+		writer.writerow(['Time [ms]','Yaw', 'Pitch', 'Roll', 'Current', 'Throttle', 'Aileron', 'Elevator', 'Rudder', 'Wing Lock', 'Body Hook', 'Tail Hook'])
 		for i in range(len(dtime)):
-			writer.writerow(dtime[i], dpitch[i], droll[i], dyaw[i], dcurrent[i])
+			writer.writerow(dtime[i], dpitch[i], droll[i], dyaw[i], dcurrent[i], dthrottle[i], daileron[i], delevator[i], dudder[i], dwing_lock[i], dbody_hook[i], dtail_hook[i])
 		
 
 

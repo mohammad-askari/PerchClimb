@@ -5,9 +5,9 @@ Clutch *Clutch::clutch_ptr = nullptr;
 Clutch::Clutch(Actuator &servo) : servo(servo) { clutch_ptr = this; }
 
 // sets the pins for the clutch and determines if a quadrature encoder is used
-void Clutch::pins(byte dir_pin, byte pwm_pin, byte enc1_pin, byte enc2_pin) {
-  this->dir_pin  = dir_pin;
+void Clutch::pins(byte pwm_pin, byte dir_pin, byte enc1_pin, byte enc2_pin) {
   this->pwm_pin  = pwm_pin;
+  this->dir_pin  = dir_pin;
   this->enc1_pin = enc1_pin;
   this->enc2_pin = enc2_pin;
   this->is_dual_encoder = (enc2_pin != UNDEFINED);
@@ -20,29 +20,33 @@ void Clutch::pins(byte dir_pin, byte pwm_pin, byte enc1_pin, byte enc2_pin) {
 
 // initializes the clutch object variables and sets the initial state
 void Clutch::init(Actuator servo, clutch_t state,
-                  byte cpr, float gear, float spool) {
-  this->servo  = servo;
-  this->state  = state;
-  this->gear   = gear;
-  this->spool  = spool;
-  this->counts = 0;
-  this->speed  = 0;
+                  byte cpr, float gear, float spool, int pwm_max) {
+  this->servo   = servo;
+  this->state   = state;
+  this->cpr     = cpr;
+  this->gear    = gear;
+  this->spool   = spool;
+  this->pwm_max = pwm_max;
+  this->direction = STOP;
 
-  if (!is_dual_encoder) {
-    this->cpr = cpr / 2;
-    attachInterrupt(enc1_pin, Clutch::interruptSingle, CHANGE);
-  }
-  else {
-    this->cpr = cpr;
-    attachInterrupt(enc1_pin, Clutch::interruptDual, CHANGE);
-    attachInterrupt(enc2_pin, Clutch::interruptDual, CHANGE);
+  stop();
+  resetCounts();
+
+  // if (!is_dual_encoder) { // TODO: IMPLEMENT ENCODER INTERRUPT FUNCTIONALITY
+  //   this->cpr = cpr / 2;
+  //   attachInterrupt(enc1_pin, Clutch::interruptSingle, CHANGE);
+  // }
+  // else {
+  //   this->cpr = cpr;
+  //   attachInterrupt(enc1_pin, Clutch::interruptDual, CHANGE);
+  //   attachInterrupt(enc2_pin, Clutch::interruptDual, CHANGE);
     
-    // initial encoder state stored in the last 2 bits of the readings variable
-    byte s = 0;
-    if (analogRead(enc1_pin)) s |= 1;
-    if (analogRead(enc2_pin)) s |= 2;
-    this->readings = s;
-  }
+  //   // initial encoder state stored in the last 2 bits of the readings variable
+  //   byte s = 0;
+  //   if (analogRead(enc1_pin)) s |= 1;
+  //   if (analogRead(enc2_pin)) s |= 2;
+  //   this->readings = s;
+  // }
 }
 
 // static interrupt functions to count pulses based on encoder type
@@ -55,10 +59,22 @@ void Clutch::interruptDual() {
         clutch_ptr->countPulseDual();
 }
 
-void Clutch::engage()      { state = ENGAGED;    servo.setPosition(RANGE_MAX); }
-void Clutch::disengage()   { state = DISENGAGED; servo.setPosition(RANGE_MIN); }
-void Clutch::forward()     { direction = OPEN; }
-void Clutch::reverse()     { direction = CLOSE; }
+void Clutch::engage()    { state = ENGAGED;    servo.setPosition(RANGE_MAX); }
+void Clutch::disengage() { state = DISENGAGED; servo.setPosition(RANGE_MIN); }
+void Clutch::forward()   { direction = OPEN;   digitalWrite(dir_pin, HIGH);  }
+void Clutch::reverse()   { direction = CLOSE;  digitalWrite(dir_pin, LOW);   }
+
+void Clutch::stop()      { speed(0); } // TODO: IMPLEMENT direction = STOP;
+
+void Clutch::speed(int speed) {
+  speed = constrain(speed, 0, pwm_max);
+  if (this->pwm != speed) {
+    this->pwm = speed;
+    analogWrite(pwm_pin, pwm);
+  }
+}
+
+int  Clutch::getSpeed()    { return direction * pwm; }
 long Clutch::getCounts()   { return counts; }
 void Clutch::resetCounts() { counts = 0; }
 
@@ -68,11 +84,11 @@ void Clutch::print() {
   char str[len];
   const char* state_str = state ? "engaged" : "disengaged";
   if (!is_dual_encoder)
-    snprintf(str, len, "clutch: %s, speed: %d, dir: %+2d, counts: %ld, %d", 
-             state_str, speed, direction, counts, digitalRead(enc1_pin));
+    snprintf(str, len, "clutch: %s, pwm: %d, dir: %+2d, counts: %ld, %d", 
+             state_str, pwm, direction, counts, digitalRead(enc1_pin));
   else
-    snprintf(str, len, "clutch: %s, speed: %d, dir: %+2d, counts: %ld, %d, %d", 
-             state_str, speed, direction, counts, digitalRead(enc1_pin), digitalRead(enc2_pin));
+    snprintf(str, len, "clutch: %s, pwm: %d, dir: %+2d, counts: %ld, %d, %d", 
+             state_str, pwm, direction, counts, digitalRead(enc1_pin), digitalRead(enc2_pin));
 
   Serial.println(str);
 }
@@ -117,41 +133,25 @@ void Clutch::countPulseSingle() {
 //              1	      1	      1	      0         +1
 //              1	      1	      1	      1     no movement
 //
-// void Clutch::countPulseDual() {
-//   byte s = readings & 3;             // retains "old pin 2" and "old pin 1" bits
-//   if (digitalRead(enc1_pin)) s |= 4; // adds "new pin 1" state as the 3rd bit
-//   if (digitalRead(enc2_pin)) s |= 8; // adds "new pin 2" state as the 4th bit
-//   switch (s) {
-//     case 0: case 5: case 10: case 15:
-//       direction = STOP; break;
-//     case 1: case 7: case 8: case 14:
-//       counts++; 
-//       direction = OPEN; break;
-//     case 2: case 4: case 11: case 13:
-//       counts--;
-//       direction = CLOSE; break;
-//     case 3: case 12:
-//       counts += 2;
-//       direction = OPEN; break;
-//     default:
-//       counts -= 2;
-//       direction = CLOSE; break;
-//   }
-//   readings = (s >> 2);
-// }
-
-// TODO: CHECK THIS COMPARED TO THE ABOVE AND DELETE IF NOT NEEDED
 void Clutch::countPulseDual() {
-  if (is_dual_encoder) {
-    int enc1 = digitalRead(enc1_pin);
-    int enc2 = digitalRead(enc2_pin);
-    int dir = (enc1 << 1) | enc2;
-    switch (dir) {
-      case 1: case 3: counts++; break;
-      case 0: case 2: counts--; break;
-    }
+  byte s = readings & 3;             // retains "old pin 2" and "old pin 1" bits
+  if (digitalRead(enc1_pin)) s |= 4; // adds "new pin 1" state as the 3rd bit
+  if (digitalRead(enc2_pin)) s |= 8; // adds "new pin 2" state as the 4th bit
+  switch (s) {
+    case 0: case 5: case 10: case 15:
+      direction = STOP; break;
+    case 1: case 7: case 8: case 14:
+      counts++; 
+      direction = OPEN; break;
+    case 2: case 4: case 11: case 13:
+      counts--;
+      direction = CLOSE; break;
+    case 3: case 12:
+      counts += 2;
+      direction = OPEN; break;
+    default:
+      counts -= 2;
+      direction = CLOSE; break;
   }
-  else {
-    counts++;
-  }
+  readings = (s >> 2);
 }

@@ -63,7 +63,9 @@ void cliLogData(cmd *cmd_ptr) { // TODO: IMPLEMENT THIS FUNCTION
  **/
 void cliTransferData(cmd *cmd_ptr) { // TODO: MAKE NON-BLOCKING
   Command c(cmd_ptr);  // wrapper class instance for the pointer
-  
+  Argument arg0 = c.getArgument(0);
+  transfer_include_commands = arg0.isSet();
+
   // THIS IS A BLOCKING FUNCTION!
   ts_data_transfer.restart();
 }
@@ -114,43 +116,44 @@ void cliEraseFile(cmd *cmd_ptr) { // TODO: IMPLEMENT THIS FUNCTION
 void cliMotorDrive(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0    = c.getArgument(0);
+  Argument arg1    = c.getArgument(1);
+  Argument arg2    = c.getArgument(2);
   Argument arg3    = c.getArgument(3);
   float turn_val   = arg0.getValue().toFloat();
+  int power_val    = arg1.getValue().toInt();
+  bool is_reverse  = arg2.isSet();
   bool is_distance = arg3.isSet();
-  float ticks = 0;
-  float corr_factor = 1;
-  if (is_distance){
-    ticks = (turn_val *12 * gear_ratio / (spool_diameter * PI)) * corr_factor;
-  }
-  else {
-    ticks = turn_val * 12 * gear_ratio;
-  }
+  
+  int power_byte  = map(power_val,0,100,0,pwm_range);
 
-  Argument power_arg = c.getArgument(1);
-  int power_val = power_arg.getValue().toInt();
-  int power_byte = map(power_val,0,100,0,pwm_range);
+  // float ticks = 0;
+  // float corr_factor = 1;
+  // if (is_distance){
+  //   ticks = (turn_val *12 * gear_ratio / (spool_diameter * PI)) * corr_factor;
+  // }
+  // else {
+  //   ticks = turn_val * 12 * gear_ratio;
+  // }
 
-  Argument reverse = c.getArgument(2);
-  bool reverse_val = reverse.isSet();
-
-  if (reverse_val) digitalWrite(phase_pin,LOW);
-  else digitalWrite(phase_pin,HIGH);
+  if (is_reverse) clutch.reverse();
+  else clutch.forward();
 
 // FIXME: REPLACE WITH CLUTCH OBJECT
-/*   long initial_pos = encoder.count();
-  analogWrite(enable_pin,power_byte);
+// long initial_pos = encoder.count();
+  clutch.speed(power_byte);
 
   int time = millis();
 
-  while ((abs(encoder.count() - initial_pos) < ticks) && (millis()-time) < turn_val*100)
+  // while ((abs(encoder.count() - initial_pos) < ticks) && (millis()-time) < turn_val*100)
+  while ((millis()-time) < turn_val*100)
   {
     delay(10);
   }
-  analogWrite(enable_pin,0);
-  Serial.print("Reached position: ");
-  Serial.println(encoder.count());
+  clutch.stop();
+  // Serial.print("Reached position: ");
+  // Serial.println(encoder.count());
   Serial.print("Elapsed time: ");
-  Serial.println(millis()-time); */
+  Serial.println(millis()-time);
 }
 
 // —————————————————————————— MOTOR HOME COMMANDS —————————————————————————— //
@@ -179,10 +182,10 @@ void cliMotorHome(cmd *cmd_ptr) {
 
     long initial_position = encoder.count();
     bool reverse = (initial_position > 0);
-    if (reverse) digitalWrite(phase_pin,LOW);
-    else digitalWrite(phase_pin,HIGH);
+    if (reverse) clutch.reverse();
+    else clutch.forward();
 
-    analogWrite(enable_pin,power_byte);
+    clutch.speed(power_byte);
 
     int time = millis();
 
@@ -190,7 +193,7 @@ void cliMotorHome(cmd *cmd_ptr) {
     {
       delay(10);
     }
-    analogWrite(0,0);
+    clutch.stop();
 
     Serial.print("Reached position: ");
     Serial.println(encoder.count());
@@ -276,7 +279,6 @@ void setESC(cmd *cmd_ptr) {
   Argument arg0 = c.getArgument(0);   
   esc_speed     = arg0.getValue().toInt();
 
-  esc.stop();
   Serial.print("ESC speed set to ");
   Serial.println(esc_speed);
   sendStringAsStringPacketViaBLE(String("ESC speed set to ") + String(esc_speed) + String("\n"));
@@ -523,16 +525,26 @@ void setWingOpening(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);
   Argument arg1 = c.getArgument(1);
+  Argument arg2 = c.getArgument(2);
   wing_opening_duration = arg0.getValue().toFloat();
   int speed_percent     = arg1.getValue().toInt();
-  dc_speed = map(speed_percent,0,100,0,pwm_range);
+  is_opening_reverse    = arg2.isSet();
+  const char* direction_str = is_opening_reverse ? "closing" : "opening";
+
+  // set the phase pin to the desired direction // FIXME: REPLACE WITH CLUTCH
+  if (is_opening_reverse) 
+    clutch.reverse();
+  else 
+    clutch.forward();
 
   // enable the wing opening under motor update task
   is_wing_opening = true;
 
-  Serial.print("Wing opening set to ");
+  Serial.print("Wing ");
+  Serial.print(direction_str);
+  Serial.print(" set to ");
   Serial.print(speed_percent);
-  Serial.print("%% speed for ");
+  Serial.print("% speed for ");
   Serial.print(wing_opening_duration);
   Serial.println(" (s)");
   sendStringAsStringPacketViaBLE(String("Wing opening set to ") + String(speed_percent) + String("%% speed for ") + String(wing_opening_duration) + String(" (s)\n"));
@@ -600,9 +612,12 @@ void cliClimb(cmd *cmd_ptr) {
   Argument arg0    = c.getArgument(0);
   String direction = arg0.getValue();
   direction.toLowerCase();
+
+  // disable the wing loosening by default, unless activated by wing command
+  climb_wing_loosening = false;
   
   if (direction == "up") {
-    ts_climb_on.restartDelayed(exp_delayed * TASK_SECOND);
+    ts_pre_climb.restartDelayed(exp_delayed * TASK_SECOND);
   }
   else if (direction == "down") {
     ts_pre_descent.restartDelayed(exp_delayed * TASK_SECOND);

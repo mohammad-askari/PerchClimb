@@ -92,6 +92,18 @@ void setLED(const byte *pins, const char mode) {
   }
 }
 
+// —————————————————————————— EULER ANGLE WRAPPING —————————————————————————— //
+/**
+ * @brief Clips the input Euler angle to the range of -180 to +180 degrees.
+ * @param[in] angle input angle [deg]
+ * @return clipped angle [deg]
+ **/
+float clipAngle(float angle){
+  while (angle <= -180) { angle += 360; }
+  while (angle >  +180) { angle -= 360; }
+  return angle;
+}
+
 // —————————————————— BLE CUSTOMIZATION & ADVERTISING SETUP ————————————————— //
 /**
  * @brief Sets up the BLE peripheral device, services, and advertising packet
@@ -174,11 +186,8 @@ void setupCLI() {
 
   // define BLE transfer command, callback, and relevant arguments
   Command cmd_ble = cli.addCommand("transfer", cliTransferData);
-  cmd_ble.addFlagArgument("info");
-  cmd_ble.addFlagArgument("time");
-  cmd_ble.addFlagArgument("imu");
-  cmd_ble.addFlagArgument("current");
-  cmd_ble.setDescription("\tEstablishes file transfer via BLE");
+  cmd_ble.addFlagArgument("f/ull");
+  cmd_ble.setDescription("\tEstablishes data transfer via BLE");
 
   // define motor drive command, callback, and relevant arguments
   Command cmd_drive = cli.addCommand("m/otor,d/rive", cliMotorDrive);
@@ -281,7 +290,8 @@ void setupCLI() {
   Command cmd_wing_time = cli.addCommand("w/ing", setWingOpening);
   cmd_wing_time.addPositionalArgument("t/ime", "1");
   cmd_wing_time.addPositionalArgument("s/peed", "100");
-  cmd_wing_time.setDescription("\tSets wing opening parameters.");
+  cmd_wing_time.addFlagArgument("r/ev/erse");
+  cmd_wing_time.setDescription("\tSets wing opening (or closing) parameters.");
 
   // define climb down command with no arguments to start delayed experiments
   Command cmd_set_unperch = cli.addCommand("setunperch", setUnperch);
@@ -317,6 +327,7 @@ void setupTasks() {
   scheduler.addTask(ts_sensors);
 	scheduler.addTask(ts_ble_conn);
 	scheduler.addTask(ts_kill);
+	scheduler.addTask(ts_pre_climb);
 	scheduler.addTask(ts_climb_on);
 	scheduler.addTask(ts_climb_off);
 	scheduler.addTask(ts_pre_descent);

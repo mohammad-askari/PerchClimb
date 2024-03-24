@@ -101,7 +101,7 @@ async def run():
 					# TODO: check missing parts
 
 					# create CSV from the packets
-					alltext = "Packet No, Time [ms], Current [adc], Roll [deg], Pitch [deg], Yaw [deg]\n"
+					alltext = "Packet No,Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg]\n"
 					
 					# convert all data to string
 					for i in range(packetCount):
@@ -168,47 +168,3 @@ def cliThread(uart_service):
 		thereIsDataToSend = True
 		dataToSend = sendBuffer
 		#bluetoothMutex.release()
-
-###################################### FUNCTIONS ##################################
-
-class LogData:
-	def __init__(self, time, current, roll, pitch, yaw):
-		self.time = time
-		self.current = current
-		self.roll = roll
-		self.pitch = pitch
-		self.yaw = yaw
-
-def convert_exp_data_to_str(buffer):
-	if len(buffer) == 10:
-		time = int.from_bytes(buffer[0:2], byteorder='little', signed=False)
-		current = int.from_bytes(buffer[2:4], byteorder='little', signed=True)
-		roll = int.from_bytes(buffer[4:6], byteorder='little', signed=True)
-		pitch = int.from_bytes(buffer[6:8], byteorder='little', signed=True)
-		yaw = int.from_bytes(buffer[8:], byteorder='little', signed=True)
-		return LogData(time, current, roll, pitch, yaw)
-	else:
-		print("Bad file segment: {0}".format(len(buffer)))
-
-
-
-
-def signal_handler(sig, frame):
-	global continueThread
-	global loop
-	
-	continueThread = False
-	loop.stop()
-	sys.exit(0)
-
-######################################### MAIN ######################################
-# detect ctrl+c to kill the thread
-signal.signal(signal.SIGINT, signal_handler)
-
-loop = asyncio.get_event_loop()
-asyncio.ensure_future(run())
-loop.run_forever()
-
-
-
-
