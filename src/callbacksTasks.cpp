@@ -7,26 +7,20 @@ uint16_t ble_conn_handle;
 
 // ——————————————————————— PARSE INCOMING USER INPUTS ——————————————————————— //
 /**
- * @brief Processes incoming serial/ble data bytes and parses into the CLI.
+ * @brief Processes incoming serial/BLE data bytes and parses into the CLI.
  **/
 void tsParser() {
   // check serial for user input
-  if(Serial.available())
-  {
+  if (Serial.available()) {
     int ch = Serial.read();  // read a single byte from the serial
     processCommandSerial(ch);
   }
-  //else
-  //  delay(10);
-};
 
-void tsBleParser() {
+  // check BLE for user input
   uint8_t bleBuffer[MAX_BLUETOOTH_PACKET_LEN];
   uint8_t bleDataLen = 0;
   
-  // read BLE data
-  if(bleuart.available())
-  {
+  if (bleuart.available()) {
     bleDataLen = bleuart.read(bleBuffer, MAX_BLUETOOTH_PACKET_LEN);
     Serial.print("Read BLE ");
     Serial.print(bleDataLen);
@@ -34,11 +28,10 @@ void tsBleParser() {
     if(bleDataLen > 0)
       decodeBytes(bleBuffer, bleDataLen);
   }
-  //else
-  //{
-    //delay(10);
-    //Serial.println("No BLE Data");
-  //}
+};
+
+void tsBleParser() {
+
 };
 
 

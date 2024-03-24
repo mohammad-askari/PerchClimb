@@ -65,10 +65,10 @@ int esc_speed;                               // ESC speed parameter     [μs]
 ESC esc(esc_pin, esc_min, esc_max, esc_arm); // ESC motor object
 
 // ——————————————————————————————— PID CONTROL —————————————————————————————— //
-//                       kp,    ki,   kd,    dt,   min output, max output
-PIDController pid_roll( 1.0,   0.0,  0.2,  0.01,    -1.0, +1.0);
-PIDController pid_pitch(1.0,   0.1,  0.2,  0.01,    -1.0, +1.0);
-PIDController pid_yaw(  1.0,   0.0,  0.2,  0.01,    -1.0, +1.0);
+//            kp ,  ki ,  kd ,   dt ,  min out,  max out
+PID pid_roll (1.0,  0.0,  0.2,  0.01,    -1.0 ,    +1.0);
+PID pid_pitch(1.0,  0.1,  0.2,  0.01,    -1.0 ,    +1.0);
+PID pid_yaw  (1.0,  0.0,  0.2,  0.01,    -1.0 ,    +1.0);
 
 // ————————————————————— WING MOTOR & ENCODER VARIABLES ————————————————————— //
 const byte encoder_pin[] = {8};   // single or dual-channel encoder pin(s) // FIXME pin 8
@@ -138,7 +138,6 @@ bool  is_level_flight;                     // flag to set level flight mode
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 // ———— TASK PARAMETERS: interval [ms/μs], #executions, callback function ——— //
 TsTask ts_parser       (TASK_IMMEDIATE,        TASK_FOREVER, &tsParser);
-TsTask ts_ble_parser   (TASK_IMMEDIATE,        TASK_FOREVER, &tsBleParser);
 TsTask ts_sensors      (TASK_SECOND/log_freq,  TASK_FOREVER, &tsSensors);
 TsTask ts_ble_conn     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLEConn);
 TsTask ts_pre_climb    (TASK_IMMEDIATE,        TASK_ONCE,    &tsPreClimb);
@@ -223,15 +222,16 @@ void loop() {
   scheduler.execute();
   
   // for (byte i = 0; i < servo_num; i++) actuator[i]->print();
-  // static unsigned long prev_time  = 0;
-  // static unsigned long loop_count = 0;
+  static unsigned long prev_time  = 0;
+  static unsigned long loop_count = 0;
+  loop_count++;
 
-  // loop_count++;
-  // if (millis() - prev_time > 1000) {
-  //   Serial.println(loop_count);
-  //   loop_count = 0;
-  //   prev_time  = millis();
-  // }
+  unsigned long now = millis();
+  if (now - prev_time > 1000) {
+    Serial.println(loop_count);
+    loop_count = 0;
+    prev_time  = now;
+  }
 
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UGLY FUNCTIONALITY TESTING CODE
   // if (millis()%1000 == 0) {

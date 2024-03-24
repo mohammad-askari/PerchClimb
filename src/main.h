@@ -16,7 +16,7 @@
 #include "actuator.h"
 #include "esc.h"
 #include "clutch.h"
-#include "pidcontroller.h"
+#include "pid.h"
 
 // __________________________  MAIN FUNCTION FLAGS  _________________________ //
 extern bool DEBUG, MANUAL;
@@ -60,7 +60,7 @@ extern int dc_speed;
 extern Clutch clutch;
 
 // —————————————————————————————— PID CONTROL ——————————————————————————————— //
-extern PIDController pid_roll, pid_pitch, pid_yaw;
+extern PID pid_roll, pid_pitch, pid_yaw;
 
 // ———————————————————————————— PARSER VARIABLES ———————————————————————————— //
 extern SimpleCLI cli;
@@ -118,7 +118,7 @@ extern bool  is_start_of_takeoff;
 extern bool  is_level_flight;
 
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
-extern TsTask ts_parser, ts_ble_parser, ts_sensors, ts_ble_conn, ts_kill, ts_motor_update;
+extern TsTask ts_parser, ts_sensors, ts_ble_conn, ts_kill, ts_motor_update;
 
 extern TsTask ts_pre_climb,   ts_climb_on,   ts_climb_off;
 extern TsTask ts_pre_descent, ts_descent_on, ts_descent_off;

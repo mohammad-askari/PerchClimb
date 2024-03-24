@@ -1,9 +1,9 @@
-#ifndef PID_CONTROLLER_H
-#define PID_CONTROLLER_H
+#ifndef PID_H
+#define PID_H
 
-class PIDController {
+class PID {
   public:
-    PIDController(float kp, float ki, float kd, float dt, float min_output, float max_output);
+    PID(float kp, float ki, float kd, float dt, float min_output, float max_output);
     void setSetpoint(float setpoint);
     float compute(float measurement);
   
