@@ -4,16 +4,13 @@
 #include "callbacksCLI.h"
 #include "callbacksTasks.h"
 
-// ——————————————————————— PARSE INCOMING USER INPUTS ——————————————————————— //
+// —————————————————————— PARSE INCOMING SERIAL INPUTS —————————————————————— //
 /**
- * @brief Processes incoming serial/ble data bytes and parses into the CLI.
- * @param[in] c    single character input from serial/ble buffer
- * @param[in] size size of the processing buffer array
- * @param[in] idx  index position of the processing buffer
- * @param[in] str  pointer to the processing buffer array
+ * @brief Processes incoming serial data bytes and parses into the CLI.
+ * @param[in] c single character input from serial buffer
  **/
 void processCommandSerial(const char c) {
-  const byte buffer_len = 245;
+  const  byte buffer_len = 245;
   static byte buffer_idx = 0;
   static char buffer[buffer_len];
   
@@ -38,8 +35,13 @@ void processCommandSerial(const char c) {
   }
 }
 
+// ———————————————————————— PARSE INCOMING BLE INPUTS ——————————————————————— //
+/**
+ * @brief Processes incoming BLE data bytes and parses into the CLI.
+ * @param[in] c single character input from ble buffer
+ **/
 void processCommandBLE(const char c) {
-  const byte buffer_len = 245;
+  const  byte buffer_len = 245;
   static byte buffer_idx = 0;
   static char buffer[buffer_len];
   
@@ -323,7 +325,6 @@ void setupTasks() {
   scheduler.init();
 	
   scheduler.addTask(ts_parser);
-  scheduler.addTask(ts_ble_parser);
   scheduler.addTask(ts_sensors);
 	scheduler.addTask(ts_ble_conn);
 	scheduler.addTask(ts_kill);
@@ -345,6 +346,5 @@ void setupTasks() {
 	
   ts_motor_update.setOnDisable(&tsMotorUpdateDisabled); 
   ts_parser.enable();
-  ts_ble_parser.enable();
   ts_sensors.enable();
 }
