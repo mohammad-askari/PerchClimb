@@ -54,13 +54,23 @@ class pktFileRequest_t:
         self.data = bytearray(MAX_COMM_PACKET_LEN)
         self.dataLen = 0
 
+class pktFileSend_t:
+    def __init__(self):
+        self.sent = True
+
 
 packet = commPacket_t()
-state = STATE_HEADER
+state = STATE_HEADER1
 dataIndex = 0
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def decodeBytes(buffer):
+    decodedPackets = []
     index = 0
+
+    global packet
+    global state
+    global dataIndex
+
     while index < len(buffer):
         if state == STATE_HEADER1:
             if buffer[index] == HEADER1:
@@ -70,29 +80,31 @@ def decodeBytes(buffer):
             if buffer[index] == HEADER2:
                 packet.header2 = buffer[index]
                 state = STATE_TYPE
-            else
+            else:
                 state = STATE_HEADER1 # error
         elif state == STATE_TYPE:
             if buffer[index] < PKT_COUNT:
                 packet.type = buffer[index]
                 state = STATE_LEN
-            else
+            else:
                 state = STATE_HEADER1 # error
         elif state == STATE_LEN:
             if buffer[index] <= MAX_COMM_PACKET_LEN:
                 packet.dataLen = buffer[index]
                 if packet.dataLen == 0:
                     state = STATE_CRC1
-                else
+                else:
                     state = STATE_DATA
                     dataIndex = 0
-            else
+            else:
                 state = STATE_HEADER1 # error
         elif state == STATE_DATA:
             if dataIndex < packet.dataLen:
                 packet.data[dataIndex] = buffer[index]
                 dataIndex += 1
-            else
+                if dataIndex == packet.dataLen:
+                    state = STATE_CRC1
+            else:
                 state = STATE_CRC1
         elif state == STATE_CRC1:
             packet.crc = buffer[index]
@@ -101,34 +113,37 @@ def decodeBytes(buffer):
             packet.crc += buffer[index] << 8
             
             if crc16(packet) == packet.crc:
-                decodePacket();
+                decodedPackets.append(decodePacket())
             
             state = STATE_HEADER1
         
         index += 1
+    
+    return decodedPackets
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def decodePacket():
+    global packet
+    
     if packet.type == PKT_STRING:
-        pktString = decodeStringPacket(packet)
+        return decodeStringPacket(packet)
     elif packet.type == PKT_FILE_METADATA:
-		pktMetadata = decodeFileMetadataPacket(packet)
+        return decodeFileMetadataPacket(packet)
     elif packet.type == PKT_FILE_CONTENT:
-		fileContent = decodeFileContentPacket(packet)
+        return decodeFileContentPacket(packet)
     elif packet.type == PKT_FILE_SENT:
-        # all file packets are sent
-        pass
+        return pktFileSend_t()
     elif packet.type == PKT_FILE_REQUEST:
-		fileRequest = decodeFileRequestPacket(packet)
+        return decodeFileRequestPacket(packet)
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def createStringPacket(pCommPacket, pPktString):	
-	pCommPacket.header1 = HEADER1
-	pCommPacket.header2 = HEADER2
-	pCommPacket.type = PKT_STRING
-	pCommPacket.dataLen = pPktString.strLen
+    pCommPacket.header1 = HEADER1
+    pCommPacket.header2 = HEADER2
+    pCommPacket.type = PKT_STRING
+    pCommPacket.dataLen = pPktString.strLen
     pCommPacket.data = pPktString.str.encode("ascii")
 	
-	crc = crc16(pCommPacket)
-	pCommPacket.crc = crc
+    crc = crc16(pCommPacket)
+    pCommPacket.crc = crc
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def decodeStringPacket(pCommPacket):
     pPktString = pktString_t()
@@ -138,13 +153,13 @@ def decodeStringPacket(pCommPacket):
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def createFileMetadataPacket(pCommPacket, pPktMetadata):
     pCommPacket.header1 = HEADER1
-	pCommPacket.header2 = HEADER2
-	pCommPacket.type = PKT_FILE_METADATA
-	pCommPacket.dataLen = PKT_FILE_METADATA_LEN
+    pCommPacket.header2 = HEADER2
+    pCommPacket.type = PKT_FILE_METADATA
+    pCommPacket.dataLen = PKT_FILE_METADATA_LEN
     pCommPacket.data = pPktMetadata.packetCount.to_bytes(2, byteorder='little', signed=False)
-	
-	crc = crc16(pCommPacket)
-	pCommPacket.crc = crc
+
+    crc = crc16(pCommPacket)
+    pCommPacket.crc = crc
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def decodeFileMetadataPacket(pCommPacket):
     pPktMetadata = pktFileMetadata_t()
@@ -153,16 +168,16 @@ def decodeFileMetadataPacket(pCommPacket):
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def createFileContentPacket(pCommPacket, pFileContent):
     pCommPacket.header1 = HEADER1
-	pCommPacket.header2 = HEADER2
-	pCommPacket.type = PKT_FILE_CONTENT
-	pCommPacket.dataLen = pFileContent.dataLen
-    packetNoBytes = pPktMetadata.packetNo.to_bytes(2, byteorder='little', signed=False)
+    pCommPacket.header2 = HEADER2
+    pCommPacket.type = PKT_FILE_CONTENT
+    pCommPacket.dataLen = pFileContent.dataLen
+    packetNoBytes = pFileContent.packetNo.to_bytes(2, byteorder='little', signed=False)
     pCommPacket.data = pFileContent.data.extends(packetNoBytes)
-    
-	crc = crc16(pCommPacket)
-	pCommPacket.crc = crc
+
+    crc = crc16(pCommPacket)
+    pCommPacket.crc = crc
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-def decodeFileContentPacket(pCommPacket)
+def decodeFileContentPacket(pCommPacket):
     pFileContent = pktFileContent_t()
     pFileContent.packetNo = int.from_bytes(pCommPacket.data[0:2], byteorder='little', signed=False)
     pFileContent.data = pCommPacket.data[:2]
@@ -171,24 +186,24 @@ def decodeFileContentPacket(pCommPacket)
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def createFileSentPacket(pCommPacket):
     pCommPacket.header1 = HEADER1
-	pCommPacket.header2 = HEADER2
-	pCommPacket.type = PKT_FILE_SENT
-	pCommPacket.dataLen = 0
-    
-	crc = crc16(pCommPacket)
-	pCommPacket.crc = crc
+    pCommPacket.header2 = HEADER2
+    pCommPacket.type = PKT_FILE_SENT
+    pCommPacket.dataLen = 0
+
+    crc = crc16(pCommPacket)
+    pCommPacket.crc = crc
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def createFileRequestPacket(pCommPacket, pFileRequest):
     pCommPacket.header1 = HEADER1
-	pCommPacket.header2 = HEADER2
-	pCommPacket.type = PKT_FILE_REQUEST
-	pCommPacket.dataLen = pFileRequest.dataLen
-    packetNoBytes = pPktMetadata.packetNo.to_bytes(2, byteorder='little', signed=False)
+    pCommPacket.header2 = HEADER2
+    pCommPacket.type = PKT_FILE_REQUEST
+    pCommPacket.dataLen = pFileRequest.dataLen
+    packetNoBytes = pFileRequest.packetNo.to_bytes(2, byteorder='little', signed=False)
     pCommPacket.data = pFileRequest.data.extends(packetNoBytes)
-    
-	crc = crc16(pCommPacket)
-	pCommPacket.crc = crc
+
+    crc = crc16(pCommPacket)
+    pCommPacket.crc = crc
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def decodeFileRequestPacket(pCommPacket):
     pFileRequest = pktFileRequest_t()
@@ -206,7 +221,7 @@ def convertCommPacketToByteArray(pCommPacket, includeCrc = True):
     buffer[2] = pCommPacket.type
     buffer[3] = pCommPacket.dataLen
     
-    dataIndex += 4;
+    dataIndex += 4
     
     for i in range(pCommPacket.dataLen):
         buffer[dataIndex + i] = pCommPacket.data[i]
@@ -223,36 +238,7 @@ def convertCommPacketToByteArray(pCommPacket, includeCrc = True):
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def sendCommPacket(pCommPacket):
     buffer = convertCommPacketToByteArray(pCommPacket)    
-    bluetooth.send(buffer)
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
-
-# send string
-pktString = pktString_t()
-pktString.str = "help"
-pktString.strLen = len(pktString.str)
-
-commPacket = commPacket_t()
-createStringPacket(commPacket, pktString)
-sendCommPacket(commPacket);
-
-
-
-
-
-# send file content
-pktFileContent = pktFileContent_t()
-pktFileContent.packetNo = 1
-pktFileContent.data = exp_data
-pktFileContent.dataLen = 50
-
-
-commPacket = commPacket_t()
-createFileContentPacket(commPacket, pktString)
-sendCommPacket(commPacket)
-
-
+    #bluetooth.send(buffer)
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 crc16Table = [
 0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
@@ -290,10 +276,12 @@ crc16Table = [
 
 def crc16(pCommPacket):
     buffer = convertCommPacketToByteArray(pCommPacket, False)
+    
     crc = 0xDEAD; #seed
     for counter in range(len(buffer)):
         crc = (crc << 8) ^ crc16Table[((crc >> 8) ^ buffer[counter]) & 0x00FF]
         crc &= 0xFFFF
         counter += 1
     return crc
+#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 

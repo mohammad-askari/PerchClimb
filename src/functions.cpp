@@ -12,22 +12,52 @@
  * @param[in] idx  index position of the processing buffer
  * @param[in] str  pointer to the processing buffer array
  **/
-void processCommand(const char c, const byte size, byte &idx, char *str) {
+void processCommandSerial(const char c) {
+  const byte buffer_len = 245;
+  static byte buffer_idx = 0;
+  static char buffer[buffer_len];
+  
   switch (c) {
     // if a delimeter is received, reset buffer and enable CLI parsing
     case ',':
     case '\r':
     case '\n':
-      if (!idx) break;  // skip leading delimeters if buffer is empty
-      str[idx] = '\0';  // adding terminating null byte
-      cli.parse(str);
-      idx = 0;
+      if (!buffer_idx) break;  // skip leading delimeters if buffer is empty
+      buffer[buffer_idx] = '\0';  // adding terminating null byte
+      Serial.print("Going to parse: ");
+      Serial.println(buffer);
+      cli.parse(buffer);
+      buffer_idx = 0;
       break;
 
     // add non-delimeter regular bytes to the buffer
     default:
-      if (!idx && c == ' ') break;  // skip leading space if buffer is empty
-      if (idx < (size - 1)) str[idx++] = c;
+      if (!buffer_idx && c == ' ') break;  // skip leading space if buffer is empty
+      if (buffer_idx < (buffer_len - 1)) buffer[buffer_idx++] = c;
+      break;
+  }
+}
+
+void processCommandBLE(const char c) {
+  const byte buffer_len = 245;
+  static byte buffer_idx = 0;
+  static char buffer[buffer_len];
+  
+  switch (c) {
+    // if a delimeter is received, reset buffer and enable CLI parsing
+    case ',':
+    case '\r':
+    case '\n':
+      if (!buffer_idx) break;  // skip leading delimeters if buffer is empty
+      buffer[buffer_idx] = '\0';  // adding terminating null byte
+      cli.parse(buffer);
+      buffer_idx = 0;
+      break;
+
+    // add non-delimeter regular bytes to the buffer
+    default:
+      if (!buffer_idx && c == ' ') break;  // skip leading space if buffer is empty
+      if (buffer_idx < (buffer_len - 1)) buffer[buffer_idx++] = c;
       break;
   }
 }
@@ -293,6 +323,7 @@ void setupTasks() {
   scheduler.init();
 	
   scheduler.addTask(ts_parser);
+  scheduler.addTask(ts_ble_parser);
   scheduler.addTask(ts_sensors);
 	scheduler.addTask(ts_ble_conn);
 	scheduler.addTask(ts_kill);
@@ -314,5 +345,6 @@ void setupTasks() {
 	
   ts_motor_update.setOnDisable(&tsMotorUpdateDisabled); 
   ts_parser.enable();
+  ts_ble_parser.enable();
   ts_sensors.enable();
 }

@@ -64,9 +64,6 @@ extern PIDController pid_roll, pid_pitch, pid_yaw;
 
 // ———————————————————————————— PARSER VARIABLES ———————————————————————————— //
 extern SimpleCLI cli;
-extern const byte buffer_len;
-extern byte buffer_idx;
-extern char buffer[];
 
 // ——————————————————————— EXPERIMENTAL DATA VARIABLES —————————————————————— //
 typedef struct {
@@ -121,7 +118,7 @@ extern bool  is_start_of_takeoff;
 extern bool  is_level_flight;
 
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
-extern TsTask ts_parser, ts_sensors, ts_ble_conn, ts_kill, ts_motor_update;
+extern TsTask ts_parser, ts_ble_parser, ts_sensors, ts_ble_conn, ts_kill, ts_motor_update;
 
 extern TsTask ts_pre_climb,   ts_climb_on,   ts_climb_off;
 extern TsTask ts_pre_descent, ts_descent_on, ts_descent_off;

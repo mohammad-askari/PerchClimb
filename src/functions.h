@@ -3,11 +3,14 @@
 
 #include <Arduino.h>
 
-void  processCommand(const char c, const byte size, byte &idx, char *str);
+
+void processCommandSerial(const char c);
+void processCommandBLE(const char c);
 void  setLED(const byte *pins, const char mode);
 float clipAngle(float angle);
 void  setupBLE();
 void  setupCLI();
 void  setupTasks();
+
 
 #endif

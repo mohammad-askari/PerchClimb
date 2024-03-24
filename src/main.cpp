@@ -83,8 +83,8 @@ Clutch clutch(wing_lock);         // wing-opening mechanism (clutch) object
 // ———————————————————————————— PARSER VARIABLES ———————————————————————————— //
 SimpleCLI cli;                       // command line interface (CLI) object
 const byte buffer_len = ble_mtu - 2; // size of the input buffer characters
-byte buffer_idx = 0;                 // position index variable for the buffer
-char buffer[buffer_len];             // CLI buffer array to parse user inputs
+byte buffer_idx;                     // position index variable for the buffer
+char cliBuffer[buffer_len];          // CLI buffer array to parse user inputs
 
 // ——————————————————————— EXPERIMENTAL DATA VARIABLES —————————————————————— //
 const int drop_freq = 10;                  // gradual ESC speed drop rate  [Hz]
@@ -138,7 +138,8 @@ bool  is_level_flight;                     // flag to set level flight mode
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 // ———— TASK PARAMETERS: interval [ms/μs], #executions, callback function ——— //
 TsTask ts_parser       (TASK_IMMEDIATE,        TASK_FOREVER, &tsParser);
-TsTask ts_sensors      (TASK_SECOND/filt_freq, TASK_FOREVER, &tsSensors);
+TsTask ts_ble_parser   (TASK_IMMEDIATE,        TASK_FOREVER, &tsBleParser);
+TsTask ts_sensors      (TASK_SECOND/log_freq,  TASK_FOREVER, &tsSensors);
 TsTask ts_ble_conn     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLEConn);
 TsTask ts_pre_climb    (TASK_IMMEDIATE,        TASK_ONCE,    &tsPreClimb);
 TsTask ts_climb_on     (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOn);
@@ -209,13 +210,15 @@ void setup()
 
   // configure the task scheduler and add the tasks to the scheduler
   setupTasks();
-}
 
+  // this message will help to identify restart of the system
+  Serial.println("Setup completed. Starting the main loop...");
+}
 
 // —————————————————————————————————————————————————————————————————————————— //
 //                                LOOP FUNCTION                               //
 // —————————————————————————————————————————————————————————————————————————— //
-void loop() {
+void loop() {  
   // run the task scheduler to execute the tasks in order
   scheduler.execute();
   

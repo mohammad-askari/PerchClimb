@@ -1,9 +1,9 @@
 #include "communication.h"
 #include "crc16.h"
+#include "main.h"
+#include "functions.h"
 
-decodeState_t state = decodeState_t::STATE_HEADER1;
 commPacket_t packet;
-uint8_t dataIndex = 0;
 
 // ———————————————— DATA DECODE & VERIFICATION STATE MACHINE ———————————————— //
 /**
@@ -13,28 +13,31 @@ uint8_t dataIndex = 0;
  **/
 void decodeBytes(uint8_t *buffer, uint8_t bufferLen)
 {
+	static decodeState_t state = decodeState_t::STATE_HEADER1;
+	static uint8_t dataIndex = 0;
 	uint8_t index = 0;
+	
 	while(index < bufferLen)
 	{
 		switch(state)
 		{
 			case decodeState_t::STATE_HEADER1:
 			{
-        if (buffer[index] == HEADER1)
-        {
-          packet.header1 = buffer[index];
+				if (buffer[index] == HEADER1)
+				{
+					packet.header1 = buffer[index];
 					state = decodeState_t::STATE_HEADER2;
-        }
-        break;
+				}
+				break;
 			}
 			case decodeState_t::STATE_HEADER2:
 			{
-        if (buffer[index] == HEADER2)
-        {
-          packet.header2 = buffer[index];
+				if (buffer[index] == HEADER2)
+				{
+					packet.header2 = buffer[index];
 					state = decodeState_t::STATE_TYPE;
-        }
-        else
+				}
+				else
 					state = decodeState_t::STATE_HEADER1; // error
 				break;
 			}
@@ -69,7 +72,12 @@ void decodeBytes(uint8_t *buffer, uint8_t bufferLen)
 			case decodeState_t::STATE_DATA:
 			{
 				if(dataIndex < packet.dataLen)
+				{
 					packet.data[dataIndex++] = buffer[index];
+					// if we got the last byte, we should switch to CRC1
+					if(dataIndex == packet.dataLen)
+						state = decodeState_t::STATE_CRC1;
+				}
 				else
 					state = decodeState_t::STATE_CRC1;
 				break;
@@ -103,12 +111,15 @@ void decodeBytes(uint8_t *buffer, uint8_t bufferLen)
  **/
 void decodePacket()
 {
+	Serial.println("Packet received from BLE");
 	switch(packet.type)
 	{
 		case packetTypes_t::PKT_STRING:
 		{
 			pktString_t pktString;
 			decodeStringPacket(&packet, &pktString);
+			for(uint8_t i = 0; i < pktString.strLen; i++)
+				processCommandBLE(pktString.str[i]);
 			break;
 		}
 		case packetTypes_t::PKT_FILE_METADATA:
@@ -194,7 +205,7 @@ void createFileMetadataPacket(commPacket_t *pCommPacket, const pktFileMetadata_t
  **/
 void decodeFileMetadataPacket(const commPacket_t *pCommPacket, pktFileMetadata_t* pPktMetadata)
 {
-	memcpy(pPktMetadata->packetCount, pCommPacket->data, sizeof(uint16_t));
+	memcpy(&pPktMetadata->packetCount, pCommPacket->data, sizeof(uint16_t));
 }
 
 // —————————————————————— FILE CONTENT PACKET CREATION —————————————————————— //
@@ -209,8 +220,8 @@ void createFileContentPacket(commPacket_t *pCommPacket, const pktFileContent_t* 
 	pCommPacket->header2 = HEADER2;
 	pCommPacket->type = packetTypes_t::PKT_FILE_CONTENT;
 	pCommPacket->dataLen = pFileContent->dataLen;
-	memcpy(pCommPacket->data, pFileContent->packetNo, sizeof(uint16_t));
-	memcpy(pCommPacket->data + sizeof(uint16_t), pFileContent->data, pFileContent->dataLen);
+	memcpy(pCommPacket->data, &pFileContent->packetNo, sizeof(uint16_t));
+	memcpy(pCommPacket->data + sizeof(uint16_t), &pFileContent->data, pFileContent->dataLen);
 	
 	uint8_t packetLen = pCommPacket->dataLen + COMM_PACKET_HEADER;
 	pCommPacket->crc = crc16((uint8_t*)pCommPacket, packetLen);
@@ -224,8 +235,8 @@ void createFileContentPacket(commPacket_t *pCommPacket, const pktFileContent_t* 
  **/
 void decodeFileContentPacket(const commPacket_t *pCommPacket, pktFileContent_t* pFileContent)
 {
-	memcpy(pFileContent->packetNo, pCommPacket->data, sizeof(uint16_t));
-	memcpy(pFileContent->data, pCommPacket->data + sizeof(uint16_t), pCommPacket->dataLen);
+	memcpy(&pFileContent->packetNo, pCommPacket->data, sizeof(uint16_t));
+	memcpy(&pFileContent->data, pCommPacket->data + sizeof(uint16_t), pCommPacket->dataLen);
 	pFileContent->dataLen = pCommPacket->dataLen;
 }
 
@@ -257,8 +268,8 @@ void createFileRequestPacket(commPacket_t *pCommPacket, const pktFileRequest_t* 
 	pCommPacket->header2 = HEADER2;
 	pCommPacket->type = packetTypes_t::PKT_FILE_REQUEST;
 	pCommPacket->dataLen = pFileRequest->dataLen;
-	memcpy(pCommPacket->data, pFileRequest->packetNo, sizeof(uint16_t));
-	memcpy(pCommPacket->data + sizeof(uint16_t), pFileRequest->data, pFileRequest->dataLen);
+	memcpy(pCommPacket->data, &pFileRequest->packetNo, sizeof(uint16_t));
+	memcpy(pCommPacket->data + sizeof(uint16_t), &pFileRequest->data, pFileRequest->dataLen);
 	
 	uint8_t packetLen = pCommPacket->dataLen + COMM_PACKET_HEADER;
 	pCommPacket->crc = crc16((uint8_t*)pCommPacket, packetLen);
@@ -270,20 +281,46 @@ void createFileRequestPacket(commPacket_t *pCommPacket, const pktFileRequest_t* 
  * @param[in] pCommPacket  pointer to the communication packet
  * @param[in] pFileRequest pointer to the file request packet type
  **/
-void decodeFileRequestPacket(commPacket_t *pCommPacket, const pktFileRequest_t* pFileRequest)
+void decodeFileRequestPacket(const commPacket_t *pCommPacket, pktFileRequest_t* pFileRequest)
 {
-	memcpy(pFileRequest->packetNo, pCommPacket->data, sizeof(uint16_t));
-	memcpy(pFileRequest->data, pCommPacket->data + sizeof(uint16_t), pCommPacket->dataLen);
+	memcpy(&pFileRequest->packetNo, pCommPacket->data, sizeof(uint16_t));
+	memcpy(&pFileRequest->data, pCommPacket->data + sizeof(uint16_t), pCommPacket->dataLen);
 	pFileRequest->dataLen = pCommPacket->dataLen;	
 }
 
 // ———————————————————————————— PACKET SENDING ———————————————————————————— //
-void sendCommPacket(const commPacket_t* pCommPacket)
+void sendPacketViaBLE(const commPacket_t* pCommPacket)
 {
 	uint8_t buffer[MAX_BLUETOOTH_PACKET_LEN];
 	memcpy(buffer, (uint8_t*)pCommPacket, pCommPacket->dataLen + COMM_PACKET_HEADER);
-	memcpy(buffer + pCommPacket->dataLen + COMM_PACKET_HEADER, (uint8_t*)pCommPacket->crc, sizeof(uint16_t));
+	memcpy(buffer + pCommPacket->dataLen + COMM_PACKET_HEADER, (uint8_t*)&pCommPacket->crc, sizeof(uint16_t));
 	
-	// !!!!!!!!!!!!!!! SEND BUFFER OVER BLUETOOTH - BLEUART !!!!!!!!!!!!!!!
-	bluetooth.send(buffer, pCommPacket->dataLen + COMM_PACKET_HEADER_W_CRC);
+	bleuart.write(buffer, pCommPacket->dataLen + COMM_PACKET_HEADER_W_CRC);
+}
+
+void sendStringAsStringPacketViaBLE(String str)
+{
+	commPacket_t commPacket;
+	pktString_t stringPacket;
+	int16_t index = 0, remainingCharacters = str.length(), charactersToSend;
+
+	if(str.length() == 0)
+		return;
+
+	do
+	{
+		charactersToSend = remainingCharacters < 50 ? remainingCharacters : 50;
+		
+		memcpy(stringPacket.str, str.substring(index, index + charactersToSend).c_str(), charactersToSend);
+		stringPacket.strLen = charactersToSend;
+				
+		createStringPacket(&commPacket, &stringPacket);
+		sendPacketViaBLE(&commPacket);
+
+		remainingCharacters -= charactersToSend;
+		index += charactersToSend;
+
+		delay(10);
+		
+	} while (remainingCharacters > 0);
 }

@@ -2,10 +2,12 @@
 #define COMMUNICATION_H
 
 #include <Arduino.h>
+#include <WString.h>
 
 #define COMM_PACKET_HEADER	4
 #define COMM_PACKET_HEADER_W_CRC COMM_PACKET_HEADER + 2
 #define MAX_COMM_PACKET_LEN 58
+#define MAX_INNER_PACKET_DATALEN 55
 #define MAX_BLUETOOTH_PACKET_LEN 64
 #define PKT_FILE_METADATA_LEN 2
 #define HEADER1 0xC3
@@ -50,17 +52,28 @@ typedef struct {
 
 typedef struct {
 	uint16_t packetNo;
-	uint8_t data;
+	uint8_t data[MAX_INNER_PACKET_DATALEN];
 	uint8_t dataLen;
 } pktFileContent_t;
 
 typedef struct {
 	uint16_t packetNo;
-	uint8_t data;
+	uint8_t data[MAX_INNER_PACKET_DATALEN];
 	uint8_t dataLen;
 } pktFileRequest_t;
 
 void decodePacket();
 void decodeBytes(uint8_t *buffer, uint8_t bufferLen);
+void createStringPacket(commPacket_t *pCommPacket, const pktString_t* pPktString);
+void decodeStringPacket(const commPacket_t *pCommPacket, pktString_t* pPktString);
+void createFileMetadataPacket(commPacket_t *pCommPacket, const pktFileMetadata_t* pPktMetadata);
+void decodeFileMetadataPacket(const commPacket_t *pCommPacket, pktFileMetadata_t* pPktMetadata);
+void createFileContentPacket(commPacket_t *pCommPacket, const pktFileContent_t* pFileContent);
+void decodeFileContentPacket(const commPacket_t *pCommPacket, pktFileContent_t* pFileContent);
+void createFileSentPacket(commPacket_t *pCommPacket);
+void createFileRequestPacket(commPacket_t *pCommPacket, const pktFileRequest_t* pFileRequest);
+void decodeFileRequestPacket(const commPacket_t *pCommPacket, pktFileRequest_t* pFileRequest);
+void sendPacketViaBLE(const commPacket_t* pCommPacket);
+void sendStringAsStringPacketViaBLE(String str);
 
 #endif

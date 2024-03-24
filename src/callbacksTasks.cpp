@@ -1,6 +1,7 @@
 #include "callbacksTasks.h"
 #include "main.h"
 #include "functions.h"
+#include "communication.h"
 
 uint16_t ble_conn_handle;
 
@@ -9,17 +10,35 @@ uint16_t ble_conn_handle;
  * @brief Processes incoming serial/ble data bytes and parses into the CLI.
  **/
 void tsParser() {
-  // check BLE UART for user input
-  while (bleuart.available()) {
-    int ch = bleuart.read(); // read a single byte from the BLE UART
-    processCommand(ch, buffer_len, buffer_idx, buffer);
-  }
-
   // check serial for user input
-  while (Serial.available()) {
+  if(Serial.available())
+  {
     int ch = Serial.read();  // read a single byte from the serial
-    processCommand(ch, buffer_len, buffer_idx, buffer);
+    processCommandSerial(ch);
   }
+  //else
+  //  delay(10);
+};
+
+void tsBleParser() {
+  uint8_t bleBuffer[MAX_BLUETOOTH_PACKET_LEN];
+  uint8_t bleDataLen = 0;
+  
+  // read BLE data
+  if(bleuart.available())
+  {
+    bleDataLen = bleuart.read(bleBuffer, MAX_BLUETOOTH_PACKET_LEN);
+    Serial.print("Read BLE ");
+    Serial.print(bleDataLen);
+    Serial.println(" bytes");
+    if(bleDataLen > 0)
+      decodeBytes(bleBuffer, bleDataLen);
+  }
+  //else
+  //{
+    //delay(10);
+    //Serial.println("No BLE Data");
+  //}
 };
 
 
@@ -464,7 +483,41 @@ void tsDataLogger() {
 
 
 void tsDataTransfer() {
+  commPacket_t packet;
+  pktFileMetadata_t metadata;
+  pktFileContent_t fileContent;
+  uint8_t *logArrayPointer;
+  const int8_t MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = 5; // move this to global.h or something
+  uint8_t dataLen;
+
   Serial.println("Data Transfer Started");
+
+  
+//   // send metadata packet so that the client would know how many packets it should expect
+//   metadata.packetCount = (int)ceil(data_idx / MAX_NUMBER_OF_LOGS_IN_EACH_PACKET);
+//   createFileMetadataPacket(&packet, &metadata);
+//   sendPacketViaBLE(&packet);
+
+//   delay(300);
+  
+//   for (int i = 0; i < data_idx; i = i + MAX_NUMBER_OF_LOGS_IN_EACH_PACKET)
+//   {                 
+//       logArrayPointer = (uint8_t*) exp_data;
+//       logArrayPointer += sizeof(exp_data_t) * i;
+
+//       fileContent.packetNo = i;
+//       // number of log data is not always a coefficient of MAX_NUMBER_OF_LOGS_IN_EACH_PACKET
+//       dataLen = data_idx - i >= MAX_NUMBER_OF_LOGS_IN_EACH_PACKET ? 
+//                   sizeof(exp_data_t) * MAX_NUMBER_OF_LOGS_IN_EACH_PACKET : 
+//                   sizeof(exp_data_t) * (data_idx - i);
+//       memcpy(&fileContent.data, logArrayPointer, dataLen);
+//       fileContent.dataLen = dataLen;
+
+//       createFileContentPacket(&packet, &fileContent);
+//       sendPacketViaBLE(&packet);
+      
+//       delay(30);
+
   const byte packet_len  = 60;
   const int python_delay = 250;
   char meta_str[32];
@@ -481,7 +534,7 @@ void tsDataTransfer() {
         P += sizeof(exp_data_t) * i;
         bleuart.write(P, sizeof(exp_data_t) * 6);
         delay(python_delay);
-  }
+    }
   }
   // transfer logged sensor data combined with actuator commands
   else {
@@ -508,6 +561,10 @@ void tsDataTransfer() {
     }
   }
 
+//   // tell client that file send process is finished
+//   createFileSentPacket(&packet);
+//   sendPacketViaBLE(&packet);
+  
   Serial.println("Data Transfer Complete");
 };
 
