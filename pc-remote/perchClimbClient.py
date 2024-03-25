@@ -8,8 +8,6 @@ import communication
 #---------------------------------------------------------------------------------------------------------------------
 UUID_RXD = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'
 UUID_TXD = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E'
-LOG_DATA_LEN = 10
-LOG_EX_DATA_LEN = 20
 
 continueRunning = True
 thereIsDataToSend = False
@@ -76,11 +74,11 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 				if fileContentPackets[i] != None:
 					for j in range(MAX_NUMBER_OF_LOGS_IN_EACH_PACKET):
 						if fileContentPackets[i].filetype == communication.FILE_TYPE_SIMPLE:
-							logData = decodeLogData(fileContentPackets[i].data[j * LOG_DATA_LEN : j * LOG_DATA_LEN + LOG_DATA_LEN])
+							logData = decodeLogData(fileContentPackets[i].data[j * communication.LOG_SIMPLE_LEN : j * communication.LOG_SIMPLE_LEN + communication.LOG_SIMPLE_LEN])
 							if logData != None:
 								alltext += str(i) + ',' + str(logData.time) + ',' + str(logData.current) + ',' + str(logData.roll) + ',' + str(logData.pitch) + ',' + str(logData.yaw) + '\n'
 						elif fileContentPackets[i].filetype == communication.FILE_TYPE_EXTENDED:
-							logData = decodeLogData(fileContentPackets[i].data[j * LOG_EX_DATA_LEN : j * LOG_EX_DATA_LEN + LOG_EX_DATA_LEN])
+							logData = decodeLogDataEx(fileContentPackets[i].data[j * communication.LOG_EXTENDED_LEN : j * communication.LOG_EXTENDED_LEN + communication.LOG_EXTENDED_LEN])
 							if logData != None:
 								alltext += str(i) + ',' + str(logData.time) + ',' + str(logData.current) + ',' + str(logData.roll) + ',' + str(logData.pitch) + ',' + str(logData.yaw) + ',' + str(logData.throttle) + ',' + str(logData.aileron) + ',' + str(logData.elevator) + ',' + str(logData.rudder) + ',' + str(logData.clutch) + ',' + str(logData.bodyHook) + ',' + str(logData.tailHook) + ',' + str(logData.wingOpen) + '\n'
 						else:
@@ -90,10 +88,10 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 						
 						# check if next loop has data. otherwise break the inner loop
 						if fileContentPackets[i].filetype == communication.FILE_TYPE_SIMPLE:
-							if j * LOG_DATA_LEN + LOG_DATA_LEN >= fileContentPackets[i].dataLen:
+							if j * communication.LOG_SIMPLE_LEN + communication.LOG_SIMPLE_LEN >= fileContentPackets[i].dataLen:
 								break
 						elif fileContentPackets[i].filetype == communication.FILE_TYPE_EXTENDED:
-							if j * LOG_EX_DATA_LEN + LOG_EX_DATA_LEN >= fileContentPackets[i].dataLen:
+							if j * communication.LOG_EXTENDED_LEN + communication.LOG_EXTENDED_LEN >= fileContentPackets[i].dataLen:
 								break
 			
 			# write to file
