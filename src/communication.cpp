@@ -323,7 +323,7 @@ void sendStringAsStringPacketViaBLE(String str)
 		remainingCharacters -= charactersToSend;
 		index += charactersToSend;
 
-		delay(20);
+		// delay(20); // TODO: confirm removal is safe
 		
 	} while (remainingCharacters > 0);
 }
