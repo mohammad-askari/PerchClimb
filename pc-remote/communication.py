@@ -1,8 +1,11 @@
 # Constants
 COMM_PACKET_HEADER = 4
 COMM_PACKET_HEADER_W_CRC = COMM_PACKET_HEADER + 2
-MAX_COMM_PACKET_LEN = 58
-MAX_BLUETOOTH_PACKET_LEN = 64
+MAX_COMM_PACKET_LEN = 238
+MAX_BLUETOOTH_PACKET_LEN = 244
+MAX_FILECONTENT_DATALEN = 235
+LOG_SIMPLE_LEN = 10     # this should be changed manually since sizeof(exp_data_t) doesn't make sense in python
+LOG_EXTENDED_LEN = 20   # this should be changed manually since "sizeof(exp_data_t) + sizeof(cmd_data_t)" doesn't make sense in python
 PKT_FILE_METADATA_LEN = 3
 HEADER1 = 0xC3
 HEADER2 = 0xFE
@@ -32,7 +35,7 @@ class commPacket_t:
         self.header2 = 0
         self.type = 0
         self.dataLen = 0
-        self.data = bytearray(MAX_COMM_PACKET_LEN)
+        self.data = bytearray()
         self.crc = 0
 
 class pktString_t:
@@ -49,13 +52,13 @@ class pktFileContent_t:
     def __init__(self):
         self.packetNo = 0
         self.filetype = 0
-        self.data = bytearray(MAX_COMM_PACKET_LEN)
+        self.data = bytearray()
         self.dataLen = 0
 
 class pktFileRequest_t:
     def __init__(self):
         self.packetNo = 0
-        self.data = bytearray(MAX_COMM_PACKET_LEN)
+        self.data = bytearray()
         self.dataLen = 0
 
 class pktFileSend_t:

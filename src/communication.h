@@ -6,9 +6,9 @@
 
 #define COMM_PACKET_HEADER	4
 #define COMM_PACKET_HEADER_W_CRC COMM_PACKET_HEADER + 2
-#define MAX_COMM_PACKET_LEN 58
-#define MAX_INNER_PACKET_DATALEN 55
-#define MAX_BLUETOOTH_PACKET_LEN 64
+#define MAX_COMM_PACKET_LEN 238 // MAX_BLUETOOTH_PACKET_LEN - COMM_PACKET_HEADER - 2 (CRC)
+#define MAX_FILECONTENT_DATALEN 235
+#define MAX_BLUETOOTH_PACKET_LEN 244
 #define PKT_FILE_METADATA_LEN 3
 #define HEADER1 0xC3
 #define HEADER2 0xFE
@@ -56,13 +56,13 @@ typedef struct {
 typedef struct {
 	uint16_t packetNo;
 	uint8_t filetype;
-	uint8_t data[MAX_INNER_PACKET_DATALEN];
+	uint8_t data[MAX_FILECONTENT_DATALEN];
 	uint8_t dataLen;
 } pktFileContent_t;
 
 typedef struct {
 	uint16_t packetNo;
-	uint8_t data[MAX_INNER_PACKET_DATALEN];
+	uint8_t data[MAX_FILECONTENT_DATALEN];
 	uint8_t dataLen;
 } pktFileRequest_t;
 

@@ -480,7 +480,9 @@ void tsDataTransfer() {
   pktFileMetadata_t metadata;
   pktFileContent_t fileContent;
   uint8_t *logArrayPointer, *cmdDataArrayPointer;
-  int8_t MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = transfer_include_commands ? 2 : 5; // move this to global.h or something
+  uint16_t MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = transfer_include_commands ? 
+                                                MAX_FILECONTENT_DATALEN / (sizeof(exp_data_t) + sizeof(cmd_data_t)) :
+                                                MAX_FILECONTENT_DATALEN / sizeof(exp_data_t);
   uint8_t dataLen = 0, dataLenEx = 0;
 
   Serial.println("Data Transfer Started");
@@ -514,11 +516,25 @@ void tsDataTransfer() {
                       sizeof(cmd_data_t) * MAX_NUMBER_OF_LOGS_IN_EACH_PACKET : 
                       sizeof(cmd_data_t) * (data_idx - i);
         
-      memcpy(fileContent.data, logArrayPointer, dataLen);
-      if(transfer_include_commands)
-        memcpy(fileContent.data + dataLen, cmdDataArrayPointer, dataLenEx);
+      // now copy the data
+      if(transfer_include_commands == false) // simple log
+      {
+        // since the logs are the "exp_data", we just copy from the memory
+        memcpy(fileContent.data, logArrayPointer, dataLen);
+        fileContent.dataLen = dataLen;
+      }
+      else // extended log
+      {
+        for(int j = 0; j < MAX_NUMBER_OF_LOGS_IN_EACH_PACKET; j++)
+        {
+          memcpy(fileContent.data + j * (sizeof(exp_data_t) + sizeof(cmd_data_t)), logArrayPointer, sizeof(exp_data_t));
+          memcpy(fileContent.data + j * (sizeof(exp_data_t) + sizeof(cmd_data_t)) + sizeof(exp_data_t), cmdDataArrayPointer, sizeof(cmd_data_t));
+          logArrayPointer += sizeof(exp_data_t);
+          cmdDataArrayPointer += sizeof(cmd_data_t);
+        }
+      }      
+      
       fileContent.dataLen = dataLen + dataLenEx;
-
       fileContent.filetype = transfer_include_commands ? FILE_TYPE_EXTENDED : FILE_TYPE_SIMPLE;
 
       createFileContentPacket(&packet, &fileContent);

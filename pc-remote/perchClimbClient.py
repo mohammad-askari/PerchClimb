@@ -8,7 +8,6 @@ import communication
 #---------------------------------------------------------------------------------------------------------------------
 UUID_RXD = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'
 UUID_TXD = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E'
-MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = 5
 LOG_DATA_LEN = 10
 LOG_EX_DATA_LEN = 20
 
@@ -63,6 +62,15 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 				print("Unknown file type received. Aborting...")
 				return
 			
+			MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = 0
+			if fileContentType == communication.FILE_TYPE_SIMPLE:
+				MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = int(communication.MAX_FILECONTENT_DATALEN / communication.LOG_SIMPLE_LEN)
+			elif fileContentType == communication.FILE_TYPE_EXTENDED:
+				MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = int(communication.MAX_FILECONTENT_DATALEN / communication.LOG_EXTENDED_LEN)
+			
+			print("Received {0} packets, each containing {1} logs at max.".format(packetCount, MAX_NUMBER_OF_LOGS_IN_EACH_PACKET))
+			print("Creating CSV file from received packets...")
+			
 			# convert all data to string
 			for i in range(packetCount):
 				if fileContentPackets[i] != None:
@@ -89,15 +97,16 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 								break
 			
 			# write to file
-			filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+			dateAsString = datetime.now().strftime("%Y-%m-%d %I-%M-%S %p")
+			filename = "climb_" + dateAsString + ".csv"
 			try:
 				os.mkdir('sensordata')
 			except Exception as e:
 				pass
-			h = open('sensordata/climb' + filename + '.csv', "+w")
+			h = open('sensordata/' + filename, "+w")
 			h.write(alltext)
 			h.close()	
-			print("Data has been saved to the file: sensordata/climb/{0}.csv".format(filename))
+			print("Data has been saved to the file: sensordata/" + filename)
 #---------------------------------------------------------------------------------------------------------------------
 # the thread that reads user input and sends the given command to the device via bluetooth
 def cliThread():
@@ -236,7 +245,7 @@ def decodeLogDataEx(buffer: bytearray):
 		current  = int.from_bytes(buffer[2:4], byteorder='little', signed=True)
 		roll     = int.from_bytes(buffer[4:6], byteorder='little', signed=True)
 		pitch    = int.from_bytes(buffer[6:8], byteorder='little', signed=True)
-		yaw      = int.from_bytes(buffer[8:], byteorder='little', signed=True)
+		yaw      = int.from_bytes(buffer[8:10], byteorder='little', signed=True)
 		throttle = int.from_bytes(buffer[10:12], byteorder='little', signed=True)
 		aileron  =  int.from_bytes(buffer[12:13], byteorder='little', signed=True)
 		elevator = int.from_bytes(buffer[13:14], byteorder='little', signed=True)
