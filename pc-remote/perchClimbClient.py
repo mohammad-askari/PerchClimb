@@ -204,38 +204,30 @@ async def run():
 			await asyncio.sleep(0.2)
 #---------------------------------------------------------------------------------------------------------------------			
 class LogData:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
+	def __init__(self, time, current, roll, pitch, yaw):
+		self.time = time
+		self.current = current
+		self.roll = roll
+		self.pitch = pitch
+		self.yaw = yaw
+
+class LogDataEx:
+	def __init__(self, time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, clutch, bodyHook, tailHook, wingOpen):
+		self.time = time
+		self.current = current
+		self.roll = roll
+		self.pitch = pitch
+		self.yaw = yaw
+		self.throttle = throttle
+		self.aileron = aileron
+		self.elevator = elevator
+		self.rudder = rudder
+		self.clutch = clutch
+		self.bodyHook = bodyHook
+		self.tailHook = tailHook
+		self.wingOpen = wingOpen
 
 def decodeLogData(buffer: bytearray):
-	if len(buffer) == LOG_DATA_LEN:
-		data = {
-			'time':     int.from_bytes(buffer[0:2],  byteorder='little', signed=False),
-			'current':  int.from_bytes(buffer[2:4],  byteorder='little', signed=True),
-			'roll':     int.from_bytes(buffer[4:6],  byteorder='little', signed=True),
-			'pitch':    int.from_bytes(buffer[6:8],  byteorder='little', signed=True),
-			'yaw':      int.from_bytes(buffer[8:10], byteorder='little', signed=True)
-		}
-		return LogData(**data)
-
-	elif len(buffer) == LOG_EX_DATA_LEN:
-		data = { 
-			'time':     int.from_bytes(buffer[0:2],   byteorder='little', signed=False),
-			'current':  int.from_bytes(buffer[2:4],   byteorder='little', signed=True),
-			'roll':     int.from_bytes(buffer[4:6],   byteorder='little', signed=True),
-			'pitch':    int.from_bytes(buffer[6:8],   byteorder='little', signed=True),
-			'yaw':      int.from_bytes(buffer[8:10],  byteorder='little', signed=True),
-			'throttle': int.from_bytes(buffer[10:12], byteorder='little', signed=True),
-			'aileron':  int.from_bytes(buffer[12:13], byteorder='little', signed=True),
-			'elevator': int.from_bytes(buffer[13:14], byteorder='little', signed=True),
-			'rudder':   int.from_bytes(buffer[14:15], byteorder='little', signed=True),
-			'clutch':   int.from_bytes(buffer[15:16], byteorder='little', signed=True),
-			'bodyHook': int.from_bytes(buffer[16:17], byteorder='little', signed=True),
-			'tailHook': int.from_bytes(buffer[17:18], byteorder='little', signed=True),
-			'wingOpen': int.from_bytes(buffer[18:20], byteorder='little', signed=True)
-		}
-		return LogData(**data)
-	
 	if len(buffer) == 10:
 		time    = int.from_bytes(buffer[0:2], byteorder='little', signed=False)
 		current = int.from_bytes(buffer[2:4], byteorder='little', signed=True)
