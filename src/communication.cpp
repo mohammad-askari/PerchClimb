@@ -192,6 +192,7 @@ void createFileMetadataPacket(commPacket_t *pCommPacket, const pktFileMetadata_t
 	pCommPacket->type = packetTypes_t::PKT_FILE_METADATA;
 	pCommPacket->dataLen = PKT_FILE_METADATA_LEN;
 	memcpy(pCommPacket->data, &pPktMetadata->packetCount, sizeof(uint16_t));
+	memcpy(pCommPacket->data + sizeof(uint16_t), &pPktMetadata->filetype, sizeof(uint8_t));
 	
 	uint8_t packetLen = pCommPacket->dataLen + COMM_PACKET_HEADER;
 	pCommPacket->crc = crc16((uint8_t*)pCommPacket, packetLen);
@@ -206,6 +207,7 @@ void createFileMetadataPacket(commPacket_t *pCommPacket, const pktFileMetadata_t
 void decodeFileMetadataPacket(const commPacket_t *pCommPacket, pktFileMetadata_t* pPktMetadata)
 {
 	memcpy(&pPktMetadata->packetCount, pCommPacket->data, sizeof(uint16_t));
+	memcpy(&pPktMetadata->filetype, pCommPacket->data + sizeof(uint16_t), sizeof(uint8_t));
 }
 
 // —————————————————————— FILE CONTENT PACKET CREATION —————————————————————— //
@@ -221,7 +223,8 @@ void createFileContentPacket(commPacket_t *pCommPacket, const pktFileContent_t* 
 	pCommPacket->type = packetTypes_t::PKT_FILE_CONTENT;
 	pCommPacket->dataLen = pFileContent->dataLen + sizeof(uint16_t);
 	memcpy(pCommPacket->data, &pFileContent->packetNo, sizeof(uint16_t));
-	memcpy(pCommPacket->data + sizeof(uint16_t), pFileContent->data, pFileContent->dataLen);
+	memcpy(pCommPacket->data + sizeof(uint16_t), &pFileContent->filetype, sizeof(uint8_t));
+	memcpy(pCommPacket->data + sizeof(uint16_t) + sizeof(uint8_t), pFileContent->data, pFileContent->dataLen);
 	
 	uint8_t packetLen = pCommPacket->dataLen + COMM_PACKET_HEADER;
 	pCommPacket->crc = crc16((uint8_t*)pCommPacket, packetLen);
@@ -236,7 +239,8 @@ void createFileContentPacket(commPacket_t *pCommPacket, const pktFileContent_t* 
 void decodeFileContentPacket(const commPacket_t *pCommPacket, pktFileContent_t* pFileContent)
 {
 	memcpy(&pFileContent->packetNo, pCommPacket->data, sizeof(uint16_t));
-	memcpy(&pFileContent->data, pCommPacket->data + sizeof(uint16_t), pCommPacket->dataLen);
+	memcpy(&pFileContent->filetype, pCommPacket->data + sizeof(uint16_t), sizeof(uint8_t));
+	memcpy(&pFileContent->data, pCommPacket->data + sizeof(uint16_t) + sizeof(uint8_t), pCommPacket->dataLen);
 	pFileContent->dataLen = pCommPacket->dataLen;
 }
 

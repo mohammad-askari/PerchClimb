@@ -10,6 +10,7 @@ UUID_RXD = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'
 UUID_TXD = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E'
 MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = 5
 LOG_DATA_LEN = 10
+LOG_EX_DATA_LEN = 20
 
 continueRunning = True
 thereIsDataToSend = False
@@ -17,12 +18,14 @@ cliThreadHandle = None
 dataToSend = bytearray()
 packetCount = 0
 fileContentPackets = []
+fileContentType = communication.FILE_TYPE_SIMPLE
 alltext = ""
 #---------------------------------------------------------------------------------------------------------------------
 # callback function when data is received
 async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 	global packetCount
 	global fileContentPackets
+	global fileContentType
 	global alltext
 
 	# decodedPackets contains packets that has been decoded. each element in the list can be a different type
@@ -36,12 +39,15 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 		# Metadata packet
 		elif isinstance(packet, communication.pktFileMetadata_t):
 			packetCount = packet.packetCount
+			fileContentType = packet.filetype
+			
 			fileContentPackets = [None] * (packetCount + 1)
-			print("Metadata received. {0} packets will be received".format(packetCount))
+			print("Metadata received. {0} packets of type {1} will be received".format(packet.packetCount, packet.filetype))
 		
 		# FileContent packet
 		elif isinstance(packet, communication.pktFileContent_t):
 			fileContentPackets[packet.packetNo] = packet
+			print("{0}/{1}".format(packet.packetNo, packetCount))
 		
 		# FileSend packet (file send process is finished)
 		elif isinstance(packet, communication.pktFileSend_t):
@@ -49,19 +55,35 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 			# TODO: check missing parts
 			
 			# create CSV from the packets
-			alltext = "Packet No, Time [ms], Current [adc], Roll [deg], Pitch [deg], Yaw [deg]\n"
+			if fileContentType == communication.FILE_TYPE_SIMPLE:
+				alltext = "Packet No,Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg]\n"
+			elif fileContentType == communication.FILE_TYPE_EXTENDED:
+				alltext = "Packet No,Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg],Throttle [us],Aileron,Elevator,Rudder,Clutch,Body Hook,Tail Hook,Wing Open [pwm]\n"
+			else:
+				print("Unknown file type received. Aborting...")
+				return
 			
 			# convert all data to string
 			for i in range(packetCount):
 				if fileContentPackets[i] != None:
 					for j in range(MAX_NUMBER_OF_LOGS_IN_EACH_PACKET):
-						logData = convert_exp_data_to_str(fileContentPackets[i].data[j * LOG_DATA_LEN : j * LOG_DATA_LEN + LOG_DATA_LEN])
-						if logData != None:
-							alltext += str(i) + ',' +str(logData.time) + ',' + str(logData.current) + ',' + str(logData.roll) + ',' + str(logData.pitch) + ',' + str(logData.yaw) + '\n'
+						if fileContentPackets[i].filetype == communication.FILE_TYPE_SIMPLE:
+							logData = decodeLogData(fileContentPackets[i].data[j * LOG_DATA_LEN : j * LOG_DATA_LEN + LOG_DATA_LEN])
+							if logData != None:
+								alltext += str(i) + ',' + str(logData.time) + ',' + str(logData.current) + ',' + str(logData.roll) + ',' + str(logData.pitch) + ',' + str(logData.yaw) + '\n'
+						elif fileContentPackets[i].filetype == communication.FILE_TYPE_EXTENDED:
+							logData = decodeLogDataEx(fileContentPackets[i].data[j * LOG_EX_DATA_LEN : j * LOG_EX_DATA_LEN + LOG_EX_DATA_LEN])
+							if logData != None:
+								alltext += str(i) + ',' + str(logData.time) + ',' + str(logData.current) + ',' + str(logData.roll) + ',' + str(logData.pitch) + ',' + str(logData.yaw) + ',' + str(logData.throttle) + ',' + str(logData.aileron) + ',' + str(logData.elevator) + ',' + str(logData.rudder) + ',' + str(logData.clutch) + ',' + str(logData.bodyHook) + ',' + str(logData.tailHook) + ',' + str(logData.wingOpen) + '\n'
+
 						
 						# check if next loop has data. otherwise break the inner loop
-						if j * LOG_DATA_LEN + LOG_DATA_LEN >= fileContentPackets[i].dataLen:
-							break
+						if fileContentPackets[i].filetype == communication.FILE_TYPE_SIMPLE:
+							if j * LOG_DATA_LEN + LOG_DATA_LEN >= fileContentPackets[i].dataLen:
+								break
+						elif fileContentPackets[i].filetype == communication.FILE_TYPE_EXTENDED:
+							if j * LOG_EX_DATA_LEN + LOG_EX_DATA_LEN >= fileContentPackets[i].dataLen:
+								break
 			
 			# write to file
 			filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -169,7 +191,7 @@ async def run():
 			
 			await asyncio.sleep(0.2)
 #---------------------------------------------------------------------------------------------------------------------			
-class DataProcessor:
+class LogData:
 	def __init__(self, time, current, roll, pitch, yaw):
 		self.time = time
 		self.current = current
@@ -177,19 +199,53 @@ class DataProcessor:
 		self.pitch = pitch
 		self.yaw = yaw
 
-def convert_exp_data_to_str(buffer: bytearray):
-	if len(buffer) == 10:
-		time = int.from_bytes(buffer[0:2], byteorder='little', signed=False)
-		current = int.from_bytes(buffer[2:4], byteorder='little', signed=True)
-		roll = int.from_bytes(buffer[4:6], byteorder='little', signed=True)
-		pitch = int.from_bytes(buffer[6:8], byteorder='little', signed=True)
-		yaw = int.from_bytes(buffer[8:], byteorder='little', signed=True)
-		
+class LogDataEx:
+	def __init__(self, time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, clutch, bodyHook, tailHook, wingOpen):
+		self.time = time
+		self.current = current
+		self.roll = roll
+		self.pitch = pitch
+		self.yaw = yaw
+		self.throttle = throttle
+		self.aileron = aileron
+		self.elevator = elevator
+		self.rudder = rudder
+		self.clutch = clutch
+		self.bodyHook = bodyHook
+		self.tailHook = tailHook
+		self.wingOpen = wingOpen
 
-		return DataProcessor(time, current, roll, pitch, yaw)
+def decodeLogData(buffer: bytearray):
+	if len(buffer) == 10:
+		time    = int.from_bytes(buffer[0:2], byteorder='little', signed=False)
+		current = int.from_bytes(buffer[2:4], byteorder='little', signed=True)
+		roll    = int.from_bytes(buffer[4:6], byteorder='little', signed=True)
+		pitch   = int.from_bytes(buffer[6:8], byteorder='little', signed=True)
+		yaw     = int.from_bytes(buffer[8:], byteorder='little', signed=True)
+
+		return LogData(time, current, roll, pitch, yaw)
 	else:
-		print("BAD DATA")
-		print(len(buffer))
+		print("Bad data in logs: ", len(buffer))
+
+def decodeLogDataEx(buffer: bytearray):
+	if len(buffer) == 20:
+		time     = int.from_bytes(buffer[0:2], byteorder='little', signed=False)
+		current  = int.from_bytes(buffer[2:4], byteorder='little', signed=True)
+		roll     = int.from_bytes(buffer[4:6], byteorder='little', signed=True)
+		pitch    = int.from_bytes(buffer[6:8], byteorder='little', signed=True)
+		yaw      = int.from_bytes(buffer[8:], byteorder='little', signed=True)
+		throttle = int.from_bytes(buffer[10:12], byteorder='little', signed=True)
+		aileron  =  int.from_bytes(buffer[12:13], byteorder='little', signed=True)
+		elevator = int.from_bytes(buffer[13:14], byteorder='little', signed=True)
+		rudder   = int.from_bytes(buffer[14:15], byteorder='little', signed=True)
+		clutch   = int.from_bytes(buffer[15:16], byteorder='little', signed=True)
+		bodyHook = int.from_bytes(buffer[16:17], byteorder='little', signed=True)
+		tailHook = int.from_bytes(buffer[17:18], byteorder='little', signed=True)
+		wingOpen = int.from_bytes(buffer[18:20], byteorder='little', signed=True)
+
+		return LogDataEx(time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, clutch, bodyHook, tailHook, wingOpen)
+	else:
+		print("Bad data in logs: ", len(buffer))
 #---------------------------------------------------------------------------------------------------------------------			
 def signal_handler(sig, frame):
 	global continueRunning

@@ -9,9 +9,11 @@
 #define MAX_COMM_PACKET_LEN 58
 #define MAX_INNER_PACKET_DATALEN 55
 #define MAX_BLUETOOTH_PACKET_LEN 64
-#define PKT_FILE_METADATA_LEN 2
+#define PKT_FILE_METADATA_LEN 3
 #define HEADER1 0xC3
 #define HEADER2 0xFE
+#define FILE_TYPE_SIMPLE 1
+#define FILE_TYPE_EXTENDED 2
 
 typedef enum {
 	STATE_HEADER1,
@@ -48,10 +50,12 @@ typedef struct {
 
 typedef struct {
 	uint16_t packetCount;
+	uint8_t filetype;
 } pktFileMetadata_t;
 
 typedef struct {
 	uint16_t packetNo;
+	uint8_t filetype;
 	uint8_t data[MAX_INNER_PACKET_DATALEN];
 	uint8_t dataLen;
 } pktFileContent_t;

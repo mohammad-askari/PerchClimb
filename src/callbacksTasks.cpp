@@ -479,15 +479,15 @@ void tsDataTransfer() {
   commPacket_t packet;
   pktFileMetadata_t metadata;
   pktFileContent_t fileContent;
-  uint8_t *logArrayPointer;
-  const int8_t MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = 5; // move this to global.h or something
-  uint8_t dataLen;
+  uint8_t *logArrayPointer, *cmdDataArrayPointer;
+  int8_t MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = transfer_include_commands ? 2 : 5; // move this to global.h or something
+  uint8_t dataLen = 0, dataLenEx = 0;
 
   Serial.println("Data Transfer Started");
-
   
   // send metadata packet so that the client would know how many packets it should expect
   metadata.packetCount = (int)ceil(data_idx / MAX_NUMBER_OF_LOGS_IN_EACH_PACKET);
+  metadata.filetype = transfer_include_commands ? FILE_TYPE_EXTENDED : FILE_TYPE_SIMPLE;
   createFileMetadataPacket(&packet, &metadata);
   sendPacketViaBLE(&packet);
 
@@ -497,63 +497,33 @@ void tsDataTransfer() {
   {                 
       logArrayPointer = (uint8_t*) exp_data;
       logArrayPointer += sizeof(exp_data_t) * i;
+      if(transfer_include_commands)
+      {
+        cmdDataArrayPointer = (uint8_t*) cmd_data;
+        cmdDataArrayPointer += sizeof(cmd_data_t) * i;
+      }
 
       fileContent.packetNo = i / MAX_NUMBER_OF_LOGS_IN_EACH_PACKET;
+      
       // number of log data is not always a coefficient of MAX_NUMBER_OF_LOGS_IN_EACH_PACKET
       dataLen = data_idx - i >= MAX_NUMBER_OF_LOGS_IN_EACH_PACKET ? 
                   sizeof(exp_data_t) * MAX_NUMBER_OF_LOGS_IN_EACH_PACKET : 
                   sizeof(exp_data_t) * (data_idx - i);
+      if(transfer_include_commands)
+        dataLenEx = data_idx - i >= MAX_NUMBER_OF_LOGS_IN_EACH_PACKET ? 
+                      sizeof(cmd_data_t) * MAX_NUMBER_OF_LOGS_IN_EACH_PACKET : 
+                      sizeof(cmd_data_t) * (data_idx - i);
+        
       memcpy(fileContent.data, logArrayPointer, dataLen);
-      fileContent.dataLen = dataLen;
+      if(transfer_include_commands)
+        memcpy(fileContent.data + dataLen, cmdDataArrayPointer, dataLenEx);
+      fileContent.dataLen = dataLen + dataLenEx;
 
       createFileContentPacket(&packet, &fileContent);
       sendPacketViaBLE(&packet);
       
       delay(20);
   }
-
-  /*const byte packet_len  = 60;
-  const int python_delay = 250;
-  char meta_str[32];
-
-  // transfer only logged sensor data
-  if (!transfer_include_commands) {
-    sprintf(meta_str, "meta: %d\n", (int)ceil(data_idx / 6) );
-    bleuart.write( (uint8_t*) meta_str, strlen(meta_str));
-    delay(python_delay);
-    
-    uint8_t *P;
-    for (int i = 0; i < data_idx; i=i+6) {
-        P = (uint8_t*) exp_data;
-        P += sizeof(exp_data_t) * i;
-        bleuart.write(P, sizeof(exp_data_t) * 6);
-        delay(python_delay);
-    }
-  }
-  // transfer logged sensor data combined with actuator commands
-  else {
-    int logs_per_packet = packet_len / (sizeof(exp_data_t) + sizeof(cmd_data_t));
-    sprintf(meta_str, "meta: %d\n", (int)ceil(data_idx / 3) );
-    bleuart.write( (uint8_t*) meta_str, strlen(meta_str));
-    delay(python_delay);
-
-    uint8_t packet[packet_len];
-    int packet_idx = 0;
-    for (int i = 0; i < data_idx; i++) {
-      memcpy(packet + packet_idx, &exp_data[i], sizeof(exp_data_t));
-      packet_idx += sizeof(exp_data_t);
-      memcpy(packet + packet_idx, &cmd_data[i], sizeof(cmd_data_t));
-      packet_idx += sizeof(cmd_data_t);
-
-      // send the packet once it is full or all data has been copied
-      // if ((i + 1) % logs_per_packet == 0 || i == data_idx - 1) {
-      if ((i + 1) % logs_per_packet == 0) {
-          bleuart.write(packet, packet_len);
-          delay(250); // Delay between packets
-          packet_idx = 0;
-      }
-    }
-  }*/
 
   // tell client that file send process is finished
   createFileSentPacket(&packet);

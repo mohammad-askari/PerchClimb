@@ -3,9 +3,11 @@ COMM_PACKET_HEADER = 4
 COMM_PACKET_HEADER_W_CRC = COMM_PACKET_HEADER + 2
 MAX_COMM_PACKET_LEN = 58
 MAX_BLUETOOTH_PACKET_LEN = 64
-PKT_FILE_METADATA_LEN = 2
+PKT_FILE_METADATA_LEN = 3
 HEADER1 = 0xC3
 HEADER2 = 0xFE
+FILE_TYPE_SIMPLE = 1
+FILE_TYPE_EXTENDED = 2
 
 # Decode States
 STATE_HEADER1 = 0
@@ -41,10 +43,12 @@ class pktString_t:
 class pktFileMetadata_t:
     def __init__(self):
         self.packetCount = 0
+        self.filetype = 0
 
 class pktFileContent_t:
     def __init__(self):
         self.packetNo = 0
+        self.filetype = 0
         self.data = bytearray(MAX_COMM_PACKET_LEN)
         self.dataLen = 0
 
@@ -157,14 +161,16 @@ def createFileMetadataPacket(pCommPacket, pPktMetadata):
     pCommPacket.header2 = HEADER2
     pCommPacket.type = PKT_FILE_METADATA
     pCommPacket.dataLen = PKT_FILE_METADATA_LEN
-    pCommPacket.data = pPktMetadata.packetCount.to_bytes(2, byteorder='little', signed=False)
+    pCommPacket.data = pPktMetadata.packetCount.to_bytes(2, byteorder='little', signed=False) + \
+                       pPktMetadata.filetype.to_bytes(1, byteorder='little', signed=False)
 
     crc = crc16(pCommPacket)
     pCommPacket.crc = crc
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def decodeFileMetadataPacket(pCommPacket):
     pPktMetadata = pktFileMetadata_t()
-    pPktMetadata.packetCount = int.from_bytes(pCommPacket.data, byteorder='little', signed=False)
+    pPktMetadata.packetCount = int.from_bytes(pCommPacket.data[0:2], byteorder='little', signed=False)
+    pPktMetadata.filetype = int.from_bytes(pCommPacket.data[2:3], byteorder='little', signed=False)
     return pPktMetadata
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def createFileContentPacket(pCommPacket, pFileContent):
@@ -173,7 +179,9 @@ def createFileContentPacket(pCommPacket, pFileContent):
     pCommPacket.type = PKT_FILE_CONTENT
     pCommPacket.dataLen = pFileContent.dataLen
     packetNoBytes = pFileContent.packetNo.to_bytes(2, byteorder='little', signed=False)
-    pCommPacket.data = pFileContent.data.extends(packetNoBytes)
+    filetypeBytes = pFileContent.filetype.to_bytes(1, byteorder='little', signed=False)
+    pCommPacket.data = packetNoBytes + filetypeBytes + packetNoBytes
+    pCommPacket.dataLen = len(pCommPacket.data)
 
     crc = crc16(pCommPacket)
     pCommPacket.crc = crc
@@ -181,7 +189,8 @@ def createFileContentPacket(pCommPacket, pFileContent):
 def decodeFileContentPacket(pCommPacket):
     pFileContent = pktFileContent_t()
     pFileContent.packetNo = int.from_bytes(pCommPacket.data[0:2], byteorder='little', signed=False)
-    pFileContent.data = pCommPacket.data[2:]
+    pFileContent.filetype = int.from_bytes(pCommPacket.data[2:3], byteorder='little', signed=False)
+    pFileContent.data = pCommPacket.data[3:]
     pFileContent.dataLen = len(pFileContent.data)
     return pFileContent
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

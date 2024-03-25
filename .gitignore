@@ -6,3 +6,4 @@
 .DS_Store
 pc-remote/__pycache__
 sensordata
+pc-remote/sensordata
