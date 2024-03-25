@@ -313,7 +313,7 @@ void sendStringAsStringPacketViaBLE(String str)
 
 	do
 	{
-		charactersToSend = remainingCharacters < 50 ? remainingCharacters : 50;
+		charactersToSend = remainingCharacters < MAX_COMM_PACKET_LEN ? remainingCharacters : MAX_COMM_PACKET_LEN;
 		
 		memcpy(stringPacket.str, str.substring(index, index + charactersToSend).c_str(), charactersToSend);
 		stringPacket.strLen = charactersToSend;
