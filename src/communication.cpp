@@ -221,7 +221,7 @@ void createFileContentPacket(commPacket_t *pCommPacket, const pktFileContent_t* 
 	pCommPacket->header1 = HEADER1;
 	pCommPacket->header2 = HEADER2;
 	pCommPacket->type = packetTypes_t::PKT_FILE_CONTENT;
-	pCommPacket->dataLen = pFileContent->dataLen + sizeof(uint16_t);
+	pCommPacket->dataLen = pFileContent->dataLen + sizeof(uint16_t) + sizeof(uint8_t);
 	memcpy(pCommPacket->data, &pFileContent->packetNo, sizeof(uint16_t));
 	memcpy(pCommPacket->data + sizeof(uint16_t), &pFileContent->filetype, sizeof(uint8_t));
 	memcpy(pCommPacket->data + sizeof(uint16_t) + sizeof(uint8_t), pFileContent->data, pFileContent->dataLen);

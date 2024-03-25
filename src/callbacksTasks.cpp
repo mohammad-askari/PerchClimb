@@ -519,6 +519,8 @@ void tsDataTransfer() {
         memcpy(fileContent.data + dataLen, cmdDataArrayPointer, dataLenEx);
       fileContent.dataLen = dataLen + dataLenEx;
 
+      fileContent.filetype = transfer_include_commands ? FILE_TYPE_EXTENDED : FILE_TYPE_SIMPLE;
+
       createFileContentPacket(&packet, &fileContent);
       sendPacketViaBLE(&packet);
       

@@ -27,7 +27,7 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 	global fileContentPackets
 	global fileContentType
 	global alltext
-
+	
 	# decodedPackets contains packets that has been decoded. each element in the list can be a different type
 	decodedPackets = communication.decodeBytes(buffer)
 	
@@ -75,6 +75,9 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 							logData = decodeLogDataEx(fileContentPackets[i].data[j * LOG_EX_DATA_LEN : j * LOG_EX_DATA_LEN + LOG_EX_DATA_LEN])
 							if logData != None:
 								alltext += str(i) + ',' + str(logData.time) + ',' + str(logData.current) + ',' + str(logData.roll) + ',' + str(logData.pitch) + ',' + str(logData.yaw) + ',' + str(logData.throttle) + ',' + str(logData.aileron) + ',' + str(logData.elevator) + ',' + str(logData.rudder) + ',' + str(logData.clutch) + ',' + str(logData.bodyHook) + ',' + str(logData.tailHook) + ',' + str(logData.wingOpen) + '\n'
+						else:
+							print("Unknown filetype {0} received. Aborting...".format(fileContentPackets[i].filetype))
+							return
 
 						
 						# check if next loop has data. otherwise break the inner loop
