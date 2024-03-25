@@ -80,7 +80,7 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 							if logData != None:
 								alltext += str(i) + ',' + str(logData.time) + ',' + str(logData.current) + ',' + str(logData.roll) + ',' + str(logData.pitch) + ',' + str(logData.yaw) + '\n'
 						elif fileContentPackets[i].filetype == communication.FILE_TYPE_EXTENDED:
-							logData = decodeLogDataEx(fileContentPackets[i].data[j * LOG_EX_DATA_LEN : j * LOG_EX_DATA_LEN + LOG_EX_DATA_LEN])
+							logData = decodeLogData(fileContentPackets[i].data[j * LOG_EX_DATA_LEN : j * LOG_EX_DATA_LEN + LOG_EX_DATA_LEN])
 							if logData != None:
 								alltext += str(i) + ',' + str(logData.time) + ',' + str(logData.current) + ',' + str(logData.roll) + ',' + str(logData.pitch) + ',' + str(logData.yaw) + ',' + str(logData.throttle) + ',' + str(logData.aileron) + ',' + str(logData.elevator) + ',' + str(logData.rudder) + ',' + str(logData.clutch) + ',' + str(logData.bodyHook) + ',' + str(logData.tailHook) + ',' + str(logData.wingOpen) + '\n'
 						else:
@@ -100,13 +100,13 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 			dateAsString = datetime.now().strftime("%Y-%m-%d %I-%M-%S %p")
 			filename = "climb_" + dateAsString + ".csv"
 			try:
-				os.mkdir('sensordata')
+				os.mkdir('expdata')
 			except Exception as e:
 				pass
-			h = open('sensordata/' + filename, "+w")
+			h = open('expdata/exp' + filename + '.csv', "+w")
 			h.write(alltext)
 			h.close()	
-			print("Data has been saved to the file: sensordata/" + filename)
+			print("Data has been saved to the file: expdata/exp{0}.csv".format(filename))
 #---------------------------------------------------------------------------------------------------------------------
 # the thread that reads user input and sends the given command to the device via bluetooth
 def cliThread():
@@ -204,30 +204,38 @@ async def run():
 			await asyncio.sleep(0.2)
 #---------------------------------------------------------------------------------------------------------------------			
 class LogData:
-	def __init__(self, time, current, roll, pitch, yaw):
-		self.time = time
-		self.current = current
-		self.roll = roll
-		self.pitch = pitch
-		self.yaw = yaw
-
-class LogDataEx:
-	def __init__(self, time, current, roll, pitch, yaw, throttle, aileron, elevator, rudder, clutch, bodyHook, tailHook, wingOpen):
-		self.time = time
-		self.current = current
-		self.roll = roll
-		self.pitch = pitch
-		self.yaw = yaw
-		self.throttle = throttle
-		self.aileron = aileron
-		self.elevator = elevator
-		self.rudder = rudder
-		self.clutch = clutch
-		self.bodyHook = bodyHook
-		self.tailHook = tailHook
-		self.wingOpen = wingOpen
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
 def decodeLogData(buffer: bytearray):
+	if len(buffer) == LOG_DATA_LEN:
+		data = {
+			'time':     int.from_bytes(buffer[0:2],  byteorder='little', signed=False),
+			'current':  int.from_bytes(buffer[2:4],  byteorder='little', signed=True),
+			'roll':     int.from_bytes(buffer[4:6],  byteorder='little', signed=True),
+			'pitch':    int.from_bytes(buffer[6:8],  byteorder='little', signed=True),
+			'yaw':      int.from_bytes(buffer[8:10], byteorder='little', signed=True)
+		}
+		return LogData(**data)
+
+	elif len(buffer) == LOG_EX_DATA_LEN:
+		data = { 
+			'time':     int.from_bytes(buffer[0:2],   byteorder='little', signed=False),
+			'current':  int.from_bytes(buffer[2:4],   byteorder='little', signed=True),
+			'roll':     int.from_bytes(buffer[4:6],   byteorder='little', signed=True),
+			'pitch':    int.from_bytes(buffer[6:8],   byteorder='little', signed=True),
+			'yaw':      int.from_bytes(buffer[8:10],  byteorder='little', signed=True),
+			'throttle': int.from_bytes(buffer[10:12], byteorder='little', signed=True),
+			'aileron':  int.from_bytes(buffer[12:13], byteorder='little', signed=True),
+			'elevator': int.from_bytes(buffer[13:14], byteorder='little', signed=True),
+			'rudder':   int.from_bytes(buffer[14:15], byteorder='little', signed=True),
+			'clutch':   int.from_bytes(buffer[15:16], byteorder='little', signed=True),
+			'bodyHook': int.from_bytes(buffer[16:17], byteorder='little', signed=True),
+			'tailHook': int.from_bytes(buffer[17:18], byteorder='little', signed=True),
+			'wingOpen': int.from_bytes(buffer[18:20], byteorder='little', signed=True)
+		}
+		return LogData(**data)
+	
 	if len(buffer) == 10:
 		time    = int.from_bytes(buffer[0:2], byteorder='little', signed=False)
 		current = int.from_bytes(buffer[2:4], byteorder='little', signed=True)

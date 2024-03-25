@@ -493,7 +493,7 @@ void tsDataTransfer() {
   createFileMetadataPacket(&packet, &metadata);
   sendPacketViaBLE(&packet);
 
-  delay(100);
+  // delay(100); // TODO: confirm removal is safe
   
   for (int i = 0; i < data_idx; i = i + MAX_NUMBER_OF_LOGS_IN_EACH_PACKET)
   {                 
@@ -540,7 +540,7 @@ void tsDataTransfer() {
       createFileContentPacket(&packet, &fileContent);
       sendPacketViaBLE(&packet);
       
-      delay(20);
+      // delay(20); // TODO: confirm removal is safe
   }
 
   // tell client that file send process is finished

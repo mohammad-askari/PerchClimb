@@ -223,12 +223,13 @@ void loop() {
   
   // for (byte i = 0; i < servo_num; i++) actuator[i]->print();
   static unsigned long prev_time  = 0;
-  static unsigned long loop_count = 0;
+  static float loop_count = 0;
   loop_count++;
 
   unsigned long now = millis();
-  if (now - prev_time > 1000) {
-    Serial.println(loop_count);
+  if (now - prev_time >= 1000) {
+    Serial.print(loop_count / (now-prev_time));
+    Serial.println(" loops per ms");
     loop_count = 0;
     prev_time  = now;
   }
