@@ -17,6 +17,7 @@ packetCount = 0
 fileContentPackets = []
 fileContentType = communication.FILE_TYPE_SIMPLE
 alltext = ""
+connected = False
 #---------------------------------------------------------------------------------------------------------------------
 # callback function when data is received
 async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
@@ -163,12 +164,13 @@ async def run():
 	global cliThreadHandle
 	global thereIsDataToSend
 	global dataToSend
-	connected = False
+	global connected
 	
 	# callback function on disconnection
 	def disconnectCallback(_: BleakClient):
-		print("Disconnected")
+		global connected
 		connected = False
+		print("Disconnected")
 
 	# the main loop that connects to device and starts interacting with the device
 	while continueRunning:
@@ -190,8 +192,9 @@ async def run():
 		await bleClient.start_notify(UUID_TXD, dataReceiveCallback)
 		
 		# start the CLI thread
-		cliThreadHandle = threading.Thread(target=cliThread, args=())
-		cliThreadHandle.start()
+		if cliThreadHandle == None:
+			cliThreadHandle = threading.Thread(target=cliThread, args=())
+			cliThreadHandle.start()
 
 		# device is ready, start interacting with the device
 		while connected:
