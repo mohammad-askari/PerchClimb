@@ -560,7 +560,7 @@ void setWingOpening(cmd *cmd_ptr) {
   Serial.print("% speed for ");
   Serial.print(wing_opening_duration);
   Serial.println(" (s)");
-  sendStringAsStringPacketViaBLE(String("Wing opening set to ") + String(speed_percent) + String("%% speed for ") + String(wing_opening_duration) + String(" (s)\n"));
+  sendStringAsStringPacketViaBLE(String("Wing opening set to ") + String(speed_percent) + String("% speed for ") + String(wing_opening_duration) + String(" (s)\n"));
 }
 
 /**

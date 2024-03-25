@@ -488,7 +488,7 @@ void tsDataTransfer() {
   Serial.println("Data Transfer Started");
   
   // send metadata packet so that the client would know how many packets it should expect
-  metadata.packetCount = (int)ceil(data_idx / MAX_NUMBER_OF_LOGS_IN_EACH_PACKET);
+  metadata.packetCount = (int)ceil((float)data_idx / MAX_NUMBER_OF_LOGS_IN_EACH_PACKET);
   metadata.filetype = transfer_include_commands ? FILE_TYPE_EXTENDED : FILE_TYPE_SIMPLE;
   createFileMetadataPacket(&packet, &metadata);
   sendPacketViaBLE(&packet);

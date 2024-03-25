@@ -233,47 +233,4 @@ void loop() {
     loop_count = 0;
     prev_time  = now;
   }
-
-  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UGLY FUNCTIONALITY TESTING CODE
-  // if (millis()%1000 == 0) {
-  //   Serial.println("ONE LINE OF DATA");
-  //   bleuart.write( (uint8_t*) exp_data, sizeof(exp_data_t)*6);
-  //   prev_time = millis();
-  // }
-
-  // if (data_idx >= data_len)
-  // {
-  //   char P[60];
-  //   char Q[240];
-  //   // Serial.println("SENDING DATA NOW");
-  //   for (int i = 0; i < data_idx; i = i+6) {
-  //       for (int j = 0; j < 6; j++)
-  //       {
-
-  //         // memcpy(P + j * 10 + 0, &exp_data[i+j].time, 2);
-  //         // memcpy(P + j * 10 + 2, &exp_data[i+j].current, 2);
-  //         // memcpy(P + j * 10 + 4, &exp_data[i+j].roll, 2);
-  //         // memcpy(P + j * 10 + 6, &exp_data[i+j].pitch, 2);
-  //         // memcpy(P + j * 10 + 8, &exp_data[i+j].yaw, 2);
-
-  //         snprintf(Q, 240, "%d, %d, %d, %d, %d", 
-  //                 exp_data[i+j].time, exp_data[i+j].current, 
-  //                 exp_data[i+j].roll, exp_data[i+j].pitch, exp_data[i+j].yaw);
-  //         bleuart.write(Q, strlen(Q));
-  //          delay(50);
-  //         // Serial.print(exp_data[i+j].time); Serial.print(",");
-  //         // Serial.print(exp_data[i+j].current); Serial.print(",");
-  //         // Serial.print(exp_data[i+j].roll); Serial.print(",");
-  //         // Serial.print(exp_data[i+j].pitch); Serial.print(",");
-  //         // Serial.println(exp_data[i+j].yaw);
-          
-  //       }
-        
-  //       //P = (uint8_t*) exp_data;
-  //       //P += sizeof(exp_data_t)*i;
-  //       //bleuart.write(P, sizeof(exp_data_t)*6);
-  //       //delay(50);
-  //   }
-  //   ts_data_logger.disable();
-  // }
 }
