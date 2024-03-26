@@ -30,10 +30,6 @@ void tsParser() {
   }
 };
 
-void tsBleParser() {
-
-};
-
 
 // ————————————————————————— FILTER SENSOR READINGS ————————————————————————— //
 /**
@@ -100,7 +96,9 @@ void tsPreClimb() {
   memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
   data_idx = 0;
 
-  Serial.println("Pre Climb On");
+  String str = "Pre Climb On\n";
+  Serial.print(str);
+  sendStringAsStringPacketViaBLE(str);
 
   // if wing opening is set, account for its time
   unsigned long delay_duration = 0;
@@ -110,7 +108,9 @@ void tsPreClimb() {
     climb_wing_loosening = true;
     clutch.forward();
     clutch.speed(dc_speed);
-    Serial.println("Wing Loosening Started");
+    String str = "Wing Loosening Started\n";
+    Serial.print(str);
+    sendStringAsStringPacketViaBLE(str);
   }
 
   ts_climb_on   .restartDelayed(delay_duration);
@@ -119,7 +119,9 @@ void tsPreClimb() {
 
 
 void tsClimbOn() {
-  Serial.println("Climb On");
+  String str = "Climb On\n";
+  Serial.print(str);
+  sendStringAsStringPacketViaBLE(str);
   ts_climb_off.restartDelayed(TASK_SECOND * exp_duration);
   ts_motor_update.enable();
 
@@ -130,7 +132,9 @@ void tsClimbOn() {
   // stop wing loosening if activated
   if (climb_wing_loosening) {
     clutch.stop();
-    Serial.println("Wing Loosening Completed");
+    String str = "Wing Loosening Completed\n"; // FIXME: DOES NOT WORK ON SECOND RUN
+    Serial.print(str);
+    sendStringAsStringPacketViaBLE(str);
   }
 
   // synchronize the servo start times
@@ -142,7 +146,9 @@ void tsClimbOn() {
 
 void tsClimbOff() {
   if (ts_climb_off.isFirstIteration()) {
-    Serial.println("Climb Off Smooth");
+    String str = "Climb Off Smooth\n";
+    Serial.print(str);
+    sendStringAsStringPacketViaBLE(str);
 
     aileron.reset();
     rudder.reset();
@@ -178,7 +184,9 @@ void tsPreDescent() {
   memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
   data_idx = 0;
 
-  Serial.println("Pre Descent On");
+  String str = "Pre Descent On\n";
+  Serial.print(str);
+  sendStringAsStringPacketViaBLE(str);
   ts_descent_on .restartDelayed(TASK_SECOND * pre_descent_time);
   ts_data_logger.restart();
 
@@ -200,7 +208,9 @@ void tsDescentOn() {
   unsigned long elapsed_time = dt * n * TASK_MILLISECOND;
 
   if (ts_descent_on.isFirstIteration()) {
-    Serial.println("Descent On");
+    String str = "Descent On\n";
+    Serial.print(str);
+    sendStringAsStringPacketViaBLE(str);
     ts_motor_update.enable();
     is_start_of_transition = true;  // enable the flag for later
 
@@ -255,7 +265,9 @@ void tsDescentOn() {
 
 
 void tsDescentOff() {
-  Serial.println("Descent Off Smooth");
+    String str = "Descent Off Smooth\n";
+    Serial.print(str);
+    sendStringAsStringPacketViaBLE(str);
   ts_data_logger.disable();
 
   while (esc_speed > esc_min){ // slow down propeller gradually
@@ -272,7 +284,9 @@ void tsPreHover() {
   memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
   data_idx = 0;
   
-  Serial.println("Pre Hover On");
+  String str = "Pre Hover On\n";
+  Serial.print(str);
+  sendStringAsStringPacketViaBLE(str);
   ts_hover_on   .restartDelayed(TASK_SECOND * pre_hover_time);
   ts_data_logger.restart();
   ts_motor_update.enable();
@@ -286,7 +300,9 @@ void tsPreHover() {
 
 void tsHoverOn() {
   if (ts_hover_on.isFirstIteration()) {
-    Serial.println("Hover On");
+    String str = "Hover On\n";
+    Serial.print(str);
+    sendStringAsStringPacketViaBLE(str);
     if (hover_use_hooks)
     {
       body_hook.setPosition(RANGE_MIN);
@@ -307,7 +323,9 @@ void tsHoverOn() {
 
 
 void tsHoverOff() {
-  Serial.println("Hover Off Smooth");
+  String str = "Hover Off Smooth\n";
+  Serial.print(str);
+  sendStringAsStringPacketViaBLE(str);
   ts_data_logger.disable();
   ts_motor_update.disable();
   
@@ -329,7 +347,9 @@ void tsPreUnperch() {
   memset(&exp_data, 0, sizeof(exp_data_t) * data_len);
   data_idx = 0;
   
-  Serial.println("Pre Unperch On");
+  String str = "Pre Unperch On\n";
+  Serial.print(str);
+  sendStringAsStringPacketViaBLE(str);
   ts_unperch_on .restartDelayed(TASK_SECOND * pre_unperch_duration);
   ts_data_logger.restart();
   ts_motor_update.enable();
@@ -356,7 +376,9 @@ void tsUnperchOn() {
 
   // initiate the pitch back movement
   if (ts_unperch_on.isFirstIteration()) {
-    Serial.println("Unperch On");
+    String str = "Unperch On\n";
+    Serial.print(str);
+    sendStringAsStringPacketViaBLE(str);
     is_start_of_takeoff = true;  // enable the flag for later
 
     // cut off thrust and disenage the body hook
@@ -367,7 +389,9 @@ void tsUnperchOn() {
 
   // start takeoff if pitch angle drops below the desired pitch for takeoff
   if (is_start_of_takeoff && fabs(pitch) <= takeoff_pitch) {
-    Serial.println("Takeoff Initiated");
+    String str = "Takeoff Initiated\n";
+    Serial.print(str);
+    sendStringAsStringPacketViaBLE(str);
     is_start_of_takeoff = false;  // reset flag
     takeoff_start_time  = elapsed_time;
     esc.speed(takeoff_esc);
@@ -377,7 +401,9 @@ void tsUnperchOn() {
   // after the initial takeoff duration, do wing twist and fly away
   unsigned long since_takeoff = (elapsed_time - takeoff_start_time);
   if (!is_start_of_takeoff && since_takeoff >= TASK_SECOND * takeoff_duration) {
-    Serial.println("Fly Away Initiated");
+    String str = "Fly Away Initiated\n";
+    Serial.print(str);
+    sendStringAsStringPacketViaBLE(str);
     esc.speed(esc_speed);
 
     // check if we are out of gimbal lock
@@ -402,7 +428,9 @@ void tsUnperchOn() {
 
 
 void tsUnperchOff() {
-  Serial.println("Unperch Off");
+  String str = "Unperch Off\n";
+  Serial.print(str);
+  sendStringAsStringPacketViaBLE(str);
   ts_data_logger.disable();
   ts_motor_update.disable();
 
@@ -425,7 +453,9 @@ void tsMotorUpdate() {
     start = elapsed_time;
     is_wing_opening = false;
     clutch.speed(dc_speed);
-    Serial.println("Wing Moving Started");
+    String str = "Wing Moving Started\n";
+    Serial.print(str);
+    sendStringAsStringPacketViaBLE(str);
   } 
   
   // HACK: AVOID CLIMB FLAG HERE
@@ -433,7 +463,9 @@ void tsMotorUpdate() {
   if (dc_speed!=0 && !climb_wing_loosening && time_to_stop) {
     dc_speed = 0;
     clutch.stop();
-    Serial.println("Wing Moving Completed");
+    String str = "Wing Moving Completed\n";
+    Serial.print(str);
+    sendStringAsStringPacketViaBLE(str);
   }
   
   if (DEBUG) {
@@ -453,7 +485,9 @@ void tsDataLogger() {
   if (ts_data_logger.isFirstIteration()) start_time = millis();
 
   if (data_idx >= data_len) {
-    Serial.println("Data Logger Buffer Full!");
+    String str = "Data Logger Buffer is Full! Logging Stopped!\n";
+    Serial.print(str);
+    sendStringAsStringPacketViaBLE(str);
     ts_data_logger.disable();
     return;
   }
