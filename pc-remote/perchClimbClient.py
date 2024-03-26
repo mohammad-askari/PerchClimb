@@ -8,6 +8,7 @@ import communication
 #---------------------------------------------------------------------------------------------------------------------
 UUID_RXD = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'
 UUID_TXD = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E'
+bleName  = "PerchClimb"
 
 continueRunning = True
 thereIsDataToSend = False
@@ -40,63 +41,74 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 			fileContentType = packet.filetype
 			
 			fileContentPackets = [None] * (packetCount + 1)
-			print("Metadata received. {0} packets of type {1} will be received".format(packet.packetCount, packet.filetype))
+			print(f"Metadata received. {packet.packetCount} packets of type {packet.filetype} will be received")
 		
 		# FileContent packet
 		elif isinstance(packet, communication.pktFileContent_t):
 			fileContentPackets[packet.packetNo] = packet
-			print("{0}/{1}".format(packet.packetNo, packetCount))
+			print(f"{packet.packetNo + 1:>{len(str(packetCount))}} / {packetCount}")
 		
 		# FileSend packet (file send process is finished)
 		elif isinstance(packet, communication.pktFileSend_t):
 			print("File send process is finished. Checking missing packets...")
 			# TODO: check missing parts
 			
+			# define mappings
+			csvHeader = {
+				communication.FILE_TYPE_SIMPLE:   "Packet No,Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg]\n",
+				communication.FILE_TYPE_EXTENDED: "Packet No,Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg],Throttle [µs],Aileron,Elevator,Rudder,Clutch,Body Hook,Tail Hook,Wing Open [pwm]\n"
+			}
+			logLength = {
+				communication.FILE_TYPE_SIMPLE:   communication.LOG_SIMPLE_LEN,
+				communication.FILE_TYPE_EXTENDED: communication.LOG_EXTENDED_LEN
+			}
+
 			# create CSV from the packets
-			if fileContentType == communication.FILE_TYPE_SIMPLE:
-				alltext = "Packet No,Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg]\n"
-			elif fileContentType == communication.FILE_TYPE_EXTENDED:
-				alltext = "Packet No,Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg],Throttle [us],Aileron,Elevator,Rudder,Clutch,Body Hook,Tail Hook,Wing Open [pwm]\n"
-			else:
+			try:
+				alltext = csvHeader[fileContentType]
+				MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = int(communication.MAX_FILECONTENT_DATALEN / logLength[fileContentType])
+			except KeyError:
 				print("Unknown file type received. Aborting...")
 				return
-			
-			MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = 0
-			if fileContentType == communication.FILE_TYPE_SIMPLE:
-				MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = int(communication.MAX_FILECONTENT_DATALEN / communication.LOG_SIMPLE_LEN)
-			elif fileContentType == communication.FILE_TYPE_EXTENDED:
-				MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = int(communication.MAX_FILECONTENT_DATALEN / communication.LOG_EXTENDED_LEN)
-			
-			print("Received {0} packets, each containing {1} logs at max.".format(packetCount, MAX_NUMBER_OF_LOGS_IN_EACH_PACKET))
+
+			print(f"Received {packetCount} packets, each containing {MAX_NUMBER_OF_LOGS_IN_EACH_PACKET} logs at max.")
 			print("Creating CSV file from received packets...")
 			
 			# convert all data to string
 			for i in range(packetCount):
 				if fileContentPackets[i] != None:
 					for j in range(MAX_NUMBER_OF_LOGS_IN_EACH_PACKET):
-						if fileContentPackets[i].filetype == communication.FILE_TYPE_SIMPLE:
-							logData = decodeLogData(fileContentPackets[i].data[j * communication.LOG_SIMPLE_LEN : j * communication.LOG_SIMPLE_LEN + communication.LOG_SIMPLE_LEN])
-							if logData != None:
-								alltext += str(i) + ',' + str(logData.time) + ',' + str(logData.current) + ',' + str(logData.roll) + ',' + str(logData.pitch) + ',' + str(logData.yaw) + '\n'
-						elif fileContentPackets[i].filetype == communication.FILE_TYPE_EXTENDED:
-							logData = decodeLogData(fileContentPackets[i].data[j * communication.LOG_EXTENDED_LEN : j * communication.LOG_EXTENDED_LEN + communication.LOG_EXTENDED_LEN])
-							if logData != None:
-								alltext += str(i) + ',' + str(logData.time) + ',' + str(logData.current) + ',' + str(logData.roll) + ',' + str(logData.pitch) + ',' + str(logData.yaw) + ',' + str(logData.throttle) + ',' + str(logData.aileron) + ',' + str(logData.elevator) + ',' + str(logData.rudder) + ',' + str(logData.clutch) + ',' + str(logData.bodyHook) + ',' + str(logData.tailHook) + ',' + str(logData.wingOpen) + '\n'
-						else:
-							print("Unknown filetype {0} received. Aborting...".format(fileContentPackets[i].filetype))
-							return
+						logData = decodeLogData(fileContentPackets[i].data[j * logLength[fileContentType] : (j+1) * logLength[fileContentType]])
+						if logData != None:
+							alltext += str(i) + ',' + ','.join(map(str, logData.values())) + '\n'
+
+						# check if next loop has data. otherwise, break the inner loop
+						if (j+1) * logLength[fileContentType] >= fileContentPackets[i].dataLen:
+							break
+						
+						# if fileContentPackets[i].filetype == communication.FILE_TYPE_SIMPLE:
+						# 	logData = decodeLogData(fileContentPackets[i].data[j * communication.LOG_SIMPLE_LEN : j * communication.LOG_SIMPLE_LEN + communication.LOG_SIMPLE_LEN])
+						# 	if logData != None:
+						# 		alltext += str(i) + ',' + ','.join(map(str, logData.values())) + '\n'
+						# elif fileContentPackets[i].filetype == communication.FILE_TYPE_EXTENDED:
+						# 	logData = decodeLogData(fileContentPackets[i].data[j * communication.LOG_EXTENDED_LEN : j * communication.LOG_EXTENDED_LEN + communication.LOG_EXTENDED_LEN])
+						# 	if logData != None:
+						# 		alltext += str(i) + ',' + ','.join(map(str, logData.values())) + '\n'
+						# else:
+						# 	print(f"Unknown filetype {fileContentPackets[i].filetype} received. Aborting...")
+						# 	return
 
 						
-						# check if next loop has data. otherwise break the inner loop
-						if fileContentPackets[i].filetype == communication.FILE_TYPE_SIMPLE:
-							if j * communication.LOG_SIMPLE_LEN + communication.LOG_SIMPLE_LEN >= fileContentPackets[i].dataLen:
-								break
-						elif fileContentPackets[i].filetype == communication.FILE_TYPE_EXTENDED:
-							if j * communication.LOG_EXTENDED_LEN + communication.LOG_EXTENDED_LEN >= fileContentPackets[i].dataLen:
-								break
+						# # check if next loop has data. otherwise break the inner loop
+						# if fileContentPackets[i].filetype == communication.FILE_TYPE_SIMPLE:
+						# 	if j * communication.LOG_SIMPLE_LEN + communication.LOG_SIMPLE_LEN >= fileContentPackets[i].dataLen:
+						# 		break
+						# elif fileContentPackets[i].filetype == communication.FILE_TYPE_EXTENDED:
+						# 	if j * communication.LOG_EXTENDED_LEN + communication.LOG_EXTENDED_LEN >= fileContentPackets[i].dataLen:
+						# 		break
 			
 			# write to file
-			dateAsString = datetime.now().strftime("%Y-%m-%d %I-%M-%S %p")
+			dateAsString = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
 			foldername = "expdata"
 			filename = "experiment_" + dateAsString + ".csv"
 			try:
@@ -122,7 +134,7 @@ def cliThread():
 			while thereIsDataToSend == True:
 				time.sleep(0.050)
 
-			command = input(">")
+			command = input("> ")
 			if command != "":
 				pktString = communication.pktString_t()
 				pktString.str = command + "\n"
@@ -137,26 +149,26 @@ def cliThread():
 	except Exception as e:
 		pass
 #---------------------------------------------------------------------------------------------------------------------
-# find and connect to the PerchClimb device
+# find and connect to the specified device name
 async def connectBluetooth():
-	perchClimbDevice = None
+	bleDevice = None
 	
-	print('Looking for nRF58240 Peripheral Device...')
+	print("Looking for nRF58240 Peripheral Device...")
 
 	# scan until we find the device
 	while True:
 		# scan nearby bluetooth devices
 		foundDevices = await BleakScanner.discover(timeout=2.0)
 		for device in foundDevices:
-			if device.name == 'PerchClimb':
-				perchClimbDevice = device
+			if device.name == bleName:
+				bleDevice = device
 				break
 		
-		if perchClimbDevice == None:
-			print("Could not find PerchClimb. Scanning again...")
+		if bleDevice == None:
+			print("Could not find " + bleName + ". Scanning again...")
 		else:
-			print('Found PerchClimb. Connecting...')
-			return perchClimbDevice
+			print("Found " + bleName + ". Connecting...")
+			return bleDevice
 #---------------------------------------------------------------------------------------------------------------------
 # main loop
 async def run():
@@ -175,10 +187,10 @@ async def run():
 	# the main loop that connects to device and starts interacting with the device
 	while continueRunning:
 		# connect to the device
-		perchClimbDevice = await connectBluetooth()
+		bleDevice = await connectBluetooth()
 		connected = True
 
-		bleClient = BleakClient(perchClimbDevice, disconnected_callback=disconnectCallback)
+		bleClient = BleakClient(bleDevice, disconnected_callback=disconnectCallback)
 		await bleClient.connect()
 		print("Connected to the device\n")
 		
@@ -205,10 +217,6 @@ async def run():
 			
 			await asyncio.sleep(0.2)
 #---------------------------------------------------------------------------------------------------------------------			
-class LogData:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
 def decodeLogData(buffer: bytearray):
 	if len(buffer) == communication.LOG_SIMPLE_LEN:
 		data = {
@@ -218,7 +226,7 @@ def decodeLogData(buffer: bytearray):
 			'pitch':    int.from_bytes(buffer[6:8],  byteorder='little', signed=True),
 			'yaw':      int.from_bytes(buffer[8:10], byteorder='little', signed=True)
 		}
-		return LogData(**data)
+		return data
 
 	elif len(buffer) == communication.LOG_EXTENDED_LEN:
 		data = { 
@@ -236,7 +244,7 @@ def decodeLogData(buffer: bytearray):
 			'tailHook': int.from_bytes(buffer[17:18], byteorder='little', signed=True),
 			'wingOpen': int.from_bytes(buffer[18:20], byteorder='little', signed=True)
 		}
-		return LogData(**data)
+		return data
 	
 	else:
 		print("Bad data in logs: ", len(buffer))
@@ -256,5 +264,3 @@ signal.signal(signal.SIGINT, signal_handler)
 loop = asyncio.get_event_loop()
 asyncio.ensure_future(run())
 loop.run_forever()
-
-

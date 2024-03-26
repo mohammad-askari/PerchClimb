@@ -115,7 +115,7 @@ void setupBLE() {
   Bluefruit.autoConnLed(true); // blink LED when not connected
   Bluefruit.configPrphBandwidth(BANDWIDTH_MAX);
   Bluefruit.begin();
-  Bluefruit.setName("PerchClimb");
+  Bluefruit.setName(ble_name);
   Bluefruit.setTxPower(8);     // check supported values (max 8 dBm)
   Bluefruit.Periph.setConnectCallback(bleConnect);
   Bluefruit.Periph.setDisconnectCallback(bleDisconnect);
@@ -208,47 +208,47 @@ void setupCLI() {
                           "brings it back to the refence position if demanded");
 
   // define servo position command, callback, and relevant arguments
-  Command cmd_position = cli.addCommand("goto", setPos);
+  Command cmd_position = cli.addCommand("goto", cliSetPos);
   cmd_position.addPositionalArgument("id", "0");
   cmd_position.addPositionalArgument("pos", "0");
   cmd_position.setDescription("\tSets the position of one or all servos.");
 
   // define servo frequency command, callback, and relevant arguments
-  Command cmd_freq = cli.addCommand("freq", setFreq);
+  Command cmd_freq = cli.addCommand("freq", cliSetFreq);
   cmd_freq.addPositionalArgument("id", "0");
   cmd_freq.addPositionalArgument("f/req", "0");
   cmd_freq.setDescription("\tSets the frequency of all the servos.");
 
   // define servo mode command, callback, and relevant arguments
-  Command cmd_mode = cli.addCommand("mode", setMode);
+  Command cmd_mode = cli.addCommand("mode", cliSetMode);
   cmd_mode.addPositionalArgument("id", "0");
   cmd_mode.addFlagArgument("r/amp");
   cmd_mode.setDescription("\tSets the mode of all the servos.");
 
   // define servo offset command, callback, and relevant arguments
-  Command cmd_offset = cli.addCommand("offset", setOffset);
+  Command cmd_offset = cli.addCommand("offset", cliSetOffset);
   cmd_offset.addPositionalArgument("id", "0");
   cmd_offset.addPositionalArgument("o/ffset", "0");
   cmd_offset.setDescription("\tSets the offset of one or multiple servos.");
 
   // define servo range command, callback, and relevant arguments
-  Command cmd_range = cli.addCommand("range", setRange);
+  Command cmd_range = cli.addCommand("range", cliSetRange);
   cmd_range.addPositionalArgument("id", "0");
   cmd_range.addPositionalArgument("r/ange", "100");
   cmd_range.setDescription("\tSets the range of one or multiple servos.");
 
   // define ESC speed command, callback, and relevant arguments
-  Command cmd_esc = cli.addCommand("esc", setESC);
+  Command cmd_esc = cli.addCommand("esc", cliSetESC);
   cmd_esc.addPositionalArgument("s/peed");
   cmd_esc.setDescription("\tSets the speed of the ESC.");
 
   // define experiment duration command, callback, and relevant arguments
-  Command cmd_duration = cli.addCommand("duration", setExpDuration);
+  Command cmd_duration = cli.addCommand("duration", cliSetExpDuration);
   cmd_duration.addPositionalArgument("t", "10");
   cmd_duration.setDescription("\tSets the duration of the experiment.");
 
   // define experiment duration command, callback, and relevant arguments
-  Command cmd_delay = cli.addCommand("delay", setExpDelay);
+  Command cmd_delay = cli.addCommand("delay", cliSetExpDelay);
   cmd_delay.addPositionalArgument("t", "10");
   cmd_delay.setDescription("\tSets the start delay of the experiment.");
 
@@ -261,7 +261,7 @@ void setupCLI() {
   cmd_kill_smooth.setDescription("\tStop command to stop experiments smoothly.");
 
   // define the hovering parameters
-  Command cmd_pre_hover = cli.addCommand("prehover", setPreHover);
+  Command cmd_pre_hover = cli.addCommand("prehover", cliSetPreHover);
   cmd_pre_hover.addPositionalArgument("esc", "1000");
   cmd_pre_hover.addPositionalArgument("t/ime", "0");
   cmd_pre_hover.addFlagArgument("h/ook/s");
@@ -273,7 +273,7 @@ void setupCLI() {
   cmd_hover.setDescription("\tStarts hovering experiment.");
 
   // define climb down command with no arguments to start delayed experiments
-  Command cmd_climb_down = cli.addCommand("descend", setClimbDown);
+  Command cmd_climb_down = cli.addCommand("descend", cliSetClimbDown);
   cmd_climb_down.addPositionalArgument("pre_esc", "1000");
   cmd_climb_down.addPositionalArgument("transition_esc", "1500");
   cmd_climb_down.addPositionalArgument("post_esc", "1000");
@@ -289,14 +289,14 @@ void setupCLI() {
   cmd_climb.setDescription("\tStarts climbing up/down experiment.");
 
   // define wing opening command
-  Command cmd_wing_time = cli.addCommand("w/ing", setWingOpening);
+  Command cmd_wing_time = cli.addCommand("w/ing", cliSetWingOpening);
   cmd_wing_time.addPositionalArgument("t/ime", "1");
   cmd_wing_time.addPositionalArgument("s/peed", "100");
   cmd_wing_time.addFlagArgument("r/ev/erse");
   cmd_wing_time.setDescription("\tSets wing opening (or closing) parameters.");
 
   // define climb down command with no arguments to start delayed experiments
-  Command cmd_set_unperch = cli.addCommand("setunperch", setUnperch);
+  Command cmd_set_unperch = cli.addCommand("setunperch", cliSetUnperch);
   cmd_set_unperch.addPositionalArgument("pre_time", "20");
   cmd_set_unperch.addPositionalArgument("pre_esc", "1500");
   cmd_set_unperch.addPositionalArgument("tilt_esc", "1000");
@@ -310,7 +310,7 @@ void setupCLI() {
   cmd_unperch.setDescription("\tStarts unperching experiment.");
 
   // define debug command, callback, and relevant arguments
-  Command cmd_debug = cli.addCommand("debug", debug);
+  Command cmd_debug = cli.addCommand("debug", cliDebug);
   cmd_debug.setDescription("\tTurns on/off the debug flag.");
 
   // set error callback

@@ -32,6 +32,7 @@ extern BLEUart bleuart;
 extern const byte ble_dle;
 extern const byte ble_mtu;
 extern byte ble_packet_len;
+extern const char ble_name[];
 
 // —————————————————————————————— IMU VARIABLES ————————————————————————————— //
 #define LSM6DS3_CTRL1_XL 0x10

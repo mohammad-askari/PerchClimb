@@ -136,7 +136,7 @@ void decodePacket()
 		}
 		case packetTypes_t::PKT_FILE_SENT:
 		{
-			// !!!!!!!!!!!!!!!! DO SOMETHING !!!!!!!!!!!!!!!!
+			// TODO: !! DO SOMETHING !!
 			break;
 		}
 		case packetTypes_t::PKT_FILE_REQUEST:

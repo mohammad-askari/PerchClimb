@@ -2,7 +2,6 @@
 #define COMMUNICATION_H
 
 #include <Arduino.h>
-#include <WString.h>
 
 #define COMM_PACKET_HEADER	4
 #define COMM_PACKET_HEADER_W_CRC COMM_PACKET_HEADER + 2

@@ -169,8 +169,9 @@ void cliMotorHome(cmd *cmd_ptr) {
   bool set_home    = set_arg.isSet();
   if (set_home) {
     // encoder.reset_count();
-    Serial.println("Current position set to home");
-    sendStringAsStringPacketViaBLE(String("Current position set to home\n"));
+    String str = "Current position set to home\n";
+    Serial.println(str);
+    sendStringAsStringPacketViaBLE(str);
   }
 
 // FIXME: REPLACE WITH CLUTCH OBJECT
@@ -208,7 +209,7 @@ void cliMotorHome(cmd *cmd_ptr) {
  * @brief //LEVY// Sets the position of one or all servos
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void setPos(cmd *cmd_ptr) {
+void cliSetPos(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);
   Argument arg1 = c.getArgument(1);
@@ -242,7 +243,7 @@ void setPos(cmd *cmd_ptr) {
  * @brief //LEVY// Sets the frequency of all the servos
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void setFreq(cmd *cmd_ptr) {
+void cliSetFreq(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);
   Argument arg1 = c.getArgument(1);
@@ -278,7 +279,7 @@ void setFreq(cmd *cmd_ptr) {
  * @brief //LEVY// Sets the speed of the ESC
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void setESC(cmd *cmd_ptr) {
+void cliSetESC(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);   
   esc_speed     = arg0.getValue().toInt();
@@ -292,7 +293,7 @@ void setESC(cmd *cmd_ptr) {
  * @brief //LEVY// Sets the actuation mode of one or all servos (step/ramp)
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void setMode(cmd *cmd_ptr) {
+void cliSetMode(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);  
   Argument arg1 = c.getArgument(1);  
@@ -338,7 +339,7 @@ void setMode(cmd *cmd_ptr) {
  * @brief //LEVY// Sets the duration of the experiment
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void setExpDuration(cmd *cmd_ptr) {
+void cliSetExpDuration(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);   
   exp_duration  = arg0.getValue().toFloat();
@@ -353,7 +354,7 @@ void setExpDuration(cmd *cmd_ptr) {
  * @brief //LEVY// Sets the delay of the experiment
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void setExpDelay(cmd *cmd_ptr) {
+void cliSetExpDelay(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);   
   int delay_sec = arg0.getValue().toInt();
@@ -370,7 +371,7 @@ void setExpDelay(cmd *cmd_ptr) {
  * @brief //LEVY// Sets the offset of one or multiple servos
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void setOffset(cmd *cmd_ptr) {
+void cliSetOffset(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);
   Argument arg1 = c.getArgument(1);
@@ -406,7 +407,7 @@ void setOffset(cmd *cmd_ptr) {
  * @brief //LEVY// Sets the range of one or multiple servos
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void setRange(cmd *cmd_ptr) {
+void cliSetRange(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);
   Argument arg1 = c.getArgument(1);
@@ -442,7 +443,7 @@ void setRange(cmd *cmd_ptr) {
  * @brief //LEVY// Prints the debugging data to serial port
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void debug(cmd *cmd_ptr) {
+void cliDebug(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
 
   for (byte i = 0; i < servo_num; i++) { 
@@ -454,7 +455,7 @@ void debug(cmd *cmd_ptr) {
  * @brief //LEVY// Sets the pre-hover ascent parameters
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void setPreHover(cmd *cmd_ptr) {
+void cliSetPreHover(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0   = c.getArgument(0);
   Argument arg1   = c.getArgument(1);
@@ -485,7 +486,7 @@ void setPreHover(cmd *cmd_ptr) {
  * @brief //LEVY// Sets the pre-hover ascent parameters
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void setClimbDown(cmd *cmd_ptr) {
+void cliSetClimbDown(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0     = c.getArgument(0);
   Argument arg1     = c.getArgument(1);
@@ -534,7 +535,7 @@ void setClimbDown(cmd *cmd_ptr) {
  * @brief //LEVY// Sets the wing opening parameters
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void setWingOpening(cmd *cmd_ptr) {
+void cliSetWingOpening(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0 = c.getArgument(0);
   Argument arg1 = c.getArgument(1);
@@ -567,7 +568,7 @@ void setWingOpening(cmd *cmd_ptr) {
  * @brief Sets the unperching experiment parameters
  * @param[in] cmd_ptr pointer to the command stuct data type
  **/
-void setUnperch(cmd *cmd_ptr) {
+void cliSetUnperch(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Argument arg0        = c.getArgument(0);
   Argument arg1        = c.getArgument(1);

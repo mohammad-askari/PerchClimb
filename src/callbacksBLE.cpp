@@ -40,8 +40,6 @@ void bleDisconnect(uint16_t conn_handle, byte reason)
   Serial.println(reason, HEX);
   setLED(led_pin,'O');
   
-  //!!!!!!!!!!!!!!! // TODO: CHECK WHETHER WE NEED THE CONDITION
-  // take immediate actions on connection loss (not intended termination)
-  // if (reason != BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION)
+  // trigger the kill command on connection loss or termination
     ts_kill.restart();
 }

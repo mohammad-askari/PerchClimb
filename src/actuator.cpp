@@ -10,33 +10,15 @@ Actuator::Actuator(const char* name, byte pin, int offset,
   this->range = range;
   this->frequency = frequency;
   this->mode = mode;
+  this->last_position = position + 1; // initialize differently from position
 }
 
 void Actuator::init() {
-  this->last_position = offset + 1; // initialize differently from position
   servo.attach(pin);
   setLimits();
   setTime(millis());
   move();
 }
-
-// initializes variables, attaches servo pins, and moves to initial position
-// void Actuator::init(const char* name, byte pin, int offset, int range,
-//                     float frequency, signal_t mode) {
-//   this->name = name;
-//   this->pin = pin;
-//   this->position = offset;
-//   this->last_position = offset + 1; // initialize differently from position
-//   this->offset = offset;
-//   this->range = range;
-//   this->frequency = frequency;
-//   this->mode = mode;
-
-//   servo.attach(pin);
-//   setLimits();
-//   setTime(millis());
-//   move();
-// }
 
 // set variable methods
 void Actuator::setOffset(int offset) {

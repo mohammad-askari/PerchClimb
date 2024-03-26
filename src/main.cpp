@@ -32,11 +32,12 @@ const long baud_rate = 115200;             // serial data rate (bits per second)
 const byte led_pin[] = {LED_RED, LED_GREEN, LED_BLUE}; // 3-in-1 LED pins
 
 // —————————————————————————————— BLE VARIABLES ————————————————————————————— //
-BLEDis bledis;                     // BLE service for device information
-BLEUart bleuart;                   // BLE service for UART communication
-const byte ble_dle  = 251;         // BLE data length (v4.2+: 251, else: 27)
-const byte ble_mtu  = ble_dle - 4; // BLE maximum transmission unit
-byte ble_packet_len = ble_mtu - 3; // BLE maximum packet/buffer length
+BLEDis bledis;                        // BLE service for device information
+BLEUart bleuart;                      // BLE service for UART communication
+const byte ble_dle  = 251;            // BLE data length (v4.2+: 251, else: 27)
+const byte ble_mtu  = ble_dle - 4;    // BLE maximum transmission unit
+byte ble_packet_len = ble_mtu - 3;    // BLE maximum packet/buffer length
+const char ble_name[] = "PerchClimb"; // BLE device name used for advertising
 
 // —————————————————————————————— IMU VARIABLES ————————————————————————————— //
 float roll, pitch, yaw;      // filtered Euler angles [deg]
@@ -211,7 +212,7 @@ void setup()
   setupTasks();
 
   // this message will help to identify restart of the system
-  Serial.println("Setup completed. Starting the main loop...");
+  Serial.println("Setup completed. Starting the main loop..."); // TODO: REMOVE AFTER DEBUG
 }
 
 // —————————————————————————————————————————————————————————————————————————— //

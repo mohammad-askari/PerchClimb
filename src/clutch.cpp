@@ -1,4 +1,5 @@
 #include "clutch.h"
+#include "communication.h"
 
 // use of a static member to enable attach interrupt usage in the class
 Clutch *Clutch::clutch_ptr = nullptr;
@@ -91,6 +92,7 @@ void Clutch::print() {
              state_str, pwm, direction, counts, digitalRead(enc1_pin), digitalRead(enc2_pin));
 
   Serial.println(str);
+  sendStringAsStringPacketViaBLE(str + String("\n"));
 }
 
 // single-channel encoder pulse counting based on commanded direction
