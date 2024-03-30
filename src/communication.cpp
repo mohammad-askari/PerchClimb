@@ -136,7 +136,9 @@ void decodePacket()
 		}
 		case packetTypes_t::PKT_FILE_SENT:
 		{
-			// TODO: !! DO SOMETHING !!
+			// !!!!!!!!!!!!!!!! DO SOMETHING !!!!!!!!!!!!!!!!
+			// if python sends this packet, it maens that the file has been sent completely and
+			// microcontroller might take a specific action
 			break;
 		}
 		case packetTypes_t::PKT_FILE_REQUEST:
@@ -271,9 +273,10 @@ void createFileRequestPacket(commPacket_t *pCommPacket, const pktFileRequest_t* 
 	pCommPacket->header1 = HEADER1;
 	pCommPacket->header2 = HEADER2;
 	pCommPacket->type = packetTypes_t::PKT_FILE_REQUEST;
-	pCommPacket->dataLen = pFileRequest->dataLen;
+	pCommPacket->dataLen = pFileRequest->dataLen + sizeof(uint16_t) + sizeof(uint8_t);
 	memcpy(pCommPacket->data, &pFileRequest->packetNo, sizeof(uint16_t));
-	memcpy(pCommPacket->data + sizeof(uint16_t), &pFileRequest->data, pFileRequest->dataLen);
+	memcpy(pCommPacket->data + sizeof(uint16_t), &pFileRequest->filetype, sizeof(uint8_t));
+	memcpy(pCommPacket->data + sizeof(uint16_t) + sizeof(uint8_t), pFileRequest->data, pFileRequest->dataLen);
 	
 	uint8_t packetLen = pCommPacket->dataLen + COMM_PACKET_HEADER;
 	pCommPacket->crc = crc16((uint8_t*)pCommPacket, packetLen);
@@ -288,7 +291,8 @@ void createFileRequestPacket(commPacket_t *pCommPacket, const pktFileRequest_t* 
 void decodeFileRequestPacket(const commPacket_t *pCommPacket, pktFileRequest_t* pFileRequest)
 {
 	memcpy(&pFileRequest->packetNo, pCommPacket->data, sizeof(uint16_t));
-	memcpy(&pFileRequest->data, pCommPacket->data + sizeof(uint16_t), pCommPacket->dataLen);
+	memcpy(&pFileRequest->filetype, pCommPacket->data + sizeof(uint16_t), sizeof(uint8_t));
+	memcpy(&pFileRequest->data, pCommPacket->data + sizeof(uint16_t) + sizeof(uint8_t), pCommPacket->dataLen);
 	pFileRequest->dataLen = pCommPacket->dataLen;	
 }
 
@@ -326,4 +330,16 @@ void sendStringAsStringPacketViaBLE(String str)
 		// delay(20); // TODO: confirm removal is safe
 		
 	} while (remainingCharacters > 0);
+}
+
+void sendRequestedFileContent(pktFileRequest_t* pFileRequest)
+{
+	uint16_t MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = pFileRequest->filetype == FILE_TYPE_EXTENDED ? 
+                                                MAX_FILECONTENT_DATALEN / (sizeof(exp_data_t) + sizeof(cmd_data_t)) :
+                                                MAX_FILECONTENT_DATALEN / sizeof(exp_data_t);
+	
+	uint8_t *logArrayPointer, *cmdDataArrayPointer;
+	logArrayPointer = (uint8_t*) exp_data;
+	logArrayPointer += sizeof(exp_data_t) * pFileRequest->packetNo * MAX_NUMBER_OF_LOGS_IN_EACH_PACKET;
+	
 }

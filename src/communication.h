@@ -61,6 +61,7 @@ typedef struct {
 
 typedef struct {
 	uint16_t packetNo;
+	uint8_t filetype;
 	uint8_t data[MAX_FILECONTENT_DATALEN];
 	uint8_t dataLen;
 } pktFileRequest_t;
@@ -78,5 +79,6 @@ void createFileRequestPacket(commPacket_t *pCommPacket, const pktFileRequest_t* 
 void decodeFileRequestPacket(const commPacket_t *pCommPacket, pktFileRequest_t* pFileRequest);
 void sendPacketViaBLE(const commPacket_t* pCommPacket);
 void sendStringAsStringPacketViaBLE(String str);
+void sendRequestedFileContent(pktFileRequest_t* pFileRequest);
 
 #endif

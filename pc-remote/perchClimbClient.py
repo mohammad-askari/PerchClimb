@@ -19,6 +19,7 @@ fileContentPackets = []
 fileContentType = communication.FILE_TYPE_SIMPLE
 alltext = ""
 connected = False
+nextPerncent = 0
 #---------------------------------------------------------------------------------------------------------------------
 # callback function when data is received
 async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
@@ -26,6 +27,7 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 	global fileContentPackets
 	global fileContentType
 	global alltext
+	global nextPerncent
 	
 	# decodedPackets contains packets that has been decoded. each element in the list can be a different type
 	decodedPackets = communication.decodeBytes(buffer)
@@ -39,14 +41,20 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 		elif isinstance(packet, communication.pktFileMetadata_t):
 			packetCount = packet.packetCount
 			fileContentType = packet.filetype
+			nextPerncent = 10
 			
 			fileContentPackets = [None] * (packetCount + 1)
-			print(f"Metadata received. {packet.packetCount} packets of type {packet.filetype} will be received")
+			print(f"Metadata received. {packet.packetCount} packets of type {communication.getFileTypeName(packet.filetype)} will be received")
 		
 		# FileContent packet
 		elif isinstance(packet, communication.pktFileContent_t):
 			fileContentPackets[packet.packetNo] = packet
-			print(f"{packet.packetNo + 1:>{len(str(packetCount))}} / {packetCount}")
+			if (float(packet.packetNo + 1) / packetCount) * 100 >= nextPerncent:
+				print(f"{nextPerncent}%   ", end='')
+				nextPerncent += 10
+				if nextPerncent == 110:
+					print("\n")
+			#print(f"{packet.packetNo + 1:>{len(str(packetCount))}} / {packetCount}")
 		
 		# FileSend packet (file send process is finished)
 		elif isinstance(packet, communication.pktFileSend_t):
@@ -55,8 +63,8 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 			
 			# define mappings
 			csvHeader = {
-				communication.FILE_TYPE_SIMPLE:   "Packet No,Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg]\n",
-				communication.FILE_TYPE_EXTENDED: "Packet No,Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg],Throttle [µs],Aileron,Elevator,Rudder,Clutch,Body Hook,Tail Hook,Wing Open [pwm]\n"
+				communication.FILE_TYPE_SIMPLE:   "Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg]\n",
+				communication.FILE_TYPE_EXTENDED: "Time [ms],Current [adc],Roll [deg],Pitch [deg],Yaw [deg],Throttle [µs],Aileron,Elevator,Rudder,Clutch,Body Hook,Tail Hook,Wing Open [pwm]\n"
 			}
 			logLength = {
 				communication.FILE_TYPE_SIMPLE:   communication.LOG_SIMPLE_LEN,
@@ -80,32 +88,11 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 					for j in range(MAX_NUMBER_OF_LOGS_IN_EACH_PACKET):
 						logData = decodeLogData(fileContentPackets[i].data[j * logLength[fileContentType] : (j+1) * logLength[fileContentType]])
 						if logData != None:
-							alltext += str(i) + ',' + ','.join(map(str, logData.values())) + '\n'
+							alltext += ','.join(map(str, logData.values())) + '\n'
 
 						# check if next loop has data. otherwise, break the inner loop
 						if (j+1) * logLength[fileContentType] >= fileContentPackets[i].dataLen:
 							break
-						
-						# if fileContentPackets[i].filetype == communication.FILE_TYPE_SIMPLE:
-						# 	logData = decodeLogData(fileContentPackets[i].data[j * communication.LOG_SIMPLE_LEN : j * communication.LOG_SIMPLE_LEN + communication.LOG_SIMPLE_LEN])
-						# 	if logData != None:
-						# 		alltext += str(i) + ',' + ','.join(map(str, logData.values())) + '\n'
-						# elif fileContentPackets[i].filetype == communication.FILE_TYPE_EXTENDED:
-						# 	logData = decodeLogData(fileContentPackets[i].data[j * communication.LOG_EXTENDED_LEN : j * communication.LOG_EXTENDED_LEN + communication.LOG_EXTENDED_LEN])
-						# 	if logData != None:
-						# 		alltext += str(i) + ',' + ','.join(map(str, logData.values())) + '\n'
-						# else:
-						# 	print(f"Unknown filetype {fileContentPackets[i].filetype} received. Aborting...")
-						# 	return
-
-						
-						# # check if next loop has data. otherwise break the inner loop
-						# if fileContentPackets[i].filetype == communication.FILE_TYPE_SIMPLE:
-						# 	if j * communication.LOG_SIMPLE_LEN + communication.LOG_SIMPLE_LEN >= fileContentPackets[i].dataLen:
-						# 		break
-						# elif fileContentPackets[i].filetype == communication.FILE_TYPE_EXTENDED:
-						# 	if j * communication.LOG_EXTENDED_LEN + communication.LOG_EXTENDED_LEN >= fileContentPackets[i].dataLen:
-						# 		break
 			
 			# write to file
 			dateAsString = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
