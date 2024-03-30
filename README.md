@@ -5,11 +5,11 @@ Upload the code using **PlatformIO** extension of **Visual Studio Code**.
 ### To run the python script
 First install the required package:
 
-`pip3 install adafruit-circuitpython-ble`
+`pip3 install bleak asyncio`
 
 then navigate to the **pc-remote** folder and run the script:
 
-`python3 communicateViaBLE.py`
+`python3 perchClimbClient.py`
 
 The python script should connect to the board automatically.
 
