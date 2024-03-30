@@ -47,8 +47,8 @@ Madgwick filter;             // Madgwick sensor fusion algorithm object
 // ————————————————————————————— SERVO VARIABLES ———————————————————————————— //
 //                    name    , pin, offset, range, freq, mode
 Actuator aileron  ("aileron"  ,  7 ,  +0   , +100 , +0.0, STEP);
-Actuator elevator ("elevator" ,  2 ,  +0   , +100 , +0.0, STEP); // FIXME pin 2
-Actuator rudder   ("rudder"   ,  3 ,  +0   , +90  , +0.0, STEP); // FIXME pin 3
+Actuator elevator ("elevator" ,  2 ,  +0   , +100 , +0.0, STEP);
+Actuator rudder   ("rudder"   ,  3 ,  +0   , +90  , +0.0, STEP);
 Actuator wing_lock("clutch"   ,  4 ,  +0   , +12  , +0.0, STEP);
 Actuator body_hook("body hook",  5 ,  +0   , +25  , +0.0, STEP);
 Actuator tail_hook("tail hook",  6 ,  +28  , +20  , +0.0, STEP);
@@ -72,7 +72,7 @@ PID pid_pitch(1.0,  0.1,  0.2,  0.01,    -1.0 ,    +1.0);
 PID pid_yaw  (1.0,  0.0,  0.2,  0.01,    -1.0 ,    +1.0);
 
 // ————————————————————— WING MOTOR & ENCODER VARIABLES ————————————————————— //
-const byte encoder_pin[] = {8};   // single or dual-channel encoder pin(s) // FIXME pin 8
+const byte encoder_pin[] = {8};   // single or dual-channel encoder pin(s)
 const byte enable_pin = 9;        // DC motor speed control PWM pin
 const byte phase_pin  = 10;       // DC motor direction control pin
 const byte cpr = 12;              // dual-channel encoder counts per revolution
@@ -139,7 +139,7 @@ bool  is_level_flight;                     // flag to set level flight mode
 // ———————————————————————— TASK SCHEDULER VARIABLES ———————————————————————— //
 // ———— TASK PARAMETERS: interval [ms/μs], #executions, callback function ——— //
 TsTask ts_parser       (TASK_IMMEDIATE,        TASK_FOREVER, &tsParser);
-TsTask ts_sensors      (TASK_SECOND/log_freq,  TASK_FOREVER, &tsSensors);
+TsTask ts_sensors      (TASK_SECOND/filt_freq, TASK_FOREVER, &tsSensors);
 TsTask ts_ble_conn     (TASK_IMMEDIATE,        TASK_ONCE,    &tsBLEConn);
 TsTask ts_pre_climb    (TASK_IMMEDIATE,        TASK_ONCE,    &tsPreClimb);
 TsTask ts_climb_on     (TASK_IMMEDIATE,        TASK_ONCE,    &tsClimbOn);
@@ -163,8 +163,7 @@ TsScheduler scheduler; // scheduler object to run tasks in order
 // —————————————————————————————————————————————————————————————————————————— //
 //                               SETUP FUNCTION                               //
 // —————————————————————————————————————————————————————————————————————————— //
-void setup()
-{
+void setup() {
   // set up serial data communication and transmission speed
   Serial.begin(baud_rate);
   if (DEBUG) { while (!Serial) delay(10); } // wait for serial in debug mode
@@ -210,9 +209,6 @@ void setup()
 
   // configure the task scheduler and add the tasks to the scheduler
   setupTasks();
-
-  // this message will help to identify restart of the system
-  Serial.println("Setup completed. Starting the main loop..."); // TODO: REMOVE AFTER DEBUG
 }
 
 // —————————————————————————————————————————————————————————————————————————— //
@@ -222,16 +218,16 @@ void loop() {
   // run the task scheduler to execute the tasks in order
   scheduler.execute();
   
-  // for (byte i = 0; i < servo_num; i++) actuator[i]->print();
-  static unsigned long prev_time  = 0;
-  static float loop_count = 0;
-  loop_count++;
+  // // for (byte i = 0; i < servo_num; i++) actuator[i]->print();
+  // static unsigned long prev_time  = 0;
+  // static float loop_count = 0;
+  // loop_count++;
 
-  unsigned long now = millis();
-  if (now - prev_time >= 1000) {
-    Serial.print(loop_count / (now-prev_time));
-    Serial.println(" loops per ms");
-    loop_count = 0;
-    prev_time  = now;
-  }
+  // unsigned long now = millis();
+  // if (now - prev_time >= 1000) {
+  //   Serial.print(loop_count / (now-prev_time));
+  //   Serial.println(" loops per ms");
+  //   loop_count = 0;
+  //   prev_time  = now;
+  // }
 }

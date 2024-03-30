@@ -67,9 +67,9 @@ void tsSensors() {
     yaw   = clipAngle(yaw);
 
     if (DEBUG) {
-      Serial.print(">roll: "); Serial.println(roll);
+      Serial.print(">roll: ");  Serial.println(roll);
       Serial.print(">pitch: "); Serial.println(pitch);
-      Serial.print(">yaw: "); Serial.println(yaw);
+      Serial.print(">yaw: ");   Serial.println(yaw);
     }
   }
 };
