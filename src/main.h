@@ -10,7 +10,6 @@
 #include <SimpleCLI.h>
 #include <LSM6DS3.h>
 #include <MadgwickAHRS.h>
-#include <quadrature.h>
 #include <TSchedulerDeclarations.hpp>
 
 #include "actuator.h"
