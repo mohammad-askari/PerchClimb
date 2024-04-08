@@ -1,14 +1,43 @@
+# —————————————————————————————— LIBRARY IMPORTS ————————————————————————————— #
 import asyncio
 from bleak import BleakClient, BleakScanner
-from bleak import BleakError, BleakGATTCharacteristic
-import os, time, threading
+from bleak import BleakGATTCharacteristic
+from time import sleep
+import os, threading
 from datetime import datetime
 import signal, sys
 import communication
-#---------------------------------------------------------------------------------------------------------------------
-UUID_RXD = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'
-UUID_TXD = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E'
-bleName  = "PerchClimb"
+
+
+# ———————————————————————— TERMINAL ANSI CONTROL CODES ——————————————————————— #
+class font:
+   red 		  = "\033[91m"
+   green 	  = "\033[92m"
+   yellow 	  = "\033[93m"
+   blue 	  = "\033[94m"
+   purple 	  = "\033[95m"
+   cyan 	  = "\033[96m"
+   bold 	  = "\033[1m"
+   underline  = "\033[4m"
+   normal     = "\033[22m"
+   reset 	  = "\033[0m"
+
+class cursor:
+   save 	  = "\033[s"
+   restore 	  = "\033[u"
+   clearright = "\033[K"
+   clearleft  = "\033[1K"
+   clearline  = "\033[2K"
+   up 		  = "\033[A"
+   down 	  = "\033[B"
+   right 	  = "\033[C"
+   left 	  = "\033[D"
+ 
+# ————————————————————————————— GLOBAL VARIABLES ————————————————————————————— #
+UUID_RXD  = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
+UUID_TXD  = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
+bleName   = "PerchClimb"
+promptStr = font.bold + font.blue + "> Enter Commands:\u00A0" + font.cyan
 
 continueRunning = True
 thereIsDataToSend = False
@@ -19,42 +48,56 @@ fileContentPackets = []
 fileContentType = communication.FILE_TYPE_SIMPLE
 alltext = ""
 connected = False
-nextPerncent = 0
-#---------------------------------------------------------------------------------------------------------------------
-# callback function when data is received
+nextPercent = 0
+
+
+# —————————————————————— TERMINAL CURSOR MOVER FUNCTIONS ————————————————————— #
+def saveCursor():
+	print(cursor.save, end="", flush=True)
+
+def restoreCursor():
+	print(cursor.restore + cursor.clearright + font.reset, end="", flush=True)
+
+def showPrompt():
+	print(promptStr, end="", flush=True)
+
+
+# ————————————————————— DECODED DATA PROCESSING CALLBACK ————————————————————— #
 async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 	global packetCount
 	global fileContentPackets
 	global fileContentType
 	global alltext
-	global nextPerncent
+	global nextPercent
 	
-	# decodedPackets contains packets that has been decoded. each element in the list can be a different type
+	# Clear the line to overwrite the user input character if necessary
+	restoreCursor()
+	
+	# Each element in the list can be a different decoded packet type
 	decodedPackets = communication.decodeBytes(buffer)
 	
 	for packet in decodedPackets:		
 		# String packet
 		if isinstance(packet, communication.pktString_t):
-			print(packet.str, end='')
+			print(packet.str, end="")
 		
 		# Metadata packet
 		elif isinstance(packet, communication.pktFileMetadata_t):
 			packetCount = packet.packetCount
 			fileContentType = packet.filetype
-			nextPerncent = 10
+			nextPercent = 5
 			
 			fileContentPackets = [None] * (packetCount + 1)
-			print(f"Metadata received. {packet.packetCount} packets of type {communication.getFileTypeName(packet.filetype)} will be received")
+			print(f"Metadata received. {packet.packetCount} packets of type {communication.getFileTypeName(packet.filetype)} will be received\n")
 		
 		# FileContent packet
 		elif isinstance(packet, communication.pktFileContent_t):
 			fileContentPackets[packet.packetNo] = packet
-			if (float(packet.packetNo + 1) / packetCount) * 100 >= nextPerncent:
-				print(f"{nextPerncent}%   ", end='')
-				nextPerncent += 10
-				if nextPerncent == 110:
-					print("\n")
-			#print(f"{packet.packetNo + 1:>{len(str(packetCount))}} / {packetCount}")
+			if (float(packet.packetNo + 1) / packetCount) * 100 >= nextPercent:
+				percentStr = "[%-20s] %d%%" % ('='*int(nextPercent/5), nextPercent)
+				color = font.yellow if nextPercent < 100 else font.green
+				print("\r" + cursor.up + color + percentStr + font.normal)
+				nextPercent += 5
 		
 		# FileSend packet (file send process is finished)
 		elif isinstance(packet, communication.pktFileSend_t):
@@ -76,7 +119,7 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 				alltext = csvHeader[fileContentType]
 				MAX_NUMBER_OF_LOGS_IN_EACH_PACKET = int(communication.MAX_FILECONTENT_DATALEN / logLength[fileContentType])
 			except KeyError:
-				print("Unknown file type received. Aborting...")
+				print(font.bold + font.red + "Unknown file type received. Aborting..." + font.reset)
 				return
 
 			print(f"Received {packetCount} packets, each containing {MAX_NUMBER_OF_LOGS_IN_EACH_PACKET} logs at max.")
@@ -96,51 +139,66 @@ async def dataReceiveCallback(_: BleakGATTCharacteristic, buffer: bytearray):
 			
 			# write to file
 			dateAsString = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-			foldername = "expdata"
-			filename = "experiment_" + dateAsString + ".csv"
+			foldername 	 = "expdata"
+			filename     = "experiment_" + dateAsString + ".csv"
+			fileaddress  = foldername + "/" + filename
 			try:
 				os.mkdir(foldername)
 			except Exception as e:
 				pass
-			h = open(foldername + "/" + filename, "+w")
-			h.write(alltext)
-			h.close()	
-			print("Data has been saved to the file: " + foldername + "/" + filename)
-#---------------------------------------------------------------------------------------------------------------------
-# the thread that reads user input and sends the given command to the device via bluetooth
+			file = open(fileaddress, "+w")
+			file.write(alltext)
+			file.close()
+			msg = "Data has been saved to the file: "
+			print(font.bold + msg + font.green + fileaddress + font.reset)
+
+	saveCursor()
+	showPrompt()
+
+# ——————————————————————— COMMAND LINE INTERFACE THREAD —————————————————————— #
+# a thread to read input user commands and send them to the device via bluetooth
 def cliThread():
 	global continueRunning
 	global thereIsDataToSend
-	global dataToSend	
-
-	print("CLI thread started. Enter your command:")
+	global dataToSend
+	
+	helpStr = font.bold + font.cyan + "help" + font.reset
+	print("CLI thread started. Type " + helpStr + " for available commands.")
 	
 	try:
 		while continueRunning:
 			# wait until the entered command is sent
-			while thereIsDataToSend == True:
-				time.sleep(0.050)
+			# while thereIsDataToSend == True:
+			# 	sleep(0.05)
 
-			command = input("> ")
-			if command != "":
-				pktString = communication.pktString_t()
-				pktString.str = command + "\n"
-				pktString.strLen = len(pktString.str)
+			try:
+				command = input(promptStr)
+				if command != "":
+					saveCursor()
+					pktString = communication.pktString_t()
+					pktString.str = command + "\n"
+					pktString.strLen = len(pktString.str)
 
-				commPacket = communication.commPacket_t()
-				communication.createStringPacket(commPacket, pktString)
-				sendBuffer = communication.convertCommPacketToByteArray(commPacket)
-				
-				thereIsDataToSend = True
-				dataToSend = sendBuffer
+					commPacket = communication.commPacket_t()
+					communication.createStringPacket(commPacket, pktString)
+					sendBuffer = communication.convertCommPacketToByteArray(commPacket)
+					
+					thereIsDataToSend = True
+					dataToSend = sendBuffer
+			# ignore ctrl+d
+			except EOFError:
+				print()
+				pass
+
 	except Exception as e:
 		pass
-#---------------------------------------------------------------------------------------------------------------------
-# find and connect to the specified device name
+
+
+# ——————————————————————— BLUETOOTH CONNECTION FUNCTION —————————————————————— #
 async def connectBluetooth():
 	bleDevice = None
 	
-	print("Looking for nRF58240 Peripheral Device...")
+	print("Looking for nRF58240 peripheral device...")
 
 	# scan until we find the device
 	while True:
@@ -151,13 +209,17 @@ async def connectBluetooth():
 				bleDevice = device
 				break
 		
+		bleNameStr = font.bold + bleName + font.normal
 		if bleDevice == None:
-			print("Could not find " + bleName + ". Scanning again...")
+			msg = "Could not find " + bleNameStr + ". Scanning again..."
+			print(font.yellow + msg + font.reset)
 		else:
-			print("Found " + bleName + ". Connecting...")
+			msg = "Found " + bleNameStr + ". Connecting..."
+			print(font.yellow + msg + font.reset)
 			return bleDevice
-#---------------------------------------------------------------------------------------------------------------------
-# main loop
+
+
+# ————————————————————————————————— MAIN LOOP ———————————————————————————————— #
 async def run():
 	global continueRunning
 	global cliThreadHandle
@@ -169,23 +231,22 @@ async def run():
 	def disconnectCallback(_: BleakClient):
 		global connected
 		connected = False
-		print("Disconnected")
+		print(font.bold + font.red + "\n\nDisconnected" + font.reset)
 
 	# the main loop that connects to device and starts interacting with the device
 	while continueRunning:
 		# connect to the device
 		bleDevice = await connectBluetooth()
 		connected = True
-
 		bleClient = BleakClient(bleDevice, disconnected_callback=disconnectCallback)
 		await bleClient.connect()
-		print("Connected to the device\n")
+		print(font.bold + font.green + "Connected to the device\n" + font.reset)
 		
 		# show services of the device
 		print("Available services: ", len(bleClient.services.services))
 		for service in bleClient.services.services:
 			print(bleClient.services.get_service(service))
-		print("\n")
+		print()
 		
 		# set read callback function
 		await bleClient.start_notify(UUID_TXD, dataReceiveCallback)
@@ -193,7 +254,11 @@ async def run():
 		# start the CLI thread
 		if cliThreadHandle == None:
 			cliThreadHandle = threading.Thread(target=cliThread, args=())
+			cliThreadHandle.daemon = True
 			cliThreadHandle.start()
+		else:
+			saveCursor()
+			showPrompt()
 
 		# device is ready, start interacting with the device
 		while connected:
@@ -203,7 +268,9 @@ async def run():
 				thereIsDataToSend = False
 			
 			await asyncio.sleep(0.2)
-#---------------------------------------------------------------------------------------------------------------------			
+
+
+# ———————————————————————————— LOGGED DATA DECODER ——————————————————————————— #
 def decodeLogData(buffer: bytearray):
 	if len(buffer) == communication.LOG_SIMPLE_LEN:
 		data = {
@@ -235,19 +302,28 @@ def decodeLogData(buffer: bytearray):
 	
 	else:
 		print("Bad data in logs: ", len(buffer))
-#---------------------------------------------------------------------------------------------------------------------			
-def signal_handler(sig, frame):
+
+
+# —————————————————————————————— SIGNAL CALLBACK ————————————————————————————— #
+def signalHandler(sig, frame):
 	global continueRunning
 	global loop
 	
 	continueRunning = False
 	loop.stop()
-	sys.exit(0)
-#---------------------------------------------------------------------------------------------------------------------
-######################################### MAIN ######################################
-# detect ctrl+c to kill the thread
-signal.signal(signal.SIGINT, signal_handler)
+	msg = "Termination signal (CTRL+C) detected. Closing the client..."
+	print("\r", end="")
+	print(font.bold + font.red + msg + font.reset)
+	sys.exit()
 
+
+# —————————————————————————————— MAIN FUNCTION —————————————————————————————— #
+# detects CTRL+C to kill the thread and ignore CTRL+Z
+signal.signal(signal.SIGINT,  signalHandler)
+if os.name != 'nt': 
+	signal.signal(signal.SIGTSTP, signal.SIG_IGN)
+
+# starts an infinite running loop, run() function, until terminated by the user
 loop = asyncio.get_event_loop()
 asyncio.ensure_future(run())
 loop.run_forever()

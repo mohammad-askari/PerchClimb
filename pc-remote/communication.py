@@ -69,7 +69,7 @@ class pktFileSend_t:
 packet = commPacket_t()
 state = STATE_HEADER1
 dataIndex = 0
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def decodeBytes(buffer):
     decodedPackets = []
     index = 0
@@ -128,7 +128,7 @@ def decodeBytes(buffer):
         index += 1
     
     return decodedPackets
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def decodePacket():
     global packet
     
@@ -142,7 +142,7 @@ def decodePacket():
         return pktFileSend_t()
     elif packet.type == PKT_FILE_REQUEST:
         return decodeFileRequestPacket(packet)
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def createStringPacket(pCommPacket, pPktString):	
     pCommPacket.header1 = HEADER1
     pCommPacket.header2 = HEADER2
@@ -152,13 +152,13 @@ def createStringPacket(pCommPacket, pPktString):
 	
     crc = crc16(pCommPacket)
     pCommPacket.crc = crc
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def decodeStringPacket(pCommPacket):
     pPktString = pktString_t()
     pPktString.str = pCommPacket.data.decode("ascii")
     pPktString.strLen = pCommPacket.dataLen
     return pPktString
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def createFileMetadataPacket(pCommPacket, pPktMetadata):
     pCommPacket.header1 = HEADER1
     pCommPacket.header2 = HEADER2
@@ -169,13 +169,13 @@ def createFileMetadataPacket(pCommPacket, pPktMetadata):
 
     crc = crc16(pCommPacket)
     pCommPacket.crc = crc
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def decodeFileMetadataPacket(pCommPacket):
     pPktMetadata = pktFileMetadata_t()
     pPktMetadata.packetCount = int.from_bytes(pCommPacket.data[0:2], byteorder='little', signed=False)
     pPktMetadata.filetype = int.from_bytes(pCommPacket.data[2:3], byteorder='little', signed=False)
     return pPktMetadata
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def createFileContentPacket(pCommPacket, pFileContent):
     pCommPacket.header1 = HEADER1
     pCommPacket.header2 = HEADER2
@@ -188,7 +188,7 @@ def createFileContentPacket(pCommPacket, pFileContent):
 
     crc = crc16(pCommPacket)
     pCommPacket.crc = crc
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def decodeFileContentPacket(pCommPacket):
     pFileContent = pktFileContent_t()
     pFileContent.packetNo = int.from_bytes(pCommPacket.data[0:2], byteorder='little', signed=False)
@@ -196,7 +196,7 @@ def decodeFileContentPacket(pCommPacket):
     pFileContent.data = pCommPacket.data[3:]
     pFileContent.dataLen = len(pFileContent.data)
     return pFileContent
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def createFileSentPacket(pCommPacket):
     pCommPacket.header1 = HEADER1
     pCommPacket.header2 = HEADER2
@@ -206,7 +206,7 @@ def createFileSentPacket(pCommPacket):
     crc = crc16(pCommPacket)
     pCommPacket.crc = crc
 
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def createFileRequestPacket(pCommPacket, pFileRequest):
     pCommPacket.header1 = HEADER1
     pCommPacket.header2 = HEADER2
@@ -217,14 +217,14 @@ def createFileRequestPacket(pCommPacket, pFileRequest):
 
     crc = crc16(pCommPacket)
     pCommPacket.crc = crc
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def decodeFileRequestPacket(pCommPacket):
     pFileRequest = pktFileRequest_t()
     pFileRequest.packetNo = int.from_bytes(pCommPacket.data[0:2], byteorder='little', signed=False)
     pFileRequest.data = pCommPacket.data[:2]
     pFileRequest.dataLen = len(pFileRequest.data)
     return pFileRequest
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def convertCommPacketToByteArray(pCommPacket, includeCrc = True):
     buffer = bytearray(MAX_BLUETOOTH_PACKET_LEN)
     dataIndex = 0
@@ -248,11 +248,11 @@ def convertCommPacketToByteArray(pCommPacket, includeCrc = True):
         dataIndex += 2
     
     return buffer[:dataIndex]    
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def sendCommPacket(pCommPacket):
     buffer = convertCommPacketToByteArray(pCommPacket)    
     #bluetooth.send(buffer)
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 def getFileTypeName(packetType):
     if packetType == FILE_TYPE_SIMPLE:
         return "Simple"
@@ -260,7 +260,7 @@ def getFileTypeName(packetType):
         return "Extended"
     else:
         return "Unknown"
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ———————————————————————————————————————————————————————————————————————————— #
 crc16Table = [
 0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
 0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
@@ -304,5 +304,4 @@ def crc16(pCommPacket):
         crc &= 0xFFFF
         counter += 1
     return crc
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+# ———————————————————————————————————————————————————————————————————————————— #

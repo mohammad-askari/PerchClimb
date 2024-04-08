@@ -11,7 +11,7 @@
 void cliHelp(cmd *cmd_ptr) {
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   Serial.print(cli.toString());
-  sendStringAsStringPacketViaBLE(cli.toString() + String("\n"));
+  sendStringAsStringPacketViaBLE(cli.toString());
 }
 
 // —————————————————————————— INPUT ERROR CALLBACK —————————————————————————— //
@@ -78,7 +78,7 @@ void cliTransferData(cmd *cmd_ptr) { // TODO: MAKE NON-BLOCKING
 void cliFormatMemory(cmd *cmd_ptr) { // TODO: IMPLEMENT THIS FUNCTION
   Command c(cmd_ptr);  // wrapper class instance for the pointer
   
-  Serial.print("Formatting the QSPI using LittleFS ...");
+  Serial.println("Formatting the QSPI using LittleFS ...");
   sendStringAsStringPacketViaBLE(String("Formatting the QSPI using LittleFS ...\n"));
   
   delay(1500);
@@ -170,7 +170,7 @@ void cliMotorHome(cmd *cmd_ptr) {
   if (set_home) {
     // encoder.reset_count();
     String str = "Current position set to home\n";
-    Serial.println(str);
+    Serial.print(str);
     sendStringAsStringPacketViaBLE(str);
   }
 
@@ -236,7 +236,6 @@ void cliSetPos(cmd *cmd_ptr) {
   Serial.print(" to position ");
   Serial.println(pos);
   sendStringAsStringPacketViaBLE(String(" to position ") + String(pos) + String("\n"));
-
 }
 
 /**
